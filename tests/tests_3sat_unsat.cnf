@@ -1,0 +1,11 @@
+c unsat
+c This is the smallest 3-sat instance that's unsat.
+p 3 8
+1 2 3 0
+1 2 -3 0
+1 -2 3 0
+1 -2 -3 0
+-1 2 3 0
+-1 2 -3 0
+-1 -2 3 0
+-1 -2 -3 0

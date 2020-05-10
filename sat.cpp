@@ -82,11 +82,11 @@ struct trace_t {
   };
 
 
-  const cnf_t& cnf;
+  cnf_t& cnf;
   std::vector<action_t> actions;
   std::vector<variable_state_t> variable_state;
 
-  trace_t(const cnf_t& cnf): cnf(cnf) {
+  trace_t(cnf_t& cnf): cnf(cnf) {
     variable_t max_var = 0;
     for (auto& clause : cnf) {
       for (auto& literal : clause) {
@@ -104,7 +104,36 @@ struct trace_t {
   }
   bool halted() const {
     std::ostream& operator<<(std::ostream& o, const trace_t t);
+    //std::cout << "Debug: current trace is: " << *this << std::endl;
     return !actions.empty() && halt_state(*actions.rbegin());
+  }
+  bool final_state() {
+    if (actions.empty()) {
+      return false;
+    }
+    action_t action = *actions.rbegin();
+
+    // TODO: there is a better place for this check/computation, I'm sure.
+    if (action.action_kind == trace_t::action_t::action_kind_t::halt_conflict) {
+      bool has_decision = false;
+      for (auto& a : actions) {
+        if (a.action_kind == trace_t::action_t::action_kind_t::decision) {
+          has_decision = true;
+          break;
+        }
+      }
+      //auto it = std::find(std::begin(actions), std::end(actions), [](action_t a) { return a.action_kind == trace_t::action_t::action_kind_t::decision; });
+      //if (it == std::end(actions)) {
+      if (!has_decision) {
+        action_t a;
+        a.action_kind = trace_t::action_t::action_kind_t::halt_unsat;
+        actions.push_back(a);
+        action = a;
+      }
+    }
+    return
+      action.action_kind == trace_t::action_t::action_kind_t::halt_unsat ||
+      action.action_kind == trace_t::action_t::action_kind_t::halt_sat;
   }
 
   bool literal_true(const literal_t l) const {
@@ -206,6 +235,13 @@ struct trace_t {
     action.action_kind = trace_t::action_t::action_kind_t::decision;
     action.decision_literal = l;
     actions.push_back(action);
+
+    // Have we solved the equation?
+    if (cnf_sat()) {
+      action_t action;
+      action.action_kind = trace_t::action_t::action_kind_t::halt_sat;
+      actions.push_back(action);
+    }
   }
 
   bool units_to_prop() const {
@@ -257,7 +293,7 @@ struct trace_t {
         return true;
       }
     }
-    assert(0);
+    return false;
   }
 
   // We have a special initial trace that looks for degenerate
@@ -282,6 +318,24 @@ struct trace_t {
       // This can see if we've found a totally-sat assignment.
       decide_literal();
     }
+  }
+
+  // This part isn't interesting (yet)
+  void backtrack() {
+    std::fill(std::begin(variable_state), std::end(variable_state), variable_state_t::unassigned);
+    actions.clear();
+  }
+
+  void learn_clause() {
+    std::cout << "About to learn clause from: " << *this << std::endl;
+    clause_t new_clause;
+    for (action_t a : actions) {
+      if (a.action_kind == action_t::action_kind_t::decision) {
+        new_clause.push_back(-a.decision_literal);
+      }
+    }
+    std::cout << "Learned clause: " << new_clause << std::endl;
+    cnf.push_back(new_clause);
   }
 };
 
@@ -376,13 +430,21 @@ int main(int argc, char* argv[]) {
   cnf_t cnf = load_cnf();
   print_cnf(cnf);
   std::cout << "CNF DONE" << std::endl;
+  assert(cnf.size() > 0); // make sure parsing worked.
 
-  // Preprocess trace.
+  // Preprocess trace. This is to clean out "degenerate" aspects,
+  // like units and trivial CNF cases.
   trace_t trace(cnf);
   trace.process();
   std::cout << trace;
 
-  // construct our partial assignment object
+  while (!trace.final_state()) {
+    trace.learn_clause();
+    trace.backtrack();
+    trace.process();
+  }
+  std::cout << trace;
+
 
   // do the main loop
 }
