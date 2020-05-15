@@ -1,10 +1,16 @@
 CXX=clang++
-CXXFLAGS=-Wall -std=c++1z
+CXXFLAGS=-Wall -std=c++1z -g
 
 uf50-218-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf50-218/*.cnf)))
 uuf50-218-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf50-218/*.cnf)))
 
 run-tests: $(uuf50-218-tests)
+# $(uf50-218-tests)
+
+fail1: sat
+	cat tests/uuf50-218/uuf50-0218.cnf | sed s/%// | sed s/^0// |./sat
+
+
 unit: sat
 	./sat < tests/units1.cnf
 
@@ -12,10 +18,10 @@ unit: sat
 
 # $(info $(uf50-218-tests))
 
-%.unsatresult : sat %.cnf
-	cat $^ | sed s/%// | sed s/^0// | ./sat | tail -n 1 | diff - UNSAT
-%.satresult : sat %.cnf
-	cat $^ | sed s/%// | sed s/^0// | ./sat | tail -n 1 | diff - SAT
+%.unsatresult : %.cnf sat
+	cat $< | sed s/%// | sed s/^0// | ./sat | tail -n 1 | diff - UNSAT
+%.satresult : %.cnf sat
+	cat $< | sed s/%// | sed s/^0// | ./sat | tail -n 1 | diff - SAT
 
 
 # a sequence of basic tests, really trivial CNFs
@@ -36,5 +42,10 @@ run_tests:
 sat: sat.cpp
 
 
+
 clean:
 	rm sat
+
+
+# Run in bactch mode
+#gdb -q -batch -ex run -ex backtrace ./sat < tests/units1.cnf
