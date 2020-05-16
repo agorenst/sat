@@ -76,6 +76,12 @@ literal_t resolve_candidate(clause_t c1, clause_t c2) {
   return 0;
 }
 
+enum class backtrack_mode_t {
+                             simplest,
+                             trust_learning, // does the learning phase do the backtracking for us?
+};
+backtrack_mode_t backtrack_mode = backtrack_mode_t::trust_learning;
+
 // This is our CNF object. It will contain a few helper methods.
 /*
 struct cnf_t {
@@ -391,18 +397,13 @@ struct trace_t {
     }
   }
 
-  // This part isn't interesting (yet)
   void backtrack() {
-    enum class backtrack_mode {
-                           simplest,
-                           trust_learning, // does the learning phase do the backtracking for us?
-    };
-    backtrack_mode m = backtrack_mode::trust_learning;
-    if (m == backtrack_mode::simplest) {
+    //backtrack_mode m = backtrack_mode::trust_learning;
+    if (backtrack_mode == backtrack_mode_t::simplest) {
       std::fill(std::begin(variable_state), std::end(variable_state), variable_state_t::unassigned);
       actions.clear();
     }
-    else if (m == backtrack_mode::trust_learning) {
+    else if (backtrack_mode == backtrack_mode_t::trust_learning) {
       // do nothing!
     }
   }
@@ -481,61 +482,63 @@ void trace_t::learn_clause() {
     assert(counter == 1);
     cnf.push_back(c);
 
-    // create the action that this new clause is unit_propped by the trail
-    action_t a;
-    a.action_kind = action_t::action_kind_t::unit_prop;
-    a.unit_prop.reason = cnf.size() - 1;
-    a.unit_prop.propped_literal = new_implied;
+    if (backtrack_mode == backtrack_mode_t::trust_learning) {
+      // create the action that this new clause is unit_propped by the trail
+      action_t a;
+      a.action_kind = action_t::action_kind_t::unit_prop;
+      a.unit_prop.reason = cnf.size() - 1;
+      a.unit_prop.propped_literal = new_implied;
 
-    // TODO: Show that this is nonlinear! That this backtracking is really worth-it.
+      // TODO: Show that this is nonlinear! That this backtracking is really worth-it.
 
-    // we also do the backtracking here:
-    it++; // start the next level of our decision trail
-    // Continue going down our level
-    for (; it != actions.rend(); it++) {
-      literal_t l = it->get_literal();
-      if (contains(c, -l)) {
-        break;
-      }
-    }
-    auto fwd_it = it.base();
-    assert(fwd_it != actions.end());
-    // now go back to the start of the "next" decision:
-    while (!fwd_it->is_decision()) {
-      fwd_it++;
-      assert(fwd_it != actions.end());
-    }
-    //std::cout << "fwd_it : " << *fwd_it << std::endl;
-    //std::cout << "it: " << *it << std::endl;
-    //std::cout << "actions: " << actions << std::endl;
-    assert(fwd_it->is_decision());
-
-    // Backtrack!
-    for (auto reset_it = fwd_it; reset_it != actions.end(); reset_it++) {
-      if (reset_it->has_literal()) {
-        literal_t l = reset_it->get_literal();
-        unassign_literal(l);
-      }
-    }
-    actions.erase(fwd_it, std::end(actions));
-
-    // correctness check: let's make sure we really do induce
-    // the new unit_prop:
-    if (count_unassigned_literals(a.unit_prop.reason) != 1) {
-      for (auto u : cnf[a.unit_prop.reason]) {
-        if (literal_unassigned(u)) {
-          //std::cout << "Unassigned: " << u << std::endl;
+      // we also do the backtracking here:
+      it++; // start the next level of our decision trail
+      // Continue going down our level
+      for (; it != actions.rend(); it++) {
+        literal_t l = it->get_literal();
+        if (contains(c, -l)) {
+          break;
         }
       }
-      //std::cout << "Count is: " << count_unassigned_literals(a.unit_prop.reason) << std::endl;
+      auto fwd_it = it.base();
+      assert(fwd_it != actions.end());
+      // now go back to the start of the "next" decision:
+      while (!fwd_it->is_decision()) {
+        fwd_it++;
+        assert(fwd_it != actions.end());
+      }
+      //std::cout << "fwd_it : " << *fwd_it << std::endl;
+      //std::cout << "it: " << *it << std::endl;
       //std::cout << "actions: " << actions << std::endl;
+      assert(fwd_it->is_decision());
+
+      // Backtrack!
+      for (auto reset_it = fwd_it; reset_it != actions.end(); reset_it++) {
+        if (reset_it->has_literal()) {
+          literal_t l = reset_it->get_literal();
+          unassign_literal(l);
+        }
+      }
+      actions.erase(fwd_it, std::end(actions));
+
+      // correctness check: let's make sure we really do induce
+      // the new unit_prop:
+      if (count_unassigned_literals(a.unit_prop.reason) != 1) {
+        for (auto u : cnf[a.unit_prop.reason]) {
+          if (literal_unassigned(u)) {
+            //std::cout << "Unassigned: " << u << std::endl;
+          }
+        }
+        //std::cout << "Count is: " << count_unassigned_literals(a.unit_prop.reason) << std::endl;
+        //std::cout << "actions: " << actions << std::endl;
+      }
+      assert(count_unassigned_literals(a.unit_prop.reason) == 1);
+      //std::cout << find_unassigned_literal(a.unit_prop.reason) << std::endl;
+      //std::cout << a.unit_prop.propped_literal << std::endl;
+      assert(find_unassigned_literal(a.unit_prop.reason) == a.unit_prop.propped_literal);
+      // TODO: do we need to continue unit-prop here?
+      // Eep, for now, I'll just rely on the next call to unit_prop?
     }
-    assert(count_unassigned_literals(a.unit_prop.reason) == 1);
-    //std::cout << find_unassigned_literal(a.unit_prop.reason) << std::endl;
-    //std::cout << a.unit_prop.propped_literal << std::endl;
-    assert(find_unassigned_literal(a.unit_prop.reason) == a.unit_prop.propped_literal);
-    // TODO: do we need to continue unit-prop here?
-    // Eep, for now, I'll just rely on the next call to unit_prop?
   }
   else {
     // This is really expensive: compute a mapping of literals to their levels.
