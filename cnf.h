@@ -11,11 +11,18 @@ typedef std::vector<literal_t> clause_t;
 typedef std::vector<clause_t> cnf_t;
 typedef size_t clause_id;
 
+
 // These are some helper functions for clauses that
 // don't need the state implicit in a trail:
 clause_t resolve(clause_t c1, clause_t c2, literal_t l);
 
 literal_t resolve_candidate(clause_t c1, clause_t c2);
+
+// this is for units, unconditionally simplifying the CNF.
+void commit_literal(cnf_t& cnf, literal_t l);
+literal_t find_unit(const cnf_t& cnf);
+bool immediately_unsat(const cnf_t& cnf);
+bool immediately_sat(const cnf_t& cnf);
 
 // This is the various kinds of actions we can record.
 struct action_t {
@@ -46,6 +53,16 @@ struct action_t {
   bool is_decision() const;
   bool has_clause() const;
   clause_id get_clause() const;
+};
+
+// This is "just" a pair, but has some useful methods.
+struct watcher_t {
+  // these can really be a lot smaller:
+  size_t idx1;
+  size_t idx2;
+
+  literal_t change_watcher(literal_t l);
+  literal_t get_other(literal_t l);
 };
 
 

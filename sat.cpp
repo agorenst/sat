@@ -34,6 +34,7 @@ enum class unit_prop_mode_t {
                              queue
 };
 unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::queue;
+bool watched_literals_on = false; // this builds off the "queue" model.
 
 // The perspective I want to take is not one of deriving an assignment,
 // but a trace exploring the recursive, DFS space of assignments.
@@ -59,19 +60,202 @@ struct trace_t {
   // store the unit-props we're still getting through.
   std::queue<action_t> units;
 
-  trace_t(cnf_t& cnf): cnf(cnf) {
+  // the "vector" is really a map of clause_ids to their watchers.
+  std::vector<watcher_t> watched_literals;
+  std::map<literal_t, std::vector<clause_id>> literals_to_watcher;
+
+  void reset() {
+    actions.clear();
+    variable_state.clear();
+    literal_to_clause.clear();
+    while (!units.empty()) { units.pop(); }
+    watched_literals.clear();
+    literals_to_watcher.clear();
+
     variable_t max_var = 0;
     for (size_t i = 0; i < cnf.size(); i++) {
       const auto& clause = cnf[i];
+      assert(clause.size() > 1); // for watched literals, TODO, make this more robust.
       for (auto& literal : clause) {
         max_var = std::max(max_var, std::abs(literal));
-
         literal_to_clause[literal].push_back(i);
       }
     }
+
     variable_state.resize(max_var+1);
     std::fill(std::begin(variable_state), std::end(variable_state), unassigned);
 
+    for (size_t i = 0; i < cnf.size(); i++) {
+      new_watch(i);
+    }
+
+    check_watch_correctness();
+  }
+
+  trace_t(cnf_t& cnf): cnf(cnf) {
+    reset();
+  }
+
+  // Make sure our two maps are mapping to each other correctly.
+  // Not yet checked agains the consistency of the trail, something to add.
+  void check_watch_correctness() {
+    return;
+    for (size_t cid = 0; cid < cnf.size(); cid++) {
+      watcher_t w = watched_literals[cid];
+      const clause_t& c = cnf[cid];
+      assert(w.idx1 < c.size());
+      assert(w.idx2 < c.size());
+      assert(w.idx1 != w.idx2);
+
+      assert(contains(literals_to_watcher[c[w.idx1]], cid));
+      assert(contains(literals_to_watcher[c[w.idx2]], cid));
+    }
+
+    for (auto&& [literal, clause_list] : literals_to_watcher) {
+      for (const auto& cid : clause_list) {
+        const clause_t& c = cnf[cid];
+        assert(contains(c, literal));
+
+        watcher_t w = watched_literals[cid];
+        assert(c[w.idx1] == literal || c[w.idx2] == literal);
+      }
+    }
+  }
+
+  void new_watch(clause_id cid) {
+    assert(watched_literals.size() == cid);
+    const clause_t& c = cnf[cid];
+    assert(c.size() > 1);
+
+    size_t i1 = c.size();
+    size_t i2 = c.size();
+    // try to assign the 2 watched literals.
+    for (size_t i = 0; i < c.size(); i++) {
+      // we can do with unassigned or with true.
+      if (!literal_false(c[i])) {
+        literals_to_watcher[c[i]].push_back(cid);
+        i1 = i;
+        break;
+      }
+    }
+    for (size_t i = i1+1; i < c.size(); i++) {
+      if (!literal_false(c[i])) {
+        i2 = i;
+        literals_to_watcher[c[i]].push_back(cid);
+        break;
+      }
+    }
+
+    // If we couldn't find anything at all, we already have a conflict.
+    if (i1 == c.size()) {
+      if (watched_literals_on) {
+        action_t a;
+        a.action_kind = action_t::action_kind_t::halt_conflict;
+        actions.push_back(a);
+        //std::cout << "Added conflict from initial watch" << std::endl;
+      }
+      // still want to keep the watchers and everything in a consistent state.
+      i1 = 0;
+      literals_to_watcher[c[i1]].push_back(cid);
+    }
+    if (i2 == c.size()) {
+      if (watched_literals_on) {
+        action_t a;
+        a.action_kind = action_t::action_kind_t::unit_prop;
+        a.unit_prop.propped_literal = c[i1];
+        a.unit_prop.reason = cid;
+        units.push(a); // units, we haven't processed this yet.
+        //std::cout << "Added unit from initial watch" << std::endl;
+      }
+
+      // still want to keep the watchers and everything in a consistent state.
+      i2 = i1 == 0 ? 1 : 0;
+      literals_to_watcher[c[i2]].push_back(cid);
+    }
+
+    watched_literals.push_back({i1, i2});
+  }
+
+  // This is the real magic!
+  void re_watch(clause_id cid, literal_t l) {
+    assert(watched_literals.size() > cid);
+    assert(literal_false(l));
+    watcher_t w = watched_literals[cid];
+    const clause_t& c = cnf[cid];
+    assert(c[w.idx1] == l || c[w.idx2] == l);
+
+    // We want to find something new to watch cid, not l.
+    // So we find the thing we expect to remove.
+    auto& literal_watch_list = literals_to_watcher[l];
+    auto to_remove = std::find(std::begin(literal_watch_list), std::end(literal_watch_list), cid);
+    assert(to_remove != std::end(literal_watch_list));
+
+    // First, see if we found a true literal to move to. That's "best" (intuitively, at least...)
+    size_t i = 0;
+    bool found = false;
+    for (; i < c.size(); i++) {
+      if (i == w.idx1) continue;
+      if (i == w.idx2) continue;
+      literal_t l = c[i];
+      if (literal_true(l)) { found = true; break; }
+    }
+
+    if (!found) {
+      i = 0;
+      for (; i < c.size(); i++) {
+        if (i == w.idx1) continue;
+        if (i == w.idx2) continue;
+        literal_t l = c[i];
+        if (!literal_false(l)) { found = true; break; }
+      }
+    }
+
+    // great, we found a new literal for our
+    // replacement literal.
+    if (i < c.size()) {
+      assert(found);
+      // swap out the correct index.
+      if (c[w.idx1] == l) {
+        w.idx1 = i;
+      }
+      else {
+        assert(c[w.idx2] == l);
+        w.idx2 = i;
+      }
+      // update the watch list of that new index
+      literals_to_watcher[i].push_back(cid);
+
+      // remove the old index.
+      std::swap(*to_remove, *(std::end(literal_watch_list)-1));
+      literal_watch_list.pop_back();
+    }
+    // only take action if we've turned on this feature.
+    else if (watched_literals_on) {
+      // if our counterpart is unassigned, we're a unit
+      // if our counterpart is true, we're done (check this earlier?)
+      // if our counterpart is false, we're a conflict
+      literal_t other_literal = l == c[w.idx1] ? w.idx2 : w.idx1; 
+      assert(other_literal != l);
+
+      if (literal_true(other_literal)) {
+        return;
+      }
+      if (literal_unassigned(other_literal)) {
+        action_t a;
+        a.action_kind = action_t::action_kind_t::unit_prop;
+        a.unit_prop.reason = cid;
+        a.unit_prop.propped_literal = other_literal;
+        units.push(a); // UNITS, not our action: we haven't processed this yet.
+      }
+      if (literal_false(other_literal)) {
+        action_t a;
+        a.action_kind = action_t::action_kind_t::halt_conflict;
+        a.conflict_clause_id = cid;
+        actions.push_back(a); // we push this onto action, to record this conflict.
+      }
+    }
+
+    check_watch_correctness();
   }
 
   static bool halt_state(const action_t action) {
@@ -422,13 +606,45 @@ struct trace_t {
 
   }
 
-  void add_clause(const clause_t& c) {
-    size_t id = cnf.size();
-    cnf.push_back(c);
-    for (literal_t l : c) {
-      literal_to_clause[l].push_back(id);
+  bool add_clause(const clause_t& c) {
+
+    //special case if we learned a unit or similar:
+    if (c.size() == 1) {
+      //std::cout << "COMITTING" << std::endl;
+      commit_literal(cnf, c[0]);
+      // sometimes this can happen!
+      while (literal_t u = find_unit(cnf)) {
+        commit_literal(cnf, u);
+      }
+      if (immediately_unsat(cnf)) {
+        action_t a;
+        a.action_kind = action_t::action_kind_t::halt_unsat;
+        actions.push_back(a);
+      }
+      else {
+        reset();
+      }
+      return false;
     }
+    else if (c.size() == 0) {
+      //std::cout << "RESETTING" << std::endl;
+      reset(); // we're about to fail...?
+      return false;
+    }
+    else {
+      size_t id = cnf.size();
+      cnf.push_back(c);
+
+      for (literal_t l : c) {
+        literal_to_clause[l].push_back(id);
+      }
+      // this isn't necessarily right.
+      new_watch(id);
+      check_watch_correctness();
+    }
+    return true;
   }
+
   void learn_clause();
 
 };
@@ -493,7 +709,11 @@ void trace_t::learn_clause() {
     //std::cout << "Learned clause " << c << std::endl;
     //std::cout << "Counter = " << counter << std::endl;
     assert(counter == 1);
-    add_clause(c);
+
+    // didn't just add a clause, but learned a unit:
+    if (!add_clause(c)) {
+      return;
+    }
 
     if (backtrack_mode == backtrack_mode_t::trust_learning) {
       // create the action that this new clause is unit_propped by the trail
@@ -633,15 +853,27 @@ int main(int argc, char* argv[]) {
   //std::cout << "CNF DONE" << std::endl;
   assert(cnf.size() > 0); // make sure parsing worked.
 
-  // TODO: fold this into a more general case, if possible.
-  if (std::find(std::begin(cnf), std::end(cnf), clause_t()) != std::end(cnf)) {
-    std::cout << "UNSATISIFIABLE" << std::endl;
+  // Do the naive unit_prop
+  while (literal_t u = find_unit(cnf)) {
+    commit_literal(cnf, u);
   }
+
+  // TODO: fold this into a more general case, if possible.
+  if (immediately_unsat(cnf)) {
+    std::cout << "UNSATISFIABLE" << std::endl;
+    return 0;
+  }
+  if (immediately_sat(cnf)) {
+    std::cout << "SATISFIABLE" << std::endl;
+    return 0;
+  }
+
+  assert(!find_unit(cnf));
 
   // Preprocess trace. This is to clean out "degenerate" aspects,
   // like units and trivial CNF cases.
   trace_t trace(cnf);
-  trace.seed_units_queue();
+  // trace.seed_units_queue(); // outmoded, we fold away those entirely.
   trace.process();
   //std::cout << trace;
 
