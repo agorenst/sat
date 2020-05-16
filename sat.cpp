@@ -5,8 +5,10 @@
 #include <algorithm>
 #include <cassert>
 #include <map>
+#include <queue>
 
-// TODO: Do I really need to track variable assignments?
+#include "cnf.h"
+
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
 
@@ -14,82 +16,24 @@
 // frequently. We'll first start with the basic data structures,
 // and then refine things as they progress.
 
-// This is how we represent literals
-typedef int32_t literal_t;
-// Really, we can be clever and use unsigned, but come on.
-typedef int32_t variable_t;
-
-
-
-// Our initial data structures are really stupid.
-typedef std::vector<literal_t> clause_t;
-
-std::ostream& operator<<(std::ostream& o, const clause_t& c) {
-  for (auto l : c) {
-    o << l << " ";
-  }
-  return o;
-}
-std::ostream& operator<<(std::ostream& o,  clause_t& c) {
-  for (auto l : c) {
-    o << l << " ";
-  }
-  return o;
-}
 
 variable_t max_variable = 0;
 
-typedef std::vector<clause_t> cnf_t;
-typedef size_t clause_id;
-
-template<typename C, typename V>
-bool contains(const C& c, const V& v) {
-  return std::find(std::begin(c), std::end(c), v) != std::end(c);
-}
-
-clause_t resolve(clause_t c1, clause_t c2, literal_t l) {
-  assert(contains(c1, l));
-  assert(contains(c2, -l));
-  clause_t c3;
-  for (literal_t x : c1) {
-    if (std::abs(x) != std::abs(l)) {
-      c3.push_back(x);
-    }
-  }
-  for (literal_t x : c2) {
-    if (std::abs(x) != std::abs(l)) {
-      c3.push_back(x);
-    }
-  }
-  std::sort(std::begin(c3), std::end(c3));
-  auto new_end = std::unique(std::begin(c3), std::end(c3));
-  c3.erase(new_end, std::end(c3));
-  return c3;
-}
-
-literal_t resolve_candidate(clause_t c1, clause_t c2) {
-  for (literal_t l : c1) {
-    for (literal_t m : c2) {
-      if (l == -m) return l;
-    }
-  }
-  return 0;
-}
-
 enum class backtrack_mode_t {
                              simplest,
-                             trust_learning, // does the learning phase do the backtracking for us?
+                             trust_learning,
 };
 backtrack_mode_t backtrack_mode = backtrack_mode_t::trust_learning;
-
-// This is our CNF object. It will contain a few helper methods.
-/*
-struct cnf_t {
-  typedef std::vector<clause_t> clause_database_t;
-  clause_database_t clause_database;
-  typedef size_t clause_id;
+enum class learn_mode_t {
+                         simplest,
+                         explicit_resolution
 };
-*/
+learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
+enum class unit_prop_mode_t {
+                             simplest,
+                             queue
+};
+unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::simplest;
 
 // The perspective I want to take is not one of deriving an assignment,
 // but a trace exploring the recursive, DFS space of assignments.
@@ -99,63 +43,17 @@ struct trace_t;
 std::ostream& operator<<(std::ostream& o, const trace_t t);
 struct trace_t {
 
-  // This is the various kinds of actions we can record.
-  struct action_t {
-
-    // TODO: need to have an indicator of which state we are...
-    enum class action_kind_t {
-                        decision,
-                        unit_prop,
-                        backtrack,
-                        halt_conflict,
-                        halt_unsat,
-                        halt_sat
-    };
-    action_kind_t action_kind;
-
-    // Absent any unit clauses, we choose a literal.
-    union {
-      literal_t decision_literal;
-      struct {
-        literal_t propped_literal;
-        clause_id reason; // maybe multiple reasons?
-      } unit_prop;
-      clause_id conflict_clause_id;
-    };
-
-    bool has_literal() const {
-      return action_kind == action_kind_t::decision ||
-        action_kind == action_kind_t::unit_prop;
-    }
-    literal_t get_literal() const {
-      assert(action_kind == action_kind_t::decision ||
-             action_kind == action_kind_t::unit_prop);
-      if (action_kind == action_kind_t::decision) {
-        return decision_literal;
-      }
-      else if (action_kind == action_kind_t::unit_prop) {
-        return unit_prop.propped_literal;
-      }
-      return 0; // error!
-    }
-    bool is_decision() const {
-      return action_kind == action_kind_t::decision;
-    }
-  };
-
   enum variable_state_t {
                        unassigned,
                        unassigned_to_true,
-                       unassigned_to_false,
-                       swap_to_true,
-                       swap_to_false
+                       unassigned_to_false
   };
-
-
 
   cnf_t& cnf;
   std::vector<action_t> actions;
   std::vector<variable_state_t> variable_state;
+
+  std::queue<literal_t> units;
 
   trace_t(cnf_t& cnf): cnf(cnf) {
     variable_t max_var = 0;
@@ -169,9 +67,9 @@ struct trace_t {
   }
 
   static bool halt_state(const action_t action) {
-    return action.action_kind == trace_t::action_t::action_kind_t::halt_conflict ||
-      action.action_kind == trace_t::action_t::action_kind_t::halt_unsat ||
-      action.action_kind == trace_t::action_t::action_kind_t::halt_sat;
+    return action.action_kind == action_t::action_kind_t::halt_conflict ||
+      action.action_kind == action_t::action_kind_t::halt_unsat ||
+      action.action_kind == action_t::action_kind_t::halt_sat;
   }
   bool halted() const {
     std::ostream& operator<<(std::ostream& o, const trace_t t);
@@ -185,57 +83,37 @@ struct trace_t {
     action_t action = *actions.rbegin();
 
     // TODO: there is a better place for this check/computation, I'm sure.
-    if (action.action_kind == trace_t::action_t::action_kind_t::halt_conflict) {
+    if (action.action_kind == action_t::action_kind_t::halt_conflict) {
       bool has_decision = false;
       for (auto& a : actions) {
-        if (a.action_kind == trace_t::action_t::action_kind_t::decision) {
+        if (a.action_kind == action_t::action_kind_t::decision) {
           has_decision = true;
           break;
         }
       }
-      //auto it = std::find(std::begin(actions), std::end(actions), [](action_t a) { return a.action_kind == trace_t::action_t::action_kind_t::decision; });
+      //auto it = std::find(std::begin(actions), std::end(actions), [](action_t a) { return a.action_kind == action_t::action_kind_t::decision; });
       //if (it == std::end(actions)) {
       if (!has_decision) {
         action_t a;
-        a.action_kind = trace_t::action_t::action_kind_t::halt_unsat;
+        a.action_kind = action_t::action_kind_t::halt_unsat;
         actions.push_back(a);
         action = a;
       }
     }
     return
-      action.action_kind == trace_t::action_t::action_kind_t::halt_unsat ||
-      action.action_kind == trace_t::action_t::action_kind_t::halt_sat;
+      action.action_kind == action_t::action_kind_t::halt_unsat ||
+      action.action_kind == action_t::action_kind_t::halt_sat;
   }
 
   bool literal_true(const literal_t l) const {
     variable_t v = l > 0 ? l : -l;
-    if (l > 0) {
-      if (variable_state[v] == unassigned_to_true ||
-          variable_state[v] == swap_to_true) {
-        return true;
-      }
-    } else {
-      if (variable_state[v] == unassigned_to_false ||
-          variable_state[v] == swap_to_false) {
-        return true;
-      }
-    }
-    return false;
+    variable_state_t is_true = l > 0 ? unassigned_to_true : unassigned_to_false;
+    return variable_state[v] == is_true;
   }
   bool literal_false(const literal_t l) const {
     variable_t v = l > 0 ? l : -l;
-    if (l < 0) {
-      if (variable_state[v] == unassigned_to_true ||
-          variable_state[v] == swap_to_true) {
-        return true;
-      }
-    } else {
-      if (variable_state[v] == unassigned_to_false ||
-          variable_state[v] == swap_to_false) {
-        return true;
-      }
-    }
-    return false;
+    variable_state_t is_false = l < 0 ? unassigned_to_true : unassigned_to_false;
+    return variable_state[v] == is_false;
   }
 
   bool literal_unassigned(const literal_t l) const {
@@ -307,14 +185,14 @@ struct trace_t {
     variable_t v = l > 0 ? l : -l;
     variable_state[v] = satisfy_literal(l);
     action_t action;
-    action.action_kind = trace_t::action_t::action_kind_t::decision;
+    action.action_kind = action_t::action_kind_t::decision;
     action.decision_literal = l;
     actions.push_back(action);
 
     // Have we solved the equation?
     if (cnf_sat()) {
       action_t action;
-      action.action_kind = trace_t::action_t::action_kind_t::halt_sat;
+      action.action_kind = action_t::action_kind_t::halt_sat;
       actions.push_back(action);
     }
   }
@@ -343,7 +221,7 @@ struct trace_t {
         literal_t l = find_unassigned_literal(c);
         variable_state[std::abs(l)] = satisfy_literal(l);
         action_t action;
-        action.action_kind = trace_t::action_t::action_kind_t::unit_prop;
+        action.action_kind = action_t::action_kind_t::unit_prop;
         action.unit_prop.propped_literal = l;
         action.unit_prop.reason = i; // TODO: do this right
         actions.push_back(action);
@@ -352,7 +230,7 @@ struct trace_t {
         auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& c) { return clause_unsat(c); });
         if (it != std::end(cnf)) {
           action_t action;
-          action.action_kind = trace_t::action_t::action_kind_t::halt_conflict;
+          action.action_kind = action_t::action_kind_t::halt_conflict;
           action.conflict_clause_id = std::distance(std::begin(cnf), it); // get the id of the conflict clause!
           actions.push_back(action);
           return false;
@@ -361,7 +239,7 @@ struct trace_t {
         // Have we solved everything?
         if (cnf_sat()) {
           action_t action;
-          action.action_kind = trace_t::action_t::action_kind_t::halt_sat;
+          action.action_kind = action_t::action_kind_t::halt_sat;
           actions.push_back(action);
           return false;
         }
@@ -411,8 +289,7 @@ struct trace_t {
   void learn_clause();
 
 };
-std::ostream& operator<<(std::ostream& o, const trace_t::action_t a);
-std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::action_t> v) {
+std::ostream& operator<<(std::ostream& o, const std::vector<action_t> v) {
   for (auto& a : v) {
     o << a << std::endl;
   }
@@ -421,16 +298,9 @@ std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::action_t> v
 
 
 void trace_t::learn_clause() {
-  enum class learn_mode {
-                         simplest,
-                         explicit_resolution,
-                         knuth64,
-  };
-  //learn_mode mode = learn_mode::simplest;
-  learn_mode mode = learn_mode::explicit_resolution;
-  assert(actions.rbegin()->action_kind == trace_t::action_t::action_kind_t::halt_conflict);
+  assert(actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
   //std::cout << "About to learn clause from: " << *this << std::endl;
-  if (mode == learn_mode::simplest) {
+  if (learn_mode == learn_mode_t::simplest) {
     clause_t new_clause;
     for (action_t a : actions) {
       if (a.action_kind == action_t::action_kind_t::decision) {
@@ -440,10 +310,10 @@ void trace_t::learn_clause() {
     //std::cout << "Learned clause: " << new_clause << std::endl;
     cnf.push_back(new_clause);
   }
-  else if (mode == learn_mode::explicit_resolution) {
+  else if (learn_mode == learn_mode_t::explicit_resolution) {
     // Get the initial conflict clause
     auto it = actions.rbegin();
-    assert(it->action_kind == trace_t::action_t::action_kind_t::halt_conflict);
+    assert(it->action_kind == action_t::action_kind_t::halt_conflict);
     // We make an explicit copy of that conflict clause
     clause_t c = cnf[it->conflict_clause_id];
 
@@ -451,8 +321,8 @@ void trace_t::learn_clause() {
 
     // now go backwards until the decision, resolving things against it
     auto restart_it = it;
-    for (; it->action_kind != trace_t::action_t::action_kind_t::decision; it++) {
-      assert(it->action_kind == trace_t::action_t::action_kind_t::unit_prop);
+    for (; it->action_kind != action_t::action_kind_t::decision; it++) {
+      assert(it->action_kind == action_t::action_kind_t::unit_prop);
       clause_t d = cnf[it->unit_prop.reason];
       if (literal_t r = resolve_candidate(c, d)) {
         c = resolve(c, d, r);
@@ -464,14 +334,14 @@ void trace_t::learn_clause() {
     literal_t new_implied = 0;
     it = std::next(actions.rbegin());
 
-    for (; it->action_kind != trace_t::action_t::action_kind_t::decision; it++) {
-      assert(it->action_kind == trace_t::action_t::action_kind_t::unit_prop);
+    for (; it->action_kind != action_t::action_kind_t::decision; it++) {
+      assert(it->action_kind == action_t::action_kind_t::unit_prop);
       if (contains(c, -it->unit_prop.propped_literal)) {
         counter++;
         new_implied = it->get_literal();
       }
     }
-    assert(it->action_kind == trace_t::action_t::action_kind_t::decision);
+    assert(it->action_kind == action_t::action_kind_t::decision);
     if (contains(c, -it->decision_literal)) {
       counter++;
       new_implied = -it->get_literal();
@@ -540,162 +410,8 @@ void trace_t::learn_clause() {
       // Eep, for now, I'll just rely on the next call to unit_prop?
     }
   }
-  else {
-    // This is really expensive: compute a mapping of literals to their levels.
-    std::map<literal_t, int> literal_levels;
-    int level = 0;
-    {
-      for (action_t a : actions) {
-        if (a.action_kind == trace_t::action_t::action_kind_t::decision) {
-          level++;
-        }
-
-        literal_t l = 0;
-        if (a.action_kind == trace_t::action_t::action_kind_t::decision) {
-          l = a.decision_literal;
-        }
-        else if (a.action_kind == trace_t::action_t::action_kind_t::unit_prop) {
-          l = a.unit_prop.propped_literal;
-        }
-        else continue;
-
-        assert(literal_levels.find(l) == literal_levels.end());
-        literal_levels[l] = level;
-      }
-    }
-
-
-    // Get the initial conflict clause
-    auto it = actions.rbegin();
-    assert(it->action_kind == trace_t::action_t::action_kind_t::halt_conflict);
-    // We make an explicit copy of that conflict clause
-    clause_t c = cnf[it->conflict_clause_id];
-
-
-    // Get the initial literal that was propped into that conflict.
-    // Given our current structure, it should be the immediately-preceeding unit prop.
-    // TODO: This is not always true (mathematically, the algo can change!), make this more robust
-    it++;
-    assert(it->action_kind == trace_t::action_t::action_kind_t::unit_prop);
-    literal_t l = it->unit_prop.propped_literal;
-    assert(std::find(std::begin(c), std::end(c), -l) != std::end(c));
-    assert(literal_levels.find(l) != literal_levels.end());
-
-    std::vector<literal_t> resolve_possibilities;
-    std::vector<literal_t> learned;
-    for (literal_t L : c) {
-      std::cout << "Considering literal in conflict clause: " << L << std::endl;
-      resolve_possibilities.push_back(-L);
-      if (-L == l) {
-        continue;
-      }
-
-      // Everything else was set in our trail.
-      assert(literal_levels.find(-L) != literal_levels.end());
-
-      if (literal_levels[-L] < literal_levels[l]) {
-        //std::cout << "Learning: " << L << " because its level is " << literal_levels[L] << " while our main l (" << l << ") is level " << literal_levels[l] << std::endl;
-        learned.push_back(L);
-      }
-    }
-
-    //std::cout << "Resolve possibilities: " << resolve_possibilities << std::endl;
-
-
-    // we must have two conflicting unit props, at least, so counter must start out as greater-than-one.
-    int counter = 0;
-    for (auto jt = std::rbegin(actions); jt->action_kind != trace_t::action_t::action_kind_t::decision; jt++) {
-      std::ostream& operator<<(std::ostream& o, const trace_t::action_t a);
-      //std::cout << "Considering action: " << *jt;
-      if (jt->action_kind == trace_t::action_t::action_kind_t::unit_prop) {
-        const clause_t r = cnf[jt->unit_prop.reason];
-        for (literal_t x : r) {
-          //std::cout << x << " ";
-        }
-      }
-      if (jt->action_kind == trace_t::action_t::action_kind_t::halt_conflict) {
-        const clause_t r = cnf[jt->conflict_clause_id];
-        for (literal_t x : r) {
-          //std::cout << x << " ";
-        }
-      }
-      //std::cout << std::endl;
-      if (jt->action_kind == trace_t::action_t::action_kind_t::unit_prop) {
-        // we consider the /negation/ of this propped literal.
-        literal_t to_check = jt->unit_prop.propped_literal;
-        if (std::find(std::begin(resolve_possibilities), std::end(resolve_possibilities), to_check) != std::end(resolve_possibilities)) {
-          counter++;
-        }
-      }
-      if (std::next(jt)->action_kind == trace_t::action_t::action_kind_t::decision) {
-        counter++;
-        resolve_possibilities.push_back(std::next(jt)->decision_literal);
-      }
-    }
-
-    //std::cout << "counter: " << counter << std::endl;
-    assert(counter > 1);
-    it++;
-
-    // Remember it is now the first thing /after/ our initial conflict-clause, so it's pointing to the preceeding unit-prop.
-    for (; it != actions.rend(); it++) {
-      //std::cout << "learned: " << learned << std::endl;
-      //std::cout << "resolve_possibilities: " << resolve_possibilities << std::endl;
-      //std::cout << "counter: " << counter << std::endl;
-      //std::cout << "it: " << static_cast<int>(it->action_kind) << std::endl;
-      if (it->action_kind == trace_t::action_t::action_kind_t::unit_prop) {
-        literal_t L = it->unit_prop.propped_literal;
-        // this is a unit prop we could resolve against!
-        // We /don't/ negate it here, because that's the idea of resolution.
-        //std::cout << "Considering L: " << L << std::endl;
-        if (std::find(std::begin(resolve_possibilities), std::end(resolve_possibilities), L) != std::end(resolve_possibilities)) {
-          if (counter == 1) {
-            learned.push_back(-L);
-            break;
-          }
-          clause_t d = cnf[it->unit_prop.reason];
-          assert(std::find(std::begin(d), std::end(d), L) != std::end(d));
-          std::cout << "Considering reason clause: " << d << std::endl;
-          for (literal_t m : d) {
-            std::cout << "Considering reason literal: " << m << std::endl;
-            assert(literal_levels.find(-m) != literal_levels.end());
-            assert(literal_levels.find(l) != literal_levels.end());
-            if (literal_levels[-m] < literal_levels[l]) {
-              learned.push_back(m);
-            }
-            if (m == L) { continue; }
-
-            // note that this is now something we can resolve against too.
-            if (std::find(std::begin(resolve_possibilities), std::end(resolve_possibilities), -m) == std::end(resolve_possibilities)) {
-              resolve_possibilities.push_back(-m);
-            }
-          }
-          counter--;
-        }
-      }
-      if (it->action_kind == trace_t::action_t::action_kind_t::decision) {
-        assert(counter == 1); // ?
-        learned.push_back(-it->decision_literal);
-      }
-    }
-
-    //std::cout << "Learned clause: " << learned << std::endl;
-    std::sort(std::begin(learned), std::end(learned));
-    auto new_end = std::unique(std::begin(learned), std::end(learned));
-    learned.erase(new_end, std::end(learned));
-    std::cout << "learned: " << learned << std::endl;
-    cnf.push_back(learned);
-  }
 }
 
-void print_cnf(const cnf_t& cnf) {
-  for (auto&& c : cnf) {
-    for (auto&& l : c) {
-      std::cout << l << " ";
-    }
-    std::cout << "0" << std::endl;
-  }
-}
 
 cnf_t load_cnf() {
   cnf_t cnf;
@@ -725,24 +441,11 @@ cnf_t load_cnf() {
 }
 
 
-std::ostream& operator<<(std::ostream& o, const trace_t::action_t::action_kind_t a) {
-  switch(a) {
-  case trace_t::action_t::action_kind_t::decision: return o << "decision";
-  case trace_t::action_t::action_kind_t::unit_prop: return o << "unit_prop";
-  case trace_t::action_t::action_kind_t::backtrack: return o << "backtrack";
-  case trace_t::action_t::action_kind_t::halt_conflict: return o << "halt_conflict";
-  case trace_t::action_t::action_kind_t::halt_unsat: return o << "halt_unsat";
-  case trace_t::action_t::action_kind_t::halt_sat: return o << "halt_sat";
-  }
-  return o;
-}
 std::ostream& operator<<(std::ostream& o, const trace_t::variable_state_t s) {
   switch(s) {
     case trace_t::variable_state_t::unassigned: return o << "unassigned";
     case trace_t::variable_state_t::unassigned_to_true: return o << "true";
     case trace_t::variable_state_t::unassigned_to_false: return o << "false";
-    case trace_t::variable_state_t::swap_to_true: return o << "true";
-    case trace_t::variable_state_t::swap_to_false: return o << "false";
   };
   return o;
 }
@@ -756,27 +459,18 @@ std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::variable_st
   }
   return o << "}";
 }
-std::ostream& operator<<(std::ostream& o, const trace_t::action_t a) {
-  o << "{ " << a.action_kind;
-  switch(a.action_kind) {
-  case trace_t::action_t::action_kind_t::decision: return o << ", " << a.decision_literal << " }";
-  case trace_t::action_t::action_kind_t::unit_prop: return o << ", " << a.unit_prop.propped_literal << ", " << a.unit_prop.reason << " }";
-  case trace_t::action_t::action_kind_t::halt_conflict: return o << ", " << a.conflict_clause_id << " }";
-  default: return o << " }";
-  }
-}
 std::ostream& operator<<(std::ostream& o, const trace_t t) {
   return o << t.variable_state << std::endl << t.actions;
 }
 
-std::string report_conclusion(trace_t::action_t::action_kind_t conclusion) {
+std::string report_conclusion(action_t::action_kind_t conclusion) {
   switch(conclusion) {
-  case trace_t::action_t::action_kind_t::decision: return "ERROR";
-  case trace_t::action_t::action_kind_t::unit_prop: return "ERROR";
-  case trace_t::action_t::action_kind_t::backtrack: return "ERROR";
-  case trace_t::action_t::action_kind_t::halt_conflict: return "ERROR";
-  case trace_t::action_t::action_kind_t::halt_unsat: return "UNSATISFIABLE";
-  case trace_t::action_t::action_kind_t::halt_sat: return "SATISFIABLE";
+  case action_t::action_kind_t::decision: return "ERROR";
+  case action_t::action_kind_t::unit_prop: return "ERROR";
+  case action_t::action_kind_t::backtrack: return "ERROR";
+  case action_t::action_kind_t::halt_conflict: return "ERROR";
+  case action_t::action_kind_t::halt_unsat: return "UNSATISFIABLE";
+  case action_t::action_kind_t::halt_sat: return "SATISFIABLE";
   }
   return "ERROR";
 }
@@ -801,7 +495,7 @@ int main(int argc, char* argv[]) {
   //std::cout << trace;
 
   while (!trace.final_state()) {
-    assert(trace.actions.rbegin()->action_kind == trace_t::action_t::action_kind_t::halt_conflict);
+    assert(trace.actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
     trace.learn_clause();
     trace.backtrack();
     trace.process();
