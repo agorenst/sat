@@ -96,10 +96,24 @@ struct trace_t {
     reset();
   }
 
+  void print_watch_state() {
+    for (size_t cid = 0; cid < cnf.size(); cid++) {
+      watcher_t w = watched_literals[cid];
+      std::cout << cnf[cid] << " watched by " << cnf[cid][w.idx1] << " and " << cnf[cid][w.idx2] << std::endl;
+    }
+    for (auto&& [literal, clause_list] : literals_to_watcher) {
+      std::cout << "Literal " << literal << " watching: ";
+      for (const auto& cid : clause_list) {
+        const clause_t& c = cnf[cid];
+        std::cout << c << "; ";
+      }
+      std::cout << std::endl;
+    }
+  }
   // Make sure our two maps are mapping to each other correctly.
   // Not yet checked agains the consistency of the trail, something to add.
   void check_watch_correctness() {
-    return;
+    //print_watch_state();
     for (size_t cid = 0; cid < cnf.size(); cid++) {
       watcher_t w = watched_literals[cid];
       const clause_t& c = cnf[cid];
@@ -149,10 +163,19 @@ struct trace_t {
     // If we couldn't find anything at all, we already have a conflict.
     if (i1 == c.size()) {
       if (watched_literals_on) {
-        action_t a;
-        a.action_kind = action_t::action_kind_t::halt_conflict;
-        actions.push_back(a);
-        //std::cout << "Added conflict from initial watch" << std::endl;
+        // only bother to record a conflict if we haven't seen one already.
+        if (actions.size() > 0 && actions.rbegin()->action_kind != action_t::action_kind_t::halt_conflict) {
+          action_t a;
+          a.action_kind = action_t::action_kind_t::halt_conflict;
+          a.conflict_clause_id = cid;
+          actions.push_back(a);
+          std::cout << "Added conflict from initial watch" << std::endl;
+
+          // I dunno...
+          while (!units.empty()) {
+            units.pop();
+          }
+        }
       }
       // still want to keep the watchers and everything in a consistent state.
       i1 = 0;
@@ -165,7 +188,7 @@ struct trace_t {
         a.unit_prop.propped_literal = c[i1];
         a.unit_prop.reason = cid;
         units.push(a); // units, we haven't processed this yet.
-        //std::cout << "Added unit from initial watch" << std::endl;
+        std::cout << "Added unit from initial watch" << std::endl;
       }
 
       // still want to keep the watchers and everything in a consistent state.
@@ -223,18 +246,20 @@ struct trace_t {
         w.idx2 = i;
       }
       // update the watch list of that new index
-      literals_to_watcher[i].push_back(cid);
+      literals_to_watcher[c[i]].push_back(cid);
 
       // remove the old index.
       std::swap(*to_remove, *(std::end(literal_watch_list)-1));
       literal_watch_list.pop_back();
+
+      watched_literals[cid] = w;
     }
     // only take action if we've turned on this feature.
     else if (watched_literals_on) {
       // if our counterpart is unassigned, we're a unit
       // if our counterpart is true, we're done (check this earlier?)
       // if our counterpart is false, we're a conflict
-      literal_t other_literal = l == c[w.idx1] ? w.idx2 : w.idx1; 
+      literal_t other_literal = l == c[w.idx1] ? c[w.idx2] : c[w.idx1];
       assert(other_literal != l);
 
       if (literal_true(other_literal)) {
@@ -246,16 +271,24 @@ struct trace_t {
         a.unit_prop.reason = cid;
         a.unit_prop.propped_literal = other_literal;
         units.push(a); // UNITS, not our action: we haven't processed this yet.
+        std::cout << "Found unit " << a << std::endl;
       }
       if (literal_false(other_literal)) {
-        action_t a;
-        a.action_kind = action_t::action_kind_t::halt_conflict;
-        a.conflict_clause_id = cid;
-        actions.push_back(a); // we push this onto action, to record this conflict.
+        if (actions.size() > 0 && actions.rbegin()->action_kind != action_t::action_kind_t::halt_conflict) {
+          action_t a;
+          a.action_kind = action_t::action_kind_t::halt_conflict;
+          a.conflict_clause_id = cid;
+          actions.push_back(a); // we push this onto action, to record this conflict.
+          std::cout << "Found conflict " << a << std::endl;
+
+          // I dunno...
+          while (!units.empty()) {
+            units.pop();
+          }
+        }
       }
     }
 
-    check_watch_correctness();
   }
 
   static bool halt_state(const action_t action) {
@@ -411,7 +444,16 @@ struct trace_t {
     else {
       if (unit_prop_mode == unit_prop_mode_t::queue) {
         // this is the "real" call, not just for debugging.
-        seed_units_queue();
+        if (watched_literals_on) {
+          auto clause_list = literals_to_watcher[-l];
+          for (auto cid : clause_list) {
+            re_watch(cid, -l);
+          }
+          check_watch_correctness();
+        }
+        else {
+          seed_units_queue();
+        }
       }
     }
   }
@@ -436,6 +478,10 @@ struct trace_t {
 
   void seed_units_queue() {
     if (unit_prop_mode != unit_prop_mode_t::queue) {
+      return;
+    }
+    // this basically does it for us.
+    if (watched_literals_on) {
       return;
     }
 
@@ -472,55 +518,57 @@ struct trace_t {
       variable_state[std::abs(l)] = satisfy_literal(l);
       actions.push_back(a);
 
-      // Only look at clauses we possibly changed.
-      bool all_sat = true;
-      const auto& clause_ids = literal_to_clause[-l];
-      for (auto clause_id : clause_ids) {
-      //for (auto it = std::begin(cnf); it != std::end(cnf); it++) {
-        //for (size_t i = 0; i < cnf.size(); i++) {
-        //const auto& c = cnf[i];
-        //const auto& c = *it;
-        const auto& c = cnf[clause_id];
-        if (clause_sat(c)) {
-          continue;
+      if (watched_literals_on) {
+        // we just falsified -l. What are all the clauses it was watching?
+        // We make a copy because this is about to change inline.
+        auto clause_list = literals_to_watcher[-l];
+        for (auto cid : clause_list) {
+          re_watch(cid, -l);
         }
-        //all_sat = false;
-        if (contains(c, -l)) {
-          if (clause_unsat(c)) {
-            action_t action;
-            action.action_kind = action_t::action_kind_t::halt_conflict;
-            //action.conflict_clause_id = i; //std::distance(std::begin(cnf), it); // get the id of the conflict clause!
-            //action.conflict_clause_id = std::distance(std::begin(cnf), it); // get the id of the conflict clause!
-            action.conflict_clause_id = clause_id;
-            //assert(cnf[action.conflict_clause_id] == *it);
-            actions.push_back(action);
-            return false;
+    check_watch_correctness();
+      }
+      else {
+        // Only look at clauses we possibly changed.
+        const auto& clause_ids = literal_to_clause[-l];
+        for (auto clause_id : clause_ids) {
+          //for (auto it = std::begin(cnf); it != std::end(cnf); it++) {
+          //for (size_t i = 0; i < cnf.size(); i++) {
+          //const auto& c = cnf[i];
+          //const auto& c = *it;
+          const auto& c = cnf[clause_id];
+          if (clause_sat(c)) {
+            continue;
           }
-          if (count_unassigned_literals(c) == 1) {
-            literal_t p = find_unassigned_literal(c);
-            action_t imp;
-            imp.action_kind = action_t::action_kind_t::unit_prop;
-            imp.unit_prop.propped_literal = p;
-            //imp.unit_prop.reason = i; //std::distance(std::begin(cnf), it);
-            //imp.unit_prop.reason = std::distance(std::begin(cnf), it);
-            imp.unit_prop.reason = clause_id;
-            //assert(cnf[imp.unit_prop.reason] == *it);
-            units.push(imp);
+          //all_sat = false;
+          if (contains(c, -l)) {
+            if (clause_unsat(c)) {
+              action_t action;
+              action.action_kind = action_t::action_kind_t::halt_conflict;
+              //action.conflict_clause_id = i; //std::distance(std::begin(cnf), it); // get the id of the conflict clause!
+              //action.conflict_clause_id = std::distance(std::begin(cnf), it); // get the id of the conflict clause!
+              action.conflict_clause_id = clause_id;
+              //assert(cnf[action.conflict_clause_id] == *it);
+              actions.push_back(action);
+              return false;
+            }
+            if (count_unassigned_literals(c) == 1) {
+              literal_t p = find_unassigned_literal(c);
+              action_t imp;
+              imp.action_kind = action_t::action_kind_t::unit_prop;
+              imp.unit_prop.propped_literal = p;
+              //imp.unit_prop.reason = i; //std::distance(std::begin(cnf), it);
+              //imp.unit_prop.reason = std::distance(std::begin(cnf), it);
+              imp.unit_prop.reason = clause_id;
+              //assert(cnf[imp.unit_prop.reason] == *it);
+              units.push(imp);
+            }
           }
         }
-      }
-      /*
-      if (all_sat) {
-        action_t action;
-        action.action_kind = action_t::action_kind_t::halt_sat;
-        actions.push_back(action);
-        return false;
-      }
-      */
 
-      // we'll just assume that we propped *something*. We'll figure it out if the queue is really empty
-      // on the next iteration.
-      return true;
+        // we'll just assume that we propped *something*. We'll figure it out if the queue is really empty
+        // on the next iteration.
+        return true;
+      }
     }
     else if (unit_prop_mode == unit_prop_mode_t::simplest) {
       for (clause_id i = 0; i < cnf.size(); i++) {
@@ -607,6 +655,7 @@ struct trace_t {
   }
 
   bool add_clause(const clause_t& c) {
+    //std::cout << "Adding clause: " << c << std::endl;
 
     //special case if we learned a unit or similar:
     if (c.size() == 1) {
@@ -671,6 +720,14 @@ void trace_t::learn_clause() {
   }
   else if (learn_mode == learn_mode_t::explicit_resolution) {
     // Get the initial conflict clause
+    if (watched_literals_on) {
+      auto it = std::find_if(std::begin(actions), std::end(actions), [](action_t a) { return a.action_kind == action_t::action_kind_t::halt_conflict; });
+      assert(it != std::end(actions));
+      actions.erase(std::next(it), std::end(actions));
+    }
+    //std::cout << "==========" << std::endl;
+    //std::cout << actions << std::endl;
+    //std::cout << "==========" << std::endl;
     auto it = actions.rbegin();
     assert(it->action_kind == action_t::action_kind_t::halt_conflict);
     // We make an explicit copy of that conflict clause
@@ -869,6 +926,7 @@ int main(int argc, char* argv[]) {
   }
 
   assert(!find_unit(cnf));
+  //print_cnf(cnf);
 
   // Preprocess trace. This is to clean out "degenerate" aspects,
   // like units and trivial CNF cases.
