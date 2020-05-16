@@ -53,18 +53,25 @@ struct trace_t {
   std::vector<action_t> actions;
   std::vector<variable_state_t> variable_state;
 
-  // This has to store the reason, too.
+  // this is hugely expensive data structure. We'll see.
+  std::map<literal_t, std::vector<clause_id>> literal_to_clause;
+
+  // store the unit-props we're still getting through.
   std::queue<action_t> units;
 
   trace_t(cnf_t& cnf): cnf(cnf) {
     variable_t max_var = 0;
-    for (auto& clause : cnf) {
+    for (size_t i = 0; i < cnf.size(); i++) {
+      const auto& clause = cnf[i];
       for (auto& literal : clause) {
         max_var = std::max(max_var, std::abs(literal));
+
+        literal_to_clause[literal].push_back(i);
       }
     }
     variable_state.resize(max_var+1);
     std::fill(std::begin(variable_state), std::end(variable_state), unassigned);
+
   }
 
   static bool halt_state(const action_t action) {
@@ -187,7 +194,14 @@ struct trace_t {
     auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
                                                              return this->count_unassigned_literals(clause) > 0;
                                                            });
-    assert(it != std::end(cnf));
+    //assert(it != std::end(cnf));
+    if (it == std::end(cnf)) {
+      assert(cnf_sat());
+      action_t action;
+      action.action_kind = action_t::action_kind_t::halt_sat;
+      actions.push_back(action);
+      return;
+    }
     literal_t l = find_unassigned_literal(*it);
     variable_t v = l > 0 ? l : -l;
     variable_state[v] = satisfy_literal(l);
@@ -276,18 +290,25 @@ struct trace_t {
 
       // Only look at clauses we possibly changed.
       bool all_sat = true;
+      const auto& clause_ids = literal_to_clause[-l];
+      for (auto clause_id : clause_ids) {
       //for (auto it = std::begin(cnf); it != std::end(cnf); it++) {
-      for (size_t i = 0; i < cnf.size(); i++) {
-        const auto& c = cnf[i];
+        //for (size_t i = 0; i < cnf.size(); i++) {
+        //const auto& c = cnf[i];
+        //const auto& c = *it;
+        const auto& c = cnf[clause_id];
         if (clause_sat(c)) {
           continue;
         }
-        all_sat = false;
+        //all_sat = false;
         if (contains(c, -l)) {
           if (clause_unsat(c)) {
             action_t action;
             action.action_kind = action_t::action_kind_t::halt_conflict;
-            action.conflict_clause_id = i; //std::distance(std::begin(cnf), it); // get the id of the conflict clause!
+            //action.conflict_clause_id = i; //std::distance(std::begin(cnf), it); // get the id of the conflict clause!
+            //action.conflict_clause_id = std::distance(std::begin(cnf), it); // get the id of the conflict clause!
+            action.conflict_clause_id = clause_id;
+            //assert(cnf[action.conflict_clause_id] == *it);
             actions.push_back(action);
             return false;
           }
@@ -296,18 +317,22 @@ struct trace_t {
             action_t imp;
             imp.action_kind = action_t::action_kind_t::unit_prop;
             imp.unit_prop.propped_literal = p;
-            imp.unit_prop.reason = i; //std::distance(std::begin(cnf), it);
-            //assert(cnf[i.unit_prop.reason] == *it);
+            //imp.unit_prop.reason = i; //std::distance(std::begin(cnf), it);
+            //imp.unit_prop.reason = std::distance(std::begin(cnf), it);
+            imp.unit_prop.reason = clause_id;
+            //assert(cnf[imp.unit_prop.reason] == *it);
             units.push(imp);
           }
         }
       }
+      /*
       if (all_sat) {
         action_t action;
         action.action_kind = action_t::action_kind_t::halt_sat;
         actions.push_back(action);
         return false;
       }
+      */
 
       // we'll just assume that we propped *something*. We'll figure it out if the queue is really empty
       // on the next iteration.
@@ -397,6 +422,13 @@ struct trace_t {
 
   }
 
+  void add_clause(const clause_t& c) {
+    size_t id = cnf.size();
+    cnf.push_back(c);
+    for (literal_t l : c) {
+      literal_to_clause[l].push_back(id);
+    }
+  }
   void learn_clause();
 
 };
@@ -419,7 +451,7 @@ void trace_t::learn_clause() {
       }
     }
     //std::cout << "Learned clause: " << new_clause << std::endl;
-    cnf.push_back(new_clause);
+    add_clause(new_clause);
   }
   else if (learn_mode == learn_mode_t::explicit_resolution) {
     // Get the initial conflict clause
@@ -461,7 +493,7 @@ void trace_t::learn_clause() {
     //std::cout << "Learned clause " << c << std::endl;
     //std::cout << "Counter = " << counter << std::endl;
     assert(counter == 1);
-    cnf.push_back(c);
+    add_clause(c);
 
     if (backtrack_mode == backtrack_mode_t::trust_learning) {
       // create the action that this new clause is unit_propped by the trail

@@ -46,4 +46,5 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/tests_3sat_unsat.cnf
+	gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0100.cnf
+#gdb -q -batch -ex run -ex backtrace ./sat < tests/tests_3sat_unsat.cnf
