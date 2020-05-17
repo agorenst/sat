@@ -1,12 +1,13 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++1z -g
+CXXFLAGS=-Wall -std=c++1z -g -O2
 
 uf50-218-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf50-218/*.cnf)))
 uuf50-218-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf50-218/*.cnf)))
 
 uf100-430-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf100-430/*.cnf)))
-uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/uuf100-011*.cnf)))
+uuf100-430-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/uuf100-011*.cnf)))
+uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/*.cnf)))
 
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
@@ -15,7 +16,7 @@ sat: sat.o cnf.o
 tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
 
 benchmark1: $(uuf50-218-tests)
-benchmark2: $(uuf100-430-tests)
+benchmark2: $(uuf100-430-tests-brief)
 
 unit: sat
 	./sat < tests/units1.cnf | diff - SAT
