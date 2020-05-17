@@ -433,35 +433,93 @@ struct trace_t {
     actions.push_back(action);
   }
 
-  // This applies the action to make l true in our trail.
-  void apply_decision(literal_t l) {
+  // We've just applied l, and now we do various machineries to queue up
+  // the newly-implied units.
+  // This may also change our state by finding a conflict
+  void register_false_literal(literal_t l) {
+    // Here we look for conflicts and new units!
+    if (unit_prop_mode == unit_prop_mode_t::queue) {
+      const auto& clause_ids = literal_to_clause[-l];
+      for (auto clause_id : clause_ids) {
+        const auto& c = cnf[clause_id];
+        if (clause_sat(c)) {
+          continue;
+        }
+        //all_sat = false;
+        if (contains(c, -l)) {
+          if (clause_unsat(c)) {
+            push_conflict(clause_id);
+            return;
+          }
+          if (count_unassigned_literals(c) == 1) {
+            literal_t p = find_unassigned_literal(c);
+            push_unit_queue(p, clause_id);
+          }
+        }
+      }
+    }
+    // All we look for is conflicts, here.
+    else if (unit_prop_mode == unit_prop_mode_t::simplest) {
+      // we don't put in the queue, but we still look for conflicts.
+      for (size_t cid = 0; cid < cnf.size(); cid++) {
+        const clause_t& c = cnf[cid];
+        if (contains(c, -l)) {
+          if (clause_unsat(c)) {
+            //std::cout << "Found conflict: " << c << std::endl;
+            push_conflict(cid);
+            return;
+          }
+        }
+        else {
+          assert(!clause_unsat(c));
+        }
+      }
+    }
+  }
+
+  // This is the one entry point where we actually change a literal's value
+  // (presumably having just added an appropriate action to the trail). So
+  // we look at unit-prop modes here.
+  void apply_literal(literal_t l) {
     variable_t v = l > 0 ? l : -l;
     variable_state[v] = satisfy_literal(l);
+  }
+
+  // This applies the action to make l true in our trail.
+  void apply_decision(literal_t l) {
+    //std::cout << "Deciding: " << l << std::endl;
     action_t action;
     action.action_kind = action_t::action_kind_t::decision;
     action.decision_literal = l;
     actions.push_back(action);
+
+    apply_literal(l);
+
+    register_false_literal(l);
   }
 
   // This applies the action to unit prop l in our trail.
   void apply_unit(literal_t l, clause_id cid) {
-    variable_state[std::abs(l)] = satisfy_literal(l);
     action_t action;
     action.action_kind = action_t::action_kind_t::unit_prop;
     action.unit_prop.propped_literal = l;
     action.unit_prop.reason = cid;
     actions.push_back(action);
+    //std::cout << "Unit-propping : " << action << std::endl;
+
+    apply_literal(l);
+
+    register_false_literal(l);
   }
 
 
   // Find a new, unassigned literal, and assign it.
+  // Or if 
   void decide_literal() {
-    //if (unit_prop_mode == unit_prop_mode_t::queue) {
-    //  seed_units_queue(); // this shouldn't add anything.
-    //}
-    assert(!units_to_prop());
+    assert(!cnf_unsat());
+    //assert(!cnf_sat());
     auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
-                                                             return this->count_unassigned_literals(clause) > 0;
+                                                             return !clause_sat(clause) && this->count_unassigned_literals(clause) > 0;
                                                            });
     //assert(it != std::end(cnf));
     if (it == std::end(cnf)) {
@@ -470,68 +528,13 @@ struct trace_t {
       return;
     }
     literal_t l = find_unassigned_literal(*it);
-
     apply_decision(l);
-
-    // Have we solved the equation?
-    if (cnf_sat()) {
-      push_sat();
-    }
-    /* This shouldn't be necessary because we should find units.
-    else if (auto it = unsat_clause(); it != std::end(cnf)) {
-      action_t action;
-      action.action_kind = action_t::action_kind_t::halt_conflict;
-      action.conflict_clause_id = std::distance(std::begin(cnf), it);
-      actions.push_back(action);
-    }
-    */
-    else {
-      if (unit_prop_mode == unit_prop_mode_t::queue) {
-        seed_units_queue();
-      }
-    }
   }
 
-  bool units_to_prop() const {
-    if (unit_prop_mode == unit_prop_mode_t::queue) {
-      return !units.empty();
-    }
-    else {
-      for (auto& c : cnf) {
-        assert(!clause_unsat(c));
-        if (clause_sat(c)) {
-          continue;
-        }
-        if (1 == count_unassigned_literals(c)) {
-          return true;
-        }
-      }
-      return false;
-    }
-  }
-
-  void seed_units_queue() {
-    if (unit_prop_mode != unit_prop_mode_t::queue) {
-      return;
-    }
-    // this basically does it for us.
-    if (watched_literals_on) {
-      return;
-    }
-
-    for (size_t i = 0; i < cnf.size(); i++) {
-      const auto& c = cnf[i];
-      assert(!clause_unsat(c));
-      if (clause_sat(c)) {
-        continue;
-      }
-      if (1 == count_unassigned_literals(c)) {
-        push_unit_queue(find_unassigned_literal(c), i);
-      }
-    }
-  }
-
+  // This looks for a unit and applies it.
+  // It returns true if it's applied a unit.
   bool prop_unit() {
+    // Are we in a mode where we keep a queue of units?
     if (unit_prop_mode == unit_prop_mode_t::queue) {
       if (units.empty()) {
         return false;
@@ -541,47 +544,10 @@ struct trace_t {
       action_t a = units.front(); units.pop_front();
       assert(a.action_kind == action_t::action_kind_t::unit_prop);
       apply_unit(a.get_literal(), a.get_clause());
-      literal_t l = a.get_literal();
 
-      if (watched_literals_on) {
-        // we just falsified -l. What are all the clauses it was watching?
-        // We make a copy because this is about to change inline.
-        auto clause_list = literals_to_watcher[-l];
-        for (auto cid : clause_list) {
-          re_watch(cid, -l);
-        }
-        check_watch_correctness();
-      }
-      else {
-        // Only look at clauses we possibly changed.
-        const auto& clause_ids = literal_to_clause[-l];
-        for (auto clause_id : clause_ids) {
-          //for (auto it = std::begin(cnf); it != std::end(cnf); it++) {
-          //for (size_t i = 0; i < cnf.size(); i++) {
-          //const auto& c = cnf[i];
-          //const auto& c = *it;
-          const auto& c = cnf[clause_id];
-          if (clause_sat(c)) {
-            continue;
-          }
-          //all_sat = false;
-          if (contains(c, -l)) {
-            if (clause_unsat(c)) {
-              push_conflict(clause_id);
-              return false;
-            }
-            if (count_unassigned_literals(c) == 1) {
-              literal_t p = find_unassigned_literal(c);
-              push_unit_queue(p, clause_id);
-            }
-          }
-        }
-
-        // we'll just assume that we propped *something*. We'll figure it out if the queue is really empty
-        // on the next iteration.
-        return true;
-      }
+      return true;
     }
+    // Otherwise, just look manually for a unit
     else if (unit_prop_mode == unit_prop_mode_t::simplest) {
       for (clause_id i = 0; i < cnf.size(); i++) {
         auto& c = cnf[i];
@@ -592,24 +558,6 @@ struct trace_t {
         if (1 == count_unassigned_literals(c)) {
           literal_t l = find_unassigned_literal(c);
           apply_unit(l, i);
-
-          // Now, have we introduced a conflict?
-          auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& c) { return clause_unsat(c); });
-          if (it != std::end(cnf)) {
-            clause_id i = std::distance(std::begin(cnf), it);
-            push_conflict(i);
-            return false;
-          }
-
-          // Have we solved everything?
-          if (cnf_sat()) {
-            action_t action;
-            action.action_kind = action_t::action_kind_t::halt_sat;
-            actions.push_back(action);
-            return false;
-          }
-
-
           return true;
         }
       }
@@ -627,11 +575,9 @@ struct trace_t {
   // Basically, continue adding actions until it's halted.
   void process() {
     while (!halted()) {
-      while (units_to_prop()) {
-        // This does a lot of work.
-        // It can find a conflict.
-        if (!prop_unit()) {
-          break;
+      while (prop_unit()) {
+        if (halted()) {
+          return;
         }
       }
       if (halted()) {
@@ -872,13 +818,7 @@ int main(int argc, char* argv[]) {
     assert(trace.actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
     trace.learn_clause();
     trace.backtrack();
-
-    // this is needed for (backtrackmode:simplest, learnmode:resolution, unitprop:queue)
-    trace.seed_units_queue();
     trace.process();
   }
   std::cout << report_conclusion(trace.actions.rbegin()->action_kind) << std::endl;
-
-
-  // do the main loop
 }
