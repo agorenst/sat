@@ -23,11 +23,9 @@ unit: sat
 	./sat < tests/units1.cnf | diff - SAT
 
 %.unsatresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | minisat | tail -n 1 | diff - UNSAT
-#cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - UNSAT
 %.satresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | minisat | tail -n 1 | diff - SAT
-#cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - SAT
 
 
 # a sequence of basic tests, really trivial CNFs
