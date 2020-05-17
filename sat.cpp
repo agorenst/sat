@@ -8,6 +8,11 @@
 #include <queue>
 #include <list>
 
+#include <cstring>
+
+// getopt
+#include <getopt.h>
+
 #include "cnf.h"
 
 // TODO: Change clause_id to an iterator?
@@ -32,9 +37,9 @@ enum class unit_prop_mode_t {
                              simplest,
                              queue
 };
-backtrack_mode_t backtrack_mode = backtrack_mode_t::nonchron;
-learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
-unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::queue;
+backtrack_mode_t backtrack_mode = backtrack_mode_t::simplest;
+learn_mode_t learn_mode = learn_mode_t::simplest;
+unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::simplest;
 bool watched_literals_on = false; // this builds off the "queue" model.
 
 // The perspective I want to take is not one of deriving an assignment,
@@ -299,29 +304,12 @@ struct trace_t {
     return !actions.empty() && halt_state(*actions.rbegin());
   }
   bool final_state() {
+    //std::cout << "Testing final state: " << *this << std::endl;
     if (actions.empty()) {
       return false;
     }
     action_t action = *actions.rbegin();
 
-    // TODO: there is a better place for this check/computation, I'm sure.
-    if (action.action_kind == action_t::action_kind_t::halt_conflict) {
-      bool has_decision = false;
-      for (auto& a : actions) {
-        if (a.action_kind == action_t::action_kind_t::decision) {
-          has_decision = true;
-          break;
-        }
-      }
-      //auto it = std::find(std::begin(actions), std::end(actions), [](action_t a) { return a.action_kind == action_t::action_kind_t::decision; });
-      //if (it == std::end(actions)) {
-      if (!has_decision) {
-        action_t a;
-        a.action_kind = action_t::action_kind_t::halt_unsat;
-        actions.push_back(a);
-        action = a;
-      }
-    }
     return
       action.action_kind == action_t::action_kind_t::halt_unsat ||
       action.action_kind == action_t::action_kind_t::halt_sat;
@@ -430,6 +418,12 @@ struct trace_t {
   void push_sat() {
     action_t action;
     action.action_kind = action_t::action_kind_t::halt_sat;
+    actions.push_back(action);
+  }
+  void push_unsat() {
+    //std::cout << "Pushing unsat!" << std::endl;
+    action_t action;
+    action.action_kind = action_t::action_kind_t::halt_unsat;
     actions.push_back(action);
   }
 
@@ -589,16 +583,19 @@ struct trace_t {
   }
 
   void backtrack() {
+    // first, special-case the empty clause. If we found that, we're done.
+    // for now we trust that this is the newest-learned clause.
+    const clause_t& c = *std::prev(std::end(cnf));
+
+    if (c.size() == 0) { push_unsat(); return; }
+
     if (backtrack_mode == backtrack_mode_t::simplest) {
       std::fill(std::begin(variable_state), std::end(variable_state), variable_state_t::unassigned);
       actions.clear();
       
-      // We want to start with a clean slate here.
       clear_unit_queue();
     }
     else if (backtrack_mode == backtrack_mode_t::nonchron) {
-      // for now we trust that this is the newest-learned.
-      const clause_t& c = *std::prev(std::end(cnf));
       // do nothing!
       assert(std::prev(actions.end())->action_kind == action_t::action_kind_t::halt_conflict);
       actions.pop_back();
@@ -684,7 +681,7 @@ void trace_t::learn_clause() {
 
     // now go backwards until the decision, resolving things against it
     auto restart_it = it;
-    for (; it->action_kind != action_t::action_kind_t::decision; it++) {
+    for (; it != std::rend(actions) && it->action_kind != action_t::action_kind_t::decision; it++) {
       assert(it->action_kind == action_t::action_kind_t::unit_prop);
       clause_t d = cnf[it->unit_prop.reason];
       if (literal_t r = resolve_candidate(c, d)) {
@@ -692,27 +689,30 @@ void trace_t::learn_clause() {
       }
     }
 
-    // reset our iterator
-    int counter = 0;
-    literal_t new_implied = 0;
-    it = std::next(actions.rbegin());
+    if (!c.empty()) {
+      // correctness checks:
+      // reset our iterator
+      int counter = 0;
+      literal_t new_implied = 0;
+      it = std::next(actions.rbegin());
 
-    for (; it->action_kind != action_t::action_kind_t::decision; it++) {
-      assert(it->action_kind == action_t::action_kind_t::unit_prop);
-      if (contains(c, -it->unit_prop.propped_literal)) {
-        counter++;
-        new_implied = it->get_literal();
+      for (; it->action_kind != action_t::action_kind_t::decision; it++) {
+        assert(it->action_kind == action_t::action_kind_t::unit_prop);
+        if (contains(c, -it->unit_prop.propped_literal)) {
+          counter++;
+          new_implied = it->get_literal();
+        }
       }
-    }
-    assert(it->action_kind == action_t::action_kind_t::decision);
-    if (contains(c, -it->decision_literal)) {
-      counter++;
-      new_implied = -it->get_literal();
-    }
+      assert(it->action_kind == action_t::action_kind_t::decision);
+      if (contains(c, -it->decision_literal)) {
+        counter++;
+        new_implied = -it->get_literal();
+      }
 
-    //std::cout << "Learned clause " << c << std::endl;
-    //std::cout << "Counter = " << counter << std::endl;
-    assert(counter == 1);
+      //std::cout << "Learned clause " << c << std::endl;
+      //std::cout << "Counter = " << counter << std::endl;
+      assert(counter == 1);
+    }
 
     add_clause(c);
   }
@@ -780,6 +780,49 @@ std::string report_conclusion(action_t::action_kind_t conclusion) {
   }
   return "ERROR";
 }
+
+// these are our global settings
+void process_flags(int argc, char* argv[]) {
+  for (;;) {
+    static struct option long_options[] = {
+                                           {"backtracking", required_argument, 0, 'b'},
+                                           {"learning", required_argument, 0, 'l'},
+                                           {"unitprop", required_argument, 0, 'u'},
+                                           {0,0,0,0}
+    };
+    int option_index = 0;
+    int c = getopt_long(argc, argv, "b:l:u:", long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 'b':
+      if (!strcmp(optarg, "simplest") || !strcmp(optarg, "s")) {
+        backtrack_mode = backtrack_mode_t::simplest;
+      } else if (!strcmp(optarg, "nonchron") || !strcmp(optarg, "n")) {
+        backtrack_mode = backtrack_mode_t::nonchron;
+      }
+      break;
+    case 'l':
+      if (!strcmp(optarg, "simplest") || !strcmp(optarg, "s")) {
+        learn_mode = learn_mode_t::simplest;
+      } else if (!strcmp(optarg, "resolution") || !strcmp(optarg, "r")) {
+        learn_mode = learn_mode_t::explicit_resolution;
+      }
+      break;
+    case 'u':
+      if (!strcmp(optarg, "simplest") || !strcmp(optarg, "s")) {
+        unit_prop_mode = unit_prop_mode_t::simplest;
+      } else if (!strcmp(optarg, "queue") || !strcmp(optarg, "q")) {
+        unit_prop_mode = unit_prop_mode_t::queue;
+      }
+      break;
+    }
+  }
+  //std::cerr << "Settings are: " << static_cast<int>(learn_mode) << " " << static_cast<int>(backtrack_mode) << " " << static_cast<int>(unit_prop_mode) << std::endl;
+}
 // The real goal here is to find conflicts as fast as possible.
 int main(int argc, char* argv[]) {
 
@@ -804,6 +847,8 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
+  process_flags(argc, argv);
+
   assert(!find_unit(cnf));
   //print_cnf(cnf);
 
@@ -815,10 +860,12 @@ int main(int argc, char* argv[]) {
   //std::cout << trace;
 
   while (!trace.final_state()) {
+    //std::cout << "BEFORE DECISION: " << trace << std::endl;
     assert(trace.actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
     trace.learn_clause();
     trace.backtrack();
     trace.process();
+    //std::cout << "AFTER DECISION: " << trace << std::endl;
   }
   std::cout << report_conclusion(trace.actions.rbegin()->action_kind) << std::endl;
 }
