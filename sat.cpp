@@ -37,9 +37,9 @@ enum class unit_prop_mode_t {
                              simplest,
                              queue
 };
-backtrack_mode_t backtrack_mode = backtrack_mode_t::simplest;
-learn_mode_t learn_mode = learn_mode_t::simplest;
-unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::simplest;
+backtrack_mode_t backtrack_mode = backtrack_mode_t::nonchron;
+learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
+unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::queue;
 bool watched_literals_on = false; // this builds off the "queue" model.
 
 // The perspective I want to take is not one of deriving an assignment,
@@ -511,7 +511,16 @@ struct trace_t {
   // Or if 
   void decide_literal() {
     assert(!cnf_unsat());
-    //assert(!cnf_sat());
+    // NO UNITS
+    auto tt = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
+                                                             return !clause_sat(clause) && this->count_unassigned_literals(clause) == 1;
+                                                           });
+    if (tt != std::end(cnf)) {
+      std::cout << "UNIT LEFT UNPROCESSED " << *tt << std::endl << *this << std::endl;
+      //print_cnf(cnf);
+    }
+    assert(tt == std::end(cnf));
+
     auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
                                                              return !clause_sat(clause) && this->count_unassigned_literals(clause) > 0;
                                                            });
@@ -594,6 +603,11 @@ struct trace_t {
       actions.clear();
       
       clear_unit_queue();
+
+      // if this clause is a unit, add it:
+      if (c.size() == 1) {
+        push_unit_queue(c[0], cnf.size() - 1);
+      }
     }
     else if (backtrack_mode == backtrack_mode_t::nonchron) {
       // do nothing!
@@ -856,16 +870,63 @@ int main(int argc, char* argv[]) {
   // like units and trivial CNF cases.
   trace_t trace(cnf);
   // trace.seed_units_queue(); // outmoded, we fold away those entirely.
-  trace.process();
   //std::cout << trace;
 
-  while (!trace.final_state()) {
-    //std::cout << "BEFORE DECISION: " << trace << std::endl;
-    assert(trace.actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
-    trace.learn_clause();
-    trace.backtrack();
-    trace.process();
-    //std::cout << "AFTER DECISION: " << trace << std::endl;
+  enum class solver_state_t {
+                             quiescent,
+                             check_units,
+                             conflict,
+                             sat,
+                             unsat
+  };
+  solver_state_t state = solver_state_t::quiescent;
+
+  for (;;) {
+    //std::cout << "State: " << static_cast<int>(state) << std::endl;
+    //std::cout << "Trace: " << trace << std::endl;
+    switch (state) {
+    case solver_state_t::quiescent:
+      trace.decide_literal();
+      if (trace.final_state()) {
+        state = solver_state_t::sat;
+      } else {
+        state = solver_state_t::check_units;
+      }
+      break;
+
+    case solver_state_t::check_units:
+      // drain the unit queue
+
+      while (trace.prop_unit()) {
+        if (trace.halted()) break;
+      }
+      //std::cout << "State after unit prop: " << trace << std::endl;
+
+      if (trace.halted()) {
+        state = solver_state_t::conflict;
+      }
+      else {
+        state = solver_state_t::quiescent;
+      }
+      break;
+
+    case solver_state_t::conflict:
+      trace.learn_clause();
+      trace.backtrack();
+      //std::cout << "State after backtrack: " << trace << std::endl;
+      if (trace.final_state()) {
+        state = solver_state_t::unsat;
+      } else {
+        state = solver_state_t::check_units;
+      }
+      break;
+
+    case solver_state_t::sat:
+      std::cout << "SATISFIABLE" << std::endl;
+      return 0; // quit entirely
+    case solver_state_t::unsat:
+      std::cout << "UNSATISFIABLE" << std::endl;
+      return 0; // quit entirely
+    }
   }
-  std::cout << report_conclusion(trace.actions.rbegin()->action_kind) << std::endl;
 }

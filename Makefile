@@ -23,9 +23,9 @@ unit: sat
 	./sat < tests/units1.cnf | diff - SAT
 
 %.unsatresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - UNSAT
 %.satresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - SAT
 
 
 # a sequence of basic tests, really trivial CNFs
@@ -48,7 +48,7 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
+	gdb -q -batch -ex run -ex backtrace ./sat < tests/tests_3sat_unsat.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0100.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/tests_3sat_unsat.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/tests_3sat_unsat.cnf
+#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
