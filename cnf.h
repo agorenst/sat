@@ -1,6 +1,8 @@
+#pragma once
 // This isn't "cnf" so much as it is all our types
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 typedef int32_t literal_t;
 // Really, we can be clever and use unsigned, but come on.
@@ -54,17 +56,6 @@ struct action_t {
   bool has_clause() const;
   clause_id get_clause() const;
 };
-
-// This is "just" a pair, but has some useful methods.
-struct watcher_t {
-  // these can really be a lot smaller:
-  size_t idx1;
-  size_t idx2;
-
-  literal_t change_watcher(literal_t l);
-  literal_t get_other(literal_t l);
-};
-
 
 template<typename C, typename V>
 bool contains(const C& c, const V& v) {

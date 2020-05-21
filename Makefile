@@ -12,7 +12,7 @@ uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
 
-sat: sat.o cnf.o
+sat: sat.o cnf.o trace.o
 tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
 
 benchmark1: $(uuf50-218-tests)
