@@ -5,6 +5,7 @@
 #include <list>
 
 #include "cnf.h"
+#include "watched_literals.h"
 
 enum class backtrack_mode_t {
                              simplest,
@@ -40,6 +41,8 @@ struct trace_t {
 
   // store the unit-props we're still getting through.
   std::list<action_t> units;
+
+  watched_literals_t watch;
 
 
   void reset();

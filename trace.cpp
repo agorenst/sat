@@ -25,9 +25,15 @@ void trace_t::reset() {
   variable_state.resize(max_var+1);
   std::fill(std::begin(variable_state), std::end(variable_state), unassigned);
 
+  for (size_t i = 0; i < cnf.size(); i++) {
+    watch.watch_clause(i);
+  }
+
+  watch.validate_state();
+
 }
 
-trace_t::trace_t(cnf_t& cnf): cnf(cnf) {
+trace_t::trace_t(cnf_t& cnf): cnf(cnf), watch(*this) {
   reset();
 }
 
@@ -182,6 +188,7 @@ void trace_t::register_false_literal(literal_t l) {
   SAT_ASSERT(std::find_if(std::begin(cnf), std::end(cnf), [l](const clause_t& c) { return c.size() == 1 && contains(c, -l); }) == std::end(cnf));
   // Here we look for conflicts and new units!
   if (unit_prop_mode == unit_prop_mode_t::queue) {
+    //watch.literal_falsed(l);
     const auto& clause_ids = literal_to_clause[-l];
     for (auto clause_id : clause_ids) {
       const auto& c = cnf[clause_id];
@@ -367,6 +374,7 @@ void trace_t::add_clause(const clause_t& c) {
   for (literal_t l : c) {
     literal_to_clause[l].push_back(id);
   }
+  if (c.size() > 1) watch.watch_clause(id);
 }
 
 // Debugging purposes
