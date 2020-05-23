@@ -23,15 +23,8 @@ void watched_literals_t::watch_clause(clause_id cid) {
   // We may already be a unit. If so, to maintain backtracking
   // we want to have our other watcher be the last-falsified thing 
   if (l2 == 0) {
-    for (auto it = std::rbegin(trace.actions); it != std::rend(trace.actions); it++) {
-      if (it->has_literal()) {
-        literal_t l = it->get_literal();
-        if (contains(c, -l)) {
-          w.l2 = -l;
-          break;
-        }
-      }
-    }
+    literal_t l = trace.find_last_falsified(cid);
+    w.l2 = l;
   }
   else {
     w.l2 = l2;

@@ -453,16 +453,71 @@ std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::variable_st
   return o << "}";
 }
 
-
-std::ostream& operator<<(std::ostream& o, const std::vector<action_t> v) {
-  for (auto& a : v) {
+void trace_t::print_actions(std::ostream& o) const {
+  for (auto& a : actions) {
     o << a << std::endl;
   }
+}
+
+
+std::ostream& operator<<(std::ostream& o, const trace_t t) {
+  o << t.variable_state << std::endl;
+  t.print_actions(o);
   return o;
+}
+
+void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const std::vector<action_t>& actions);
+clause_t trace_t::learn_clause() {
+  SAT_ASSERT(actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
+  //std::cout << "About to learn clause from: " << *this << std::endl;
+  if (learn_mode == learn_mode_t::simplest) {
+    clause_t new_clause;
+    for (action_t a : actions) {
+      if (a.action_kind == action_t::action_kind_t::decision) {
+        new_clause.push_back(-a.decision_literal);
+      }
+    }
+    //std::cout << "Learned clause: " << new_clause << std::endl;
+    return new_clause;
+  }
+  else if (learn_mode == learn_mode_t::explicit_resolution) {
+    auto it = actions.rbegin();
+    SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
+    // We make an explicit copy of that conflict clause
+    clause_t c = cnf[it->conflict_clause_id];
+
+    it++;
+
+    // now go backwards until the decision, resolving things against it
+    auto restart_it = it;
+    for (; it != std::rend(actions) && it->action_kind != action_t::action_kind_t::decision; it++) {
+      SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
+      clause_t d = cnf[it->unit_prop.reason];
+      if (literal_t r = resolve_candidate(c, d)) {
+        c = resolve(c, d, r);
+      }
+    }
+
+    SAT_ASSERT(verify_resolution_expected(c));
+
+    learned_clause_minimization(cnf, c, actions);
+    return c;
+  }
+  assert(0);
+  return {};
 }
 
 
 
-std::ostream& operator<<(std::ostream& o, const trace_t t) {
-  return o << t.variable_state << std::endl << t.actions;
+literal_t trace_t::find_last_falsified(clause_id cid) {
+  const clause_t& c = cnf[cid];
+  for (auto it = std::rbegin(actions); it != std::rend(actions); it++) {
+    if (it->has_literal()) {
+      literal_t l = it->get_literal();
+      if (contains(c, -l)) {
+        return -l;
+      }
+    }
+  }
+  return 0;
 }

@@ -1,5 +1,6 @@
 #include "cnf.h"
 #include "debug.h"
+#include "action.h"
 std::ostream& operator<<(std::ostream& o, const std::vector<action_t> v);
 void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const std::vector<action_t>& actions) {
   // Explicit search implementation

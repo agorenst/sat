@@ -6,6 +6,8 @@
 
 #include "cnf.h"
 #include "watched_literals.h"
+#include "action.h"
+#include "trail.h"
 
 enum class backtrack_mode_t {
                              simplest,
@@ -31,6 +33,10 @@ extern unit_prop_mode_t unit_prop_mode;
 extern variable_choice_mode_t variable_choice_mode;
 
 struct trace_t {
+private:
+  trail_t actions;
+public:
+  void print_actions(std::ostream&) const;
 
   enum variable_state_t {
                        unassigned,
@@ -39,7 +45,6 @@ struct trace_t {
   };
 
   cnf_t& cnf;
-  std::vector<action_t> actions;
   std::vector<variable_state_t> variable_state;
 
   // this is hugely expensive data structure. We'll see.
@@ -94,10 +99,10 @@ struct trace_t {
   clause_t learn_clause();
   size_t count_true_literals(const clause_t& clause) const;
   size_t count_false_literals(const clause_t& clause) const;
+  literal_t find_last_falsified(clause_id cid);
 };
 
 
 std::ostream& operator<<(std::ostream& o, const trace_t::variable_state_t s);
 std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::variable_state_t>& s);
-std::ostream& operator<<(std::ostream& o, const std::vector<action_t> v);
 std::ostream& operator<<(std::ostream& o, const trace_t t);

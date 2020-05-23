@@ -91,7 +91,7 @@ void preprocess(cnf_t& cnf) {
   while (did_work) {
     did_work = false;
     while (literal_t u = find_unit(cnf)) {
-      std::cout << "[PRE][NUP] " << u << std::endl;
+      //std::cout << "[PRE][NUP] " << u << std::endl;
       commit_literal(cnf, u);
       did_work = true;
     }
