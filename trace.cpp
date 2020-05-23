@@ -34,6 +34,7 @@ void trace_t::reset() {
 
   SAT_ASSERT(watch.validate_state());
 
+  actions.construct(max_var+1);
 }
 
 trace_t::trace_t(cnf_t& cnf): cnf(cnf), watch(*this) {
@@ -49,7 +50,9 @@ bool trace_t::halt_state(const action_t action) {
 
 bool trace_t::halted() const {
   //std::cout << "Debug: current trace is: " << *this << std::endl;
-  return !actions.empty() && halt_state(*actions.rbegin());
+  bool result = !actions.empty() && halt_state(*actions.crbegin());
+  //std::cout << "[DBG](halted): " << result << " with " << *actions.crbegin() << std::endl;
+  return result;
 }
 bool trace_t::final_state() {
   //std::cout << "Testing final state: " << *this << std::endl;
@@ -454,13 +457,13 @@ std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::variable_st
 }
 
 void trace_t::print_actions(std::ostream& o) const {
-  for (auto& a : actions) {
+  for (const auto& a : actions) {
     o << a << std::endl;
   }
 }
 
 
-std::ostream& operator<<(std::ostream& o, const trace_t t) {
+std::ostream& operator<<(std::ostream& o, const trace_t& t) {
   o << t.variable_state << std::endl;
   t.print_actions(o);
   return o;

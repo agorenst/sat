@@ -105,4 +105,4 @@ public:
 
 std::ostream& operator<<(std::ostream& o, const trace_t::variable_state_t s);
 std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::variable_state_t>& s);
-std::ostream& operator<<(std::ostream& o, const trace_t t);
+std::ostream& operator<<(std::ostream& o, const trace_t& t);

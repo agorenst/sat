@@ -1,35 +1,80 @@
 #include "action.h"
+#include <memory>
 
 // This is some sequence of actions. For now we can think of it as a vector.
 //typedef std::vector<action_t> trail_t;
 
 struct trail_t {
-  std::vector<action_t> values;
+  std::unique_ptr<action_t[]> mem;
+  std::unique_ptr<bool[]> varset;
+  size_t next_index;
+  size_t size;
 
-  auto rbegin() const { return std::rbegin(values); }
-  auto rend() const { return std::rend(values); }
+  void construct(size_t max_var);
 
-  auto rbegin() { return std::rbegin(values); }
-  auto rend() { return std::rend(values); }
 
-  auto begin() const { return std::begin(values); }
-  auto end() const { return std::end(values); }
+  action_t* cbegin() const { return &(mem[0]); }
+  action_t* cend() const { return &(mem[next_index]); }
+  action_t* begin() { return &(mem[0]); }
+  action_t* end() { return &(mem[next_index]); }
+  action_t* begin() const { return &(mem[0]); }
+  action_t* end() const { return &(mem[next_index]); }
 
-  auto begin() { return std::begin(values); }
-  auto end() { return std::end(values); }
 
-  void clear() { values.clear(); }
-  bool empty() const { return values.empty(); }
+  auto rbegin() {
+    auto it = std::make_reverse_iterator(end());
+    SAT_ASSERT(&*(it.base()-1) == &*it);
+    return it;
+  }
+  auto rend() {
+    return std::make_reverse_iterator(begin());
+  }
+  auto crbegin() const { return std::make_reverse_iterator(cend()); }
+  auto crend() const { return std::make_reverse_iterator(cbegin()); }
+
+  void clear() { next_index = 0; }
+  bool empty() const { return next_index == 0; }
 
   void append(action_t a) {
-    values.push_back(a);
+    //std::cout << "next_index = " << next_index << ", size = " << size << std::endl;
+    //std::cout << a << std::endl;
+    if (a.has_literal()) {
+      variable_t v = std::abs(a.get_literal());
+      if (varset[v]) {
+        // Don't add!
+        return;
+      }
+      varset[v] = true;
+    }
+  //if (next_index == size) {
+      //std::cout << "[DBG][ERR] No room for " << a << " in trail" << std::endl;
+      //for (const auto& a : *this) {
+        //std::cout << a << std::endl;
+        //}
+      //}
+    SAT_ASSERT(next_index < size);
+    mem[next_index] = a;
+    next_index++;
   }
 
   void pop() {
-    values.pop_back();
+    SAT_ASSERT(next_index > 0);
+    next_index--;
+    action_t a = mem[next_index];
+    if (a.has_literal()) {
+      variable_t v = std::abs(a.get_literal());
+      varset[v] = false;
+    }
   }
 
-  void drop_from(std::vector<action_t>::iterator it) {
-    values.erase(it, std::end(values));
+  void drop_from(action_t* it) {
+    //std::cout << it << " " << &(mem[next_index]) << std::endl;
+    SAT_ASSERT(it <= &(mem[next_index]));
+    while (end() > it) {
+      pop();
+    }
+    //std::cout << next_index << " ";
+    //next_index = std::distance(begin(), it);
+    //std::cout << next_index << std::endl;
   }
 };

@@ -34,9 +34,6 @@ variable_t max_variable = 0;
 // but a trace exploring the recursive, DFS space of assignments.
 // We don't forget anything -- I even want to record backtracking.
 // So let's see what this looks like.
-struct trace_t;
-std::ostream& operator<<(std::ostream& o, const trace_t t);
-
 
 // these are our global settings
 void process_flags(int argc, char* argv[]) {
