@@ -7,8 +7,10 @@
 struct trail_t {
   std::unique_ptr<action_t[]> mem;
   std::unique_ptr<bool[]> varset;
+  std::unique_ptr<size_t[]> varlevel;
   size_t next_index;
   size_t size;
+  size_t dlevel;
 
   void construct(size_t max_var);
 
@@ -38,6 +40,9 @@ struct trail_t {
   void append(action_t a) {
     //std::cout << "next_index = " << next_index << ", size = " << size << std::endl;
     //std::cout << a << std::endl;
+    if (a.is_decision()) {
+      dlevel++;
+    }
     if (a.has_literal()) {
       variable_t v = std::abs(a.get_literal());
       if (varset[v]) {
@@ -45,6 +50,7 @@ struct trail_t {
         return;
       }
       varset[v] = true;
+      varlevel[v] = dlevel;
     }
   //if (next_index == size) {
       //std::cout << "[DBG][ERR] No room for " << a << " in trail" << std::endl;
@@ -65,6 +71,9 @@ struct trail_t {
       variable_t v = std::abs(a.get_literal());
       varset[v] = false;
     }
+    if (a.is_decision()) {
+      dlevel--;
+    }
   }
 
   void drop_from(action_t* it) {
@@ -76,5 +85,13 @@ struct trail_t {
     //std::cout << next_index << " ";
     //next_index = std::distance(begin(), it);
     //std::cout << next_index << std::endl;
+  }
+
+  size_t level(literal_t l) const {
+    return varlevel[std::abs(l)];
+  }
+
+  size_t level() const {
+    return dlevel;
   }
 };
