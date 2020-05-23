@@ -17,7 +17,8 @@ enum class learn_mode_t {
 };
 enum class unit_prop_mode_t {
                              simplest,
-                             queue
+                               queue,
+                               watched
 };
 
 extern backtrack_mode_t backtrack_mode;
@@ -73,6 +74,7 @@ struct trace_t {
   void clear_unit_queue();
   void clean_unit_queue();
   void push_conflict(clause_id cid);
+  bool has_conflict() const;
   void push_sat();
   void push_unsat();
   void register_false_literal(literal_t l);
@@ -85,6 +87,8 @@ struct trace_t {
   void add_clause(const clause_t& c);
   bool verify_resolution_expected(const clause_t& c);
   clause_t learn_clause();
+  size_t count_true_literals(const clause_t& clause) const;
+  size_t count_false_literals(const clause_t& clause) const;
 };
 
 

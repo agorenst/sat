@@ -78,33 +78,6 @@ clause_t trace_t::learn_clause() {
 }
 
 
-cnf_t load_cnf() {
-  cnf_t cnf;
-  // Load in cnf from stdin.
-  literal_t next_literal;
-  clause_t next_clause;
-
-  std::string line;
-  while (std::getline(std::cin, line)) {
-    if (line.size() == 0) { continue; }
-    if (line[0] == 'c') { continue; }
-    if (line[0] == 'p') {
-      // TODO: do some error-checking;
-      break;
-    }
-  }
-
-  while (std::cin >> next_literal) {
-    if (next_literal == 0) {
-      cnf.push_back(next_clause);
-      next_clause.clear();
-      continue;
-    }
-    next_clause.push_back(next_literal);
-  }
-  return cnf;
-}
-
 
 
 // these are our global settings
@@ -143,6 +116,8 @@ void process_flags(int argc, char* argv[]) {
         unit_prop_mode = unit_prop_mode_t::simplest;
       } else if (!strcmp(optarg, "queue") || !strcmp(optarg, "q")) {
         unit_prop_mode = unit_prop_mode_t::queue;
+      } else if (!strcmp(optarg, "watched") || !strcmp(optarg, "w")) {
+        unit_prop_mode = unit_prop_mode_t::watched;
       }
       break;
     }
@@ -153,7 +128,7 @@ void process_flags(int argc, char* argv[]) {
 int main(int argc, char* argv[]) {
 
   // Instantiate our CNF object
-  cnf_t cnf = load_cnf();
+  cnf_t cnf = load_cnf(std::cin);
   SAT_ASSERT(cnf.size() > 0); // make sure parsing worked.
 
   // Do the naive unit_prop
@@ -229,8 +204,6 @@ int main(int argc, char* argv[]) {
     case solver_state_t::conflict: {
 
       const clause_t c = trace.learn_clause();
-      trace.backtrack(c);
-      trace.add_clause(c);
 
       // early out in the unsat case.
       if (c.size() == 0) {
@@ -238,7 +211,13 @@ int main(int argc, char* argv[]) {
         break;
       }
 
-      if (unit_prop_mode == unit_prop_mode_t::queue) {
+      //std::cout << "Learned clause: " << c << std::endl;
+      trace.backtrack(c);
+      trace.add_clause(c);
+      if (unit_prop_mode == unit_prop_mode_t::watched) SAT_ASSERT(trace.watch.validate_state());
+
+      if (unit_prop_mode == unit_prop_mode_t::queue ||
+          unit_prop_mode == unit_prop_mode_t::watched) {
         if (backtrack_mode == backtrack_mode_t::nonchron) {
           assert(trace.count_unassigned_literals(c) == 1);
         }

@@ -13,14 +13,6 @@ std::ostream& operator<<(std::ostream& o, const clause_t& c) {
   return o;
 }
 
-void print_cnf(const cnf_t& cnf) {
-  for (auto&& c : cnf) {
-    for (auto&& l : c) {
-      std::cout << l << " ";
-    }
-    std::cout << "0" << std::endl;
-  }
-}
 
 clause_t resolve(clause_t c1, clause_t c2, literal_t l) {
   assert(contains(c1, l));
@@ -126,4 +118,41 @@ std::ostream& operator<<(std::ostream& o, const action_t a) {
   case action_t::action_kind_t::halt_conflict: return o << ", " << a.conflict_clause_id << " }";
   default: return o << " }";
   }
+}
+
+std::ostream& operator<<(std::ostream& o, const cnf_t& cnf) {
+  for (auto&& c : cnf) {
+    for (auto&& l : c) {
+      o << l << " ";
+    }
+    o << "0" << std::endl;
+  }
+  return o;
+}
+
+cnf_t load_cnf(std::istream& in) {
+  cnf_t cnf;
+  // Load in cnf from stdin.
+  literal_t next_literal;
+  clause_t next_clause;
+
+  std::string line;
+  while (std::getline(in, line)) {
+    if (line.size() == 0) { continue; }
+    if (line[0] == 'c') { continue; }
+    if (line[0] == 'p') {
+      // TODO: do some error-checking;
+      break;
+    }
+  }
+
+  while (in >> next_literal) {
+    if (next_literal == 0) {
+      cnf.push_back(next_clause);
+      next_clause.clear();
+      continue;
+    }
+    next_clause.push_back(next_literal);
+  }
+  return cnf;
 }

@@ -2,9 +2,11 @@
 #include "debug.h"
 #include <algorithm>
 
+// Defaults: fast and working...
 backtrack_mode_t backtrack_mode = backtrack_mode_t::nonchron;
 learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
-unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::queue;
+//unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::queue;
+unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::watched;
 
 void trace_t::reset() {
   actions.clear();
@@ -29,7 +31,7 @@ void trace_t::reset() {
     watch.watch_clause(i);
   }
 
-  watch.validate_state();
+  SAT_ASSERT(watch.validate_state());
 
 }
 
@@ -103,6 +105,12 @@ bool trace_t::cnf_unsat() const {
   return unsat_clause() != std::end(cnf);
 }
 
+size_t trace_t::count_true_literals(const clause_t& clause) const {
+  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->literal_true(c);});
+}
+size_t trace_t::count_false_literals(const clause_t& clause) const {
+  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->literal_false(c);});
+}
 size_t trace_t::count_unassigned_literals(const clause_t& clause) const {
   return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->literal_unassigned(c);});
 }
@@ -187,8 +195,13 @@ void trace_t::register_false_literal(literal_t l) {
   // We should never falsify a literal for which we have a unit clause asserting that it should be true.
   SAT_ASSERT(std::find_if(std::begin(cnf), std::end(cnf), [l](const clause_t& c) { return c.size() == 1 && contains(c, -l); }) == std::end(cnf));
   // Here we look for conflicts and new units!
-  if (unit_prop_mode == unit_prop_mode_t::queue) {
-    //watch.literal_falsed(l);
+  if (unit_prop_mode == unit_prop_mode_t::watched) {
+    watch.literal_falsed(l);
+    SAT_ASSERT(halted() || watch.validate_state());
+  }
+  else if (unit_prop_mode == unit_prop_mode_t::queue) {
+
+
     const auto& clause_ids = literal_to_clause[-l];
     for (auto clause_id : clause_ids) {
       const auto& c = cnf[clause_id];
@@ -263,8 +276,7 @@ void trace_t::apply_unit(literal_t l, clause_id cid) {
 literal_t trace_t::decide_literal() {
   SAT_ASSERT(!cnf_unsat());
   if (unit_clause_exists()) {
-    std::cout << "Failing with trace: " << std::endl << *this << std::endl;
-    print_cnf(cnf);
+    std::cout << "Failing with trace: " << std::endl << *this << std::endl << cnf << std::endl;
   }
   SAT_ASSERT(!unit_clause_exists());
 
@@ -284,7 +296,8 @@ literal_t trace_t::decide_literal() {
 // Get an implication that comes from our trail.
 std::pair<literal_t, clause_id> trace_t::prop_unit() {
   // Are we in a mode where we keep a queue of units?
-  if (unit_prop_mode == unit_prop_mode_t::queue) {
+  if (unit_prop_mode == unit_prop_mode_t::queue ||
+      unit_prop_mode == unit_prop_mode_t::watched) {
     if (units.empty()) {
       return std::make_pair(0,0);
     }
@@ -360,7 +373,8 @@ void trace_t::backtrack(const clause_t& c) {
     //SAT_ASSERT(cnf[cnf.size()-1] == c);
 
     // Reset whatever could be units (TODO: only reset what we know we've invalidated?)
-    clean_unit_queue();
+    clear_unit_queue();
+
     //std::cout << "Pushing " << l << " " << c << std::endl;
     //push_unit_queue(l, cnf.size()-1);
     //std::cout << "Trail is now: " << *this << std::endl;
@@ -375,6 +389,8 @@ void trace_t::add_clause(const clause_t& c) {
     literal_to_clause[l].push_back(id);
   }
   if (c.size() > 1) watch.watch_clause(id);
+  
+  if (unit_prop_mode == unit_prop_mode_t::watched) SAT_ASSERT(watch.validate_state());
 }
 
 // Debugging purposes

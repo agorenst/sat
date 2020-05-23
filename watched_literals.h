@@ -39,6 +39,8 @@ struct watched_literals_t {
   void watcher_literal_swap(watcher_t& w, literal_t o, literal_t n);
   void watcher_list_remove_clause(clause_list_t& clause_list, clause_id cid);
   void watcher_swap(clause_id cid, watcher_t& w, literal_t o, literal_t n);
-  void print_watch_state();
-  void validate_state();
+  void print_watch_state() const;
+  bool validate_state();
 };
+
+std::ostream& operator<<(std::ostream& o, const watched_literals_t& w);

@@ -67,3 +67,5 @@ std::ostream& operator<<(std::ostream& o, const clause_t& c);
 std::ostream& operator<<(std::ostream& o, const cnf_t& c);
 void print_cnf(const cnf_t& cnf);
 std::ostream& operator<<(std::ostream& o, const action_t a);
+
+cnf_t load_cnf(std::istream& in);
