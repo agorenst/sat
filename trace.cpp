@@ -174,19 +174,19 @@ void trace_t::push_conflict(clause_id cid) {
   action_t action;
   action.action_kind = action_t::action_kind_t::halt_conflict;
   action.conflict_clause_id = cid;
-  actions.push_back(action);
+  actions.append(action);
 }
 
 void trace_t::push_sat() {
   action_t action;
   action.action_kind = action_t::action_kind_t::halt_sat;
-  actions.push_back(action);
+  actions.append(action);
 }
 void trace_t::push_unsat() {
   //std::cout << "Pushing unsat!" << std::endl;
   action_t action;
   action.action_kind = action_t::action_kind_t::halt_unsat;
-  actions.push_back(action);
+  actions.append(action);
 }
 
 // We've just applied l, and now we do various machineries to queue up
@@ -255,7 +255,7 @@ void trace_t::apply_decision(literal_t l) {
   action_t action;
   action.action_kind = action_t::action_kind_t::decision;
   action.decision_literal = l;
-  actions.push_back(action);
+  actions.append(action);
 
   apply_literal(l);
 }
@@ -266,7 +266,7 @@ void trace_t::apply_unit(literal_t l, clause_id cid) {
   action.action_kind = action_t::action_kind_t::unit_prop;
   action.unit_prop.propped_literal = l;
   action.unit_prop.reason = cid;
-  actions.push_back(action);
+  actions.append(action);
   //std::cout << "Unit-propping : " << action << std::endl;
 
   apply_literal(l);
@@ -341,17 +341,17 @@ void trace_t::backtrack(const clause_t& c) {
 
   if (backtrack_mode == backtrack_mode_t::simplest) {
     SAT_ASSERT(std::prev(actions.end())->action_kind == action_t::action_kind_t::halt_conflict);
-    actions.pop_back();
+    actions.pop();
     // it can't be completely dumb: we have to leave the prefix of our automatic unit-props
 
     auto to_erase = std::find_if(std::begin(actions), std::end(actions), [](action_t& a) { return a.is_decision(); });
     std::for_each(to_erase, std::end(actions), [this](action_t& a) { unassign_literal(a.get_literal()); });
-    actions.erase(to_erase, std::end(actions));
+    actions.drop_from(to_erase);
     clear_unit_queue();
   }
   else if (backtrack_mode == backtrack_mode_t::nonchron) {
     SAT_ASSERT(std::prev(actions.end())->action_kind == action_t::action_kind_t::halt_conflict);
-    actions.pop_back();
+    actions.pop();
     SAT_ASSERT(clause_unsat(c));
 
     // Find the most recent decision. If we pop "just" this, we'll have naive backtracking (that somehow still doesn't
@@ -376,7 +376,7 @@ void trace_t::backtrack(const clause_t& c) {
 
     // Actually do the erasure:
     std::for_each(to_erase, std::end(actions), [this](action_t& a) { unassign_literal(a.get_literal()); });
-    actions.erase(to_erase, std::end(actions));
+    actions.drop_from(to_erase);
 
     SAT_ASSERT(count_unassigned_literals(c) == 1);
     literal_t l = find_unassigned_literal(c);
@@ -466,7 +466,7 @@ std::ostream& operator<<(std::ostream& o, const trace_t t) {
   return o;
 }
 
-void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const std::vector<action_t>& actions);
+void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& actions);
 clause_t trace_t::learn_clause() {
   SAT_ASSERT(actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
   //std::cout << "About to learn clause from: " << *this << std::endl;

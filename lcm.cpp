@@ -1,8 +1,9 @@
 #include "cnf.h"
 #include "debug.h"
 #include "action.h"
+#include "trail.h"
 std::ostream& operator<<(std::ostream& o, const std::vector<action_t> v);
-void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const std::vector<action_t>& actions) {
+void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
   // Explicit search implementation
   //std::cout << "Minimizing " << c << " with trail " << std::endl << actions << std::endl;
 
