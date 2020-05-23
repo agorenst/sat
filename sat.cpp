@@ -18,6 +18,7 @@
 #include "debug.h"
 #include "watched_literals.h"
 #include "trace.h"
+#include "preprocess.h"
 
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
@@ -38,6 +39,7 @@ bool watched_literals_on = false; // this builds off the "queue" model.
 struct trace_t;
 std::ostream& operator<<(std::ostream& o, const trace_t t);
 
+void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const std::vector<action_t>& actions);
 clause_t trace_t::learn_clause() {
   SAT_ASSERT(actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
   //std::cout << "About to learn clause from: " << *this << std::endl;
@@ -71,6 +73,7 @@ clause_t trace_t::learn_clause() {
 
     SAT_ASSERT(verify_resolution_expected(c));
 
+    learned_clause_minimization(cnf, c, actions);
     return c;
   }
   assert(0);
@@ -131,10 +134,7 @@ int main(int argc, char* argv[]) {
   cnf_t cnf = load_cnf(std::cin);
   SAT_ASSERT(cnf.size() > 0); // make sure parsing worked.
 
-  // Do the naive unit_prop
-  while (literal_t u = find_unit(cnf)) {
-    commit_literal(cnf, u);
-  }
+  preprocess(cnf);
 
   // TODO: fold this into a more general case, if possible.
   if (immediately_unsat(cnf)) {

@@ -16,7 +16,7 @@ uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
 
-sat: sat.o cnf.o trace.o watched_literals.o
+sat: sat.o cnf.o trace.o watched_literals.o preprocess.o lcm.o
 tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
 #tests: $(uf20-91-tests)
 
@@ -30,7 +30,7 @@ unit: sat
 	./sat < tests/units1.cnf | diff - SAT
 
 %.unsatresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - UNSAT
@@ -43,7 +43,7 @@ unit: sat
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b s | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - UNSAT
 %.satresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - SAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - SAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - SAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - SAT
@@ -77,7 +77,9 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < watched_bug_5.cnf
+	gdb -q -batch -ex run -ex backtrace ./sat < tests/uf20-91/uf20-0941.cnf
+
+#gdb -q -batch -ex run -ex backtrace ./sat < watched_bug_5.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uf20-91/uf20-093.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0100.cnf

@@ -53,6 +53,7 @@ struct action_t {
   bool has_literal() const;
   literal_t get_literal() const;
   bool is_decision() const;
+  bool is_unit_prop() const;
   bool has_clause() const;
   clause_id get_clause() const;
 };

@@ -86,6 +86,9 @@ literal_t action_t::get_literal() const {
 bool action_t::is_decision() const {
   return action_kind == action_kind_t::decision;
 }
+bool action_t::is_unit_prop() const {
+  return action_kind == action_kind_t::unit_prop;
+}
 bool action_t::has_clause() const {
   return action_kind == action_kind_t::halt_conflict || action_kind == action_kind_t::unit_prop;
 }

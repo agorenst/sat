@@ -21,7 +21,8 @@ enum class unit_prop_mode_t {
                                watched
 };
 enum class variable_choice_mode_t {
-  nextliteral
+  nextliteral,
+  nextclause
     };
 
 extern backtrack_mode_t backtrack_mode;
