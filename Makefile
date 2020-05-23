@@ -8,7 +8,9 @@ uf50-218-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf50-218/*.
 uuf50-218-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf50-218/*.cnf)))
 
 uf100-430-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf100-430/*.cnf)))
+uf100-430-tests-medium = $(addsuffix .satresult, $(basename $(wildcard tests/uf100-430/uf100-01*.cnf)))
 uuf100-430-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/uuf100-011*.cnf)))
+uuf100-430-tests-medium = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/uuf100-01*.cnf)))
 uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/*.cnf)))
 
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
@@ -20,13 +22,15 @@ tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
 
 benchmark1: $(uuf50-218-tests)
 benchmark2: $(uuf100-430-tests-brief)
-benchmark3: $(uuf100-430-tests)
+benchmark3: $(uuf100-430-tests-medium)
+benchmark4: $(uuf100-430-tests)
+benchmark5: $(uf100-430-tests-medium)
 
 unit: sat
 	./sat < tests/units1.cnf | diff - SAT
 
 %.unsatresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - UNSAT
@@ -39,7 +43,7 @@ unit: sat
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b s | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - UNSAT
 %.satresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - SAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - SAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - SAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - SAT

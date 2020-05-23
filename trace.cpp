@@ -7,6 +7,7 @@ backtrack_mode_t backtrack_mode = backtrack_mode_t::nonchron;
 learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
 //unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::queue;
 unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::watched;
+variable_choice_mode_t variable_choice_mode = variable_choice_mode_t::nextliteral;
 
 void trace_t::reset() {
   actions.clear();
@@ -280,16 +281,26 @@ literal_t trace_t::decide_literal() {
   }
   SAT_ASSERT(!unit_clause_exists());
 
-  auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
-                                                           return !clause_sat(clause) && this->count_unassigned_literals(clause) > 0;
-                                                         });
+  literal_t l = 0;
+  if (variable_choice_mode == variable_choice_mode_t::nextliteral) {
+    auto it = std::find(std::next(std::begin(variable_state)), std::end(variable_state), variable_state_t::unassigned);
+    if (it != std::end(variable_state)) {
+      l = std::distance(std::begin(variable_state), it);
+    }
+  }
+  else{
+    auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
+                                                             return !clause_sat(clause) && this->count_unassigned_literals(clause) > 0;
+                                                           });
+    if (it != std::end(cnf)) {
+      l = find_unassigned_literal(*it);
+    }
+  }
   //SAT_ASSERT(it != std::end(cnf));
-  if (it == std::end(cnf)) {
+  if (l == 0) {
     SAT_ASSERT(cnf_sat());
     push_sat();
-    return 0;
   }
-  literal_t l = find_unassigned_literal(*it);
   return l;
 }
 

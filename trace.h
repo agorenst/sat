@@ -20,10 +20,14 @@ enum class unit_prop_mode_t {
                                queue,
                                watched
 };
+enum class variable_choice_mode_t {
+  nextliteral
+    };
 
 extern backtrack_mode_t backtrack_mode;
 extern learn_mode_t learn_mode;
 extern unit_prop_mode_t unit_prop_mode;
+extern variable_choice_mode_t variable_choice_mode;
 
 struct trace_t {
 
