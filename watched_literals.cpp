@@ -89,11 +89,13 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
   }
   // If we can, then we swap to that.
   else {
+#if SAT_DEBUG_MODE
     if (trace.count_unassigned_literals(c) + trace.count_true_literals(c) <= 1) {
       std::cout << "Falsing " << l << " means {" << c << "} " << "watched by " << w << " has " << trace.count_unassigned_literals(c) << " free literals, found candidate n = " << n << std::endl;
       std::cout << trace << std::endl << cnf << std::endl;
     }
     SAT_ASSERT(trace.count_unassigned_literals(c) + trace.count_true_literals(c) > 1);
+#endif
     watcher_swap(cid, w, -l, n);
     //std::cout << "Falsing " << l << " in clause #" << cid << " {" << c << "} has watcher go from: " << oldw << " to " << w << std::endl;
   }

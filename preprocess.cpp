@@ -107,7 +107,7 @@ void preprocess(cnf_t& cnf) {
     //}
 
     //naive_self_subsumption(cnf);
-    if (false) {
+    if (true) {
       std::vector<clause_id> bc = BCE(cnf);
       std::sort(std::begin(bc), std::end(bc), [](clause_id c1, clause_id c2) { return c2 < c1; });
 #if 0
