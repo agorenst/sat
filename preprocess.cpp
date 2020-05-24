@@ -1,6 +1,7 @@
 #include "preprocess.h"
 #include <iostream>
 #include <map>
+#include <cassert>
 
 // PRE = preprocess
 // NUP = Niave unit prop
@@ -30,8 +31,11 @@ literal_t find_pure_literal(const cnf_t& cnf) {
   auto nt = std::begin(negatives);
   while (pt != std::end(positives) &&
          nt != std::end(negatives)) {
-    if (*pt != *nt) {
-      return std::min(*pt, *nt);
+    if (*pt < *nt) {
+      return *pt;
+    }
+    if (*nt < *pt) {
+      return -*nt;
     }
     pt++;
     nt++;
@@ -83,6 +87,7 @@ void naive_self_subsumption(cnf_t& cnf) {
   }
 }
 
+std::vector<clause_id> BCE(cnf_t& cnf);
 void preprocess(cnf_t& cnf) {
   // Niavely unit-prop
   bool did_work = true;
@@ -96,11 +101,34 @@ void preprocess(cnf_t& cnf) {
       did_work = true;
     }
     //while (literal_t p = find_pure_literal(cnf)) {
-    //std::cout << "[PRE][PLE] " << p << std::endl;
-    //commit_literal(cnf, p);
-    //did_work = true;
+    //  std::cout << "[PRE][PLE] " << p << std::endl;
+    //  commit_literal(cnf, p);
+    //  did_work = true;
     //}
 
     //naive_self_subsumption(cnf);
+    if (false) {
+      std::vector<clause_id> bc = BCE(cnf);
+      std::sort(std::begin(bc), std::end(bc), [](clause_id c1, clause_id c2) { return c2 < c1; });
+#if 0
+      std::cout << "To remove clause_ids: (should be from highest index to lowest: " << std::endl;
+      for (clause_id cid : bc) {
+        std::cout << " " << cid;
+      }
+      std::cout << std::endl;
+      std::cout << "Removing: " << bc.size() << " from " << cnf.size() << std::endl;
+      std::cout << cnf << std::endl;
+#endif
+      auto end_iterator = std::prev(cnf.end());
+      for (clause_id i : bc) {
+        //std::cout << "  Removing clause " << cnf[i] << std::endl;
+        std::swap(cnf[i], *end_iterator);
+        end_iterator--;
+        did_work = true;
+      }
+      cnf.erase(std::next(end_iterator), std::end(cnf));
+      //std::cout << "Removed: " << cnf.size() << std::endl;
+      //std::cout << cnf << std::endl;
+    }
   }
 }

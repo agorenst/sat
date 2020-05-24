@@ -1,4 +1,5 @@
 #include "watched_literals.h"
+
 #include "trace.h"
 
 watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t) {}
@@ -37,6 +38,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
   literals_to_watcher[w.l2].push_back(cid);
   watched_literals[cid] = w;
 }
+
 void watched_literals_t::literal_falsed(literal_t l) {
   ////std::cout << "About to falsify " << l << ", with state being: " << std::endl << *this << std::endl;
   // Make a copy because we're about to transform this list.
@@ -49,24 +51,6 @@ void watched_literals_t::literal_falsed(literal_t l) {
   }
   //std::cout << "Just falsified" << l << ", with state being: " << std::endl << *this << std::endl;
   if (!trace.halted()) SAT_ASSERT(validate_state());
-}
-
-
-bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals.find(cid) != watched_literals.end(); }
-
-bool watched_literals_t::watch_contains(const watcher_t& w, literal_t l) {
-  return w.l1 == l || w.l2 == l;
-}
-literal_t watched_literals_t::find_next_watcher(const clause_t& c, const watcher_t& w) {
-  for (literal_t l : c) {
-    if (watch_contains(w, l)) continue;
-    if (trace.actions.literal_true(l)) return l;
-  }
-  for (literal_t l : c) {
-    if (watch_contains(w, l)) continue;
-    if (!trace.actions.literal_false(l)) return l;
-  }
-  return 0;
 }
 
 void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
@@ -115,6 +99,24 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
   }
 }
 
+
+
+bool watched_literals_t::watch_contains(const watcher_t& w, literal_t l) {
+  return w.l1 == l || w.l2 == l;
+}
+literal_t watched_literals_t::find_next_watcher(const clause_t& c, const watcher_t& w) {
+  for (literal_t l : c) {
+    if (watch_contains(w, l)) continue;
+    if (trace.actions.literal_true(l)) return l;
+  }
+  for (literal_t l : c) {
+    if (watch_contains(w, l)) continue;
+    if (!trace.actions.literal_false(l)) return l;
+  }
+  return 0;
+}
+
+
 void watched_literals_t::watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
   SAT_ASSERT(watch_contains(w, o));
   SAT_ASSERT(!watch_contains(w, n));
@@ -160,6 +162,7 @@ void watched_literals_t::print_watch_state() const {
   }
 }
 
+bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals.find(cid) != watched_literals.end(); }
 bool watched_literals_t::validate_state() {
   for (clause_id cid = 0; cid < cnf.size(); cid++) {
 
