@@ -81,7 +81,6 @@ public:
   void apply_unit(literal_t l, clause_id cid);
   literal_t decide_literal();
   std::pair<literal_t, clause_id> prop_unit();
-  void backtrack(const clause_t& c);
   void add_clause(const clause_t& c);
   bool verify_resolution_expected(const clause_t& c);
   size_t count_true_literals(const clause_t& clause) const;

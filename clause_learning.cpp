@@ -2,6 +2,37 @@
 #include "trace.h"
 #include "lcm.h"
 
+// Debugging purposes
+bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
+  if (!c.empty()) {
+    // correctness checks:
+    // reset our iterator
+    int counter = 0;
+    literal_t new_implied = 0;
+    auto it = std::next(actions.rbegin());
+
+    for (; it->action_kind != action_t::action_kind_t::decision; it++) {
+      SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
+      if (contains(c, -it->unit_prop.propped_literal)) {
+        counter++;
+        new_implied = it->get_literal();
+      }
+    }
+    SAT_ASSERT(it->action_kind == action_t::action_kind_t::decision);
+    if (contains(c, -it->decision_literal)) {
+      counter++;
+      new_implied = -it->get_literal();
+    }
+
+    //std::cout << "Learned clause " << c << std::endl;
+    //std::cout << "Counter = " << counter << std::endl;
+    SAT_ASSERT(counter == 1);
+  }
+  return true;
+}
+
+
+
 clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
   SAT_ASSERT(actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
   //std::cout << "About to learn clause from: " << *this << std::endl;

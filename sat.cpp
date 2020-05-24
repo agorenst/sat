@@ -21,6 +21,7 @@
 #include "preprocess.h"
 
 #include "clause_learning.h"
+#include "backtrack.h"
 
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
@@ -165,8 +166,9 @@ int main(int argc, char* argv[]) {
         break;
       }
 
-      //std::cout << "Learned clause: " << c << std::endl;
-      trace.backtrack(c);
+      backtrack(c, trace.actions);
+      trace.clear_unit_queue(); // ???
+
       trace.add_clause(c);
       if (unit_prop_mode == unit_prop_mode_t::watched) SAT_ASSERT(trace.watch.validate_state());
 
