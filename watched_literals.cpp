@@ -1,7 +1,7 @@
 #include "watched_literals.h"
 #include "trace.h"
 
-watched_literals_t::watched_literals_t(trace_t& t): trace(t), cnf(t.cnf) {}
+watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t) {}
 
 bool active = true;
 
@@ -60,17 +60,17 @@ bool watched_literals_t::watch_contains(const watcher_t& w, literal_t l) {
 literal_t watched_literals_t::find_next_watcher(const clause_t& c, const watcher_t& w) {
   for (literal_t l : c) {
     if (watch_contains(w, l)) continue;
-    if (trace.literal_true(l)) return l;
+    if (trace.actions.literal_true(l)) return l;
   }
   for (literal_t l : c) {
     if (watch_contains(w, l)) continue;
-    if (!trace.literal_false(l)) return l;
+    if (!trace.actions.literal_false(l)) return l;
   }
   return 0;
 }
 
 void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
-  SAT_ASSERT(trace.literal_true(l));
+  SAT_ASSERT(trace.actions.literal_true(l));
   const clause_t& c = cnf[cid];
 
 
@@ -189,21 +189,21 @@ bool watched_literals_t::validate_state() {
     // I would think that the watched literals shouldn't be pointed to false,
     // but I'm not sure.
     if (trace.clause_sat(cid)) {
-      if(trace.literal_false(w.l1) && trace.literal_false(w.l2)) {
+      if(trace.actions.literal_false(w.l1) && trace.actions.literal_false(w.l2)) {
         std::cout << "Error, clause is sat, but both watched literals false: #" << cid << "{" << c << "} with watch: " << w << std::endl;
         std::cout << *this << std::endl;
         std::cout << trace << std::endl;
       }
-      SAT_ASSERT(!trace.literal_false(w.l1) || !trace.literal_false(w.l2));
+      SAT_ASSERT(!trace.actions.literal_false(w.l1) || !trace.actions.literal_false(w.l2));
       continue;
     }
 
     // If both watches are false, the clause should be entirely unsat.
-    if (trace.literal_false(w.l1) && trace.literal_false(w.l2)) {
+    if (trace.actions.literal_false(w.l1) && trace.actions.literal_false(w.l2)) {
       SAT_ASSERT(trace.clause_unsat(cid));
     }
     // If exactly one watch is false, then the clause should be unit.
-    else if (trace.literal_false(w.l1) || trace.literal_false(w.l2)) {
+    else if (trace.actions.literal_false(w.l1) || trace.actions.literal_false(w.l2)) {
       if (trace.count_unassigned_literals(cid) != 1) {
         std::cout << "Failing with unit inconsistencies in: " << std::endl << c << "; " << w << std::endl <<
           *this << std::endl << "With trace state: " << std::endl << trace << std::endl;

@@ -2,6 +2,8 @@
 #include "debug.h"
 #include <algorithm>
 
+#include "clause_learning.h"
+
 // Defaults: fast and working...
 backtrack_mode_t backtrack_mode = backtrack_mode_t::nonchron;
 learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
@@ -11,7 +13,6 @@ variable_choice_mode_t variable_choice_mode = variable_choice_mode_t::nextclause
 
 void trace_t::reset() {
   actions.clear();
-  variable_state.clear();
   literal_to_clause.clear();
   units.clear();
 
@@ -25,8 +26,7 @@ void trace_t::reset() {
     }
   }
 
-  variable_state.resize(max_var+1);
-  std::fill(std::begin(variable_state), std::end(variable_state), unassigned);
+  actions.construct(max_var+1);
 
   for (size_t i = 0; i < cnf.size(); i++) {
     watch.watch_clause(i);
@@ -34,7 +34,6 @@ void trace_t::reset() {
 
   SAT_ASSERT(watch.validate_state());
 
-  actions.construct(max_var+1);
 }
 
 trace_t::trace_t(cnf_t& cnf): cnf(cnf), watch(*this) {
@@ -66,28 +65,8 @@ bool trace_t::final_state() {
     action.action_kind == action_t::action_kind_t::halt_sat;
 }
 
-bool trace_t::literal_true(const literal_t l) const {
-  variable_t v = l > 0 ? l : -l;
-  variable_state_t is_true = l > 0 ? unassigned_to_true : unassigned_to_false;
-  return variable_state[v] == is_true;
-}
-bool trace_t::literal_false(const literal_t l) const {
-  variable_t v = l > 0 ? l : -l;
-  variable_state_t is_false = l < 0 ? unassigned_to_true : unassigned_to_false;
-  return variable_state[v] == is_false;
-}
-
-bool trace_t::literal_unassigned(const literal_t l) const {
-  variable_t v = l > 0 ? l : -l;
-  return variable_state[v] == unassigned;
-}
-void trace_t::unassign_literal(const literal_t l)  {
-  variable_t v = l > 0 ? l : -l;
-  variable_state[v] = unassigned;
-}
-
 bool trace_t::clause_sat(const clause_t& clause) const {
-  return std::any_of(std::begin(clause), std::end(clause), [this](auto& c) {return this->literal_true(c);});
+  return std::any_of(std::begin(clause), std::end(clause), [this](auto& c) {return this->actions.literal_true(c);});
 }
 bool trace_t::clause_sat(clause_id cid) const {
   return clause_sat(cnf[cid]);
@@ -95,7 +74,7 @@ bool trace_t::clause_sat(clause_id cid) const {
 
 // this means, stricly, that all literals are false (not just that none are true)
 bool trace_t::clause_unsat(const clause_t& clause) const {
-  return std::all_of(std::begin(clause), std::end(clause), [this](auto& l) { return this->literal_false(l);});
+  return std::all_of(std::begin(clause), std::end(clause), [this](auto& l) { return this->actions.literal_false(l);});
 }
 bool trace_t::clause_unsat(clause_id cid) const {
   return clause_unsat(cnf[cid]);
@@ -110,13 +89,13 @@ bool trace_t::cnf_unsat() const {
 }
 
 size_t trace_t::count_true_literals(const clause_t& clause) const {
-  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->literal_true(c);});
+  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->actions.literal_true(c);});
 }
 size_t trace_t::count_false_literals(const clause_t& clause) const {
-  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->literal_false(c);});
+  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->actions.literal_false(c);});
 }
 size_t trace_t::count_unassigned_literals(const clause_t& clause) const {
-  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->literal_unassigned(c);});
+  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {return this->actions.literal_unassigned(c);});
 }
 size_t trace_t::count_unassigned_literals(clause_id cid) const {
   return count_unassigned_literals(cnf[cid]);
@@ -125,7 +104,7 @@ size_t trace_t::count_unassigned_literals(clause_id cid) const {
 // To help unit-prop, for now.
 literal_t trace_t::find_unassigned_literal(const clause_t& clause) const {
   auto it = std::find_if(std::begin(clause), std::end(clause), [this](auto& c) {
-                                                                 return this->literal_unassigned(c);});
+                                                                 return this->actions.literal_unassigned(c);});
   SAT_ASSERT(it != std::end(clause));
   return *it;
 }
@@ -145,14 +124,6 @@ bool trace_t::unit_clause_exists() const {
 bool trace_t::cnf_sat() const {
   return std::all_of(std::begin(cnf), std::end(cnf), [this](auto& c){return this->clause_sat(c);});
 }
-
-trace_t::variable_state_t trace_t::satisfy_literal(literal_t l) const {
-  if (l > 0) {
-    return unassigned_to_true;
-  }
-  return unassigned_to_false;
-}
-
 
 // Note we *don't* push to the action queue, yet.
 void trace_t::push_unit_queue(literal_t l, clause_id cid) {
@@ -244,14 +215,6 @@ void trace_t::register_false_literal(literal_t l) {
   }
 }
 
-// This is the one entry point where we actually change a literal's value
-// (presumably having just added an appropriate action to the trail). So
-// we look at unit-prop modes here.
-void trace_t::apply_literal(literal_t l) {
-  variable_t v = l > 0 ? l : -l;
-  variable_state[v] = satisfy_literal(l);
-}
-
 // This applies the action to make l true in our trail.
 void trace_t::apply_decision(literal_t l) {
   //std::cout << "Deciding: " << l << std::endl;
@@ -259,8 +222,6 @@ void trace_t::apply_decision(literal_t l) {
   action.action_kind = action_t::action_kind_t::decision;
   action.decision_literal = l;
   actions.append(action);
-
-  apply_literal(l);
 }
 
 // This applies the action to unit prop l in our trail.
@@ -270,9 +231,6 @@ void trace_t::apply_unit(literal_t l, clause_id cid) {
   action.unit_prop.propped_literal = l;
   action.unit_prop.reason = cid;
   actions.append(action);
-  //std::cout << "Unit-propping : " << action << std::endl;
-
-  apply_literal(l);
 }
 
 
@@ -286,10 +244,7 @@ literal_t trace_t::decide_literal() {
 
   literal_t l = 0;
   if (variable_choice_mode == variable_choice_mode_t::nextliteral) {
-    auto it = std::find(std::next(std::begin(variable_state)), std::end(variable_state), variable_state_t::unassigned);
-    if (it != std::end(variable_state)) {
-      l = std::distance(std::begin(variable_state), it);
-    }
+    assert(0);
   }
   else{
     auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
@@ -348,7 +303,6 @@ void trace_t::backtrack(const clause_t& c) {
     // it can't be completely dumb: we have to leave the prefix of our automatic unit-props
 
     auto to_erase = std::find_if(std::begin(actions), std::end(actions), [](action_t& a) { return a.is_decision(); });
-    std::for_each(to_erase, std::end(actions), [this](action_t& a) { unassign_literal(a.get_literal()); });
     actions.drop_from(to_erase);
     clear_unit_queue();
   }
@@ -378,7 +332,6 @@ void trace_t::backtrack(const clause_t& c) {
     //std::cout << "Popcount: " << popcount << std::endl;
 
     // Actually do the erasure:
-    std::for_each(to_erase, std::end(actions), [this](action_t& a) { unassign_literal(a.get_literal()); });
     actions.drop_from(to_erase);
 
     SAT_ASSERT(count_unassigned_literals(c) == 1);
@@ -437,24 +390,6 @@ bool trace_t::verify_resolution_expected(const clause_t& c) {
 }
 
 
-std::ostream& operator<<(std::ostream& o, const trace_t::variable_state_t s) {
-  switch(s) {
-    case trace_t::variable_state_t::unassigned: return o << "unassigned";
-    case trace_t::variable_state_t::unassigned_to_true: return o << "true";
-    case trace_t::variable_state_t::unassigned_to_false: return o << "false";
-  };
-  return o;
-}
-std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::variable_state_t>& s) {
-  o << "{ ";
-  for (size_t i = 0; i < s.size(); i++) {
-    auto v = s[i];
-    if (v != trace_t::variable_state_t::unassigned) {
-      o << i << "=" << v << " ";
-    }
-  }
-  return o << "}";
-}
 
 void trace_t::print_actions(std::ostream& o) const {
   for (const auto& a : actions) {
@@ -464,116 +399,9 @@ void trace_t::print_actions(std::ostream& o) const {
 
 
 std::ostream& operator<<(std::ostream& o, const trace_t& t) {
-  o << t.variable_state << std::endl;
   t.print_actions(o);
   return o;
 }
-
-void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& actions);
-clause_t trace_t::learn_clause() {
-  SAT_ASSERT(actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
-  //std::cout << "About to learn clause from: " << *this << std::endl;
-
-  if (learn_mode == learn_mode_t::simplest) {
-    clause_t new_clause;
-    for (action_t a : actions) {
-      if (a.action_kind == action_t::action_kind_t::decision) {
-        new_clause.push_back(-a.decision_literal);
-      }
-    }
-    //std::cout << "Learned clause: " << new_clause << std::endl;
-    return new_clause;
-  }
-
-  else if (learn_mode == learn_mode_t::explicit_resolution) {
-    /*
-    auto it = actions.rbegin();
-    SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
-    // We make an explicit copy of that conflict clause
-    clause_t c = cnf[it->conflict_clause_id];
-
-    it++;
-
-    // now go backwards until the decision, resolving things against it
-    for (; it != std::rend(actions) && it->action_kind != action_t::action_kind_t::decision; it++) {
-      SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
-      clause_t d = cnf[it->unit_prop.reason];
-      if (literal_t r = resolve_candidate(c, d)) {
-        c = resolve(c, d, r);
-      }
-    }
-    */
-
-    // now try the stamping method
-    std::vector<literal_t> C;
-    {
-      const size_t D = actions.level();
-      auto it = actions.rbegin();
-
-
-      SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
-      const clause_t& c = cnf[it->conflict_clause_id];
-      it++;
-
-      // Everything in our conflict clause is false, and
-      // we want to take that as starting points for resolution.
-      int counter = 0;
-      std::vector<literal_t> stamped;
-      for (literal_t l : c)  {
-        stamped.push_back(-l);
-        if (actions.level(-l) < D) {
-          C.push_back(l);
-        }
-        else {
-          counter++;
-        }
-      }
-
-      //for (; it != std::rend(actions) && it->is_unit_prop(); it++) {
-      for (; it != std::rend(actions) && it->is_unit_prop(); it++) {
-        literal_t L = it->get_literal();
-        // L is *not* negated, so this is a resolution candidate with our
-        // current conflict clause!
-        if (contains(stamped, L)) {
-          const clause_t& d = cnf[it->unit_prop.reason];
-          for (literal_t a : d) {
-            if (a == L) continue;
-            // We care about future resolutions, so we negate a
-            if (!contains(stamped, -a)) {
-              stamped.push_back(-a);
-              if (actions.level(-a) < D) {
-                C.push_back(a);
-              }
-            }
-          }
-        }
-      }
-      if (it->is_decision() && contains(stamped, it->get_literal())) {
-        C.push_back(-it->get_literal());
-      }
-
-      //std::cout << "Counter: " << counter << std::endl;
-      //assert(counter == 1);
-      std::sort(std::begin(C), std::end(C));
-
-      // Now we have a lot of things stamped. Everything that's not
-      // in our current decision level compromises the actual learned clause
-    }
-    //std::cout << "C: " << C << "; c: " << c << std::endl;
-    //assert(C == c);
-
-
-
-    SAT_ASSERT(verify_resolution_expected(C));
-
-    learned_clause_minimization(cnf, C, actions);
-    return C;
-  }
-  assert(0);
-  return {};
-}
-
-
 
 literal_t trace_t::find_last_falsified(clause_id cid) {
   const clause_t& c = cnf[cid];

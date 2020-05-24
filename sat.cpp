@@ -20,6 +20,8 @@
 #include "trace.h"
 #include "preprocess.h"
 
+#include "clause_learning.h"
+
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
 
@@ -155,7 +157,7 @@ int main(int argc, char* argv[]) {
 
     case solver_state_t::conflict: {
 
-      const clause_t c = trace.learn_clause();
+      const clause_t c = learn_clause(cnf, trace.actions);
 
       // early out in the unsat case.
       if (c.size() == 0) {

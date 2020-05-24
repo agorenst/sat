@@ -34,18 +34,11 @@ extern variable_choice_mode_t variable_choice_mode;
 
 struct trace_t {
 private:
-  trail_t actions;
 public:
+  trail_t actions;
   void print_actions(std::ostream&) const;
 
-  enum variable_state_t {
-                       unassigned,
-                       unassigned_to_true,
-                       unassigned_to_false
-  };
-
   cnf_t& cnf;
-  std::vector<variable_state_t> variable_state;
 
   // this is hugely expensive data structure. We'll see.
   std::map<literal_t, std::vector<clause_id>> literal_to_clause;
@@ -63,10 +56,6 @@ public:
   static bool halt_state(const action_t action);
   bool halted() const;
   bool final_state();
-  bool literal_true(const literal_t l) const;
-  bool literal_false(const literal_t l) const;
-  bool literal_unassigned(const literal_t l) const;
-  void unassign_literal(const literal_t l);
   bool clause_sat(const clause_t& clause) const;
   bool clause_sat(clause_id cid) const;
   bool clause_unsat(const clause_t& clause) const;
@@ -79,7 +68,6 @@ public:
   literal_t find_unassigned_literal(clause_id cid) const;
   bool unit_clause_exists() const;
   bool cnf_sat() const;
-  variable_state_t satisfy_literal(literal_t l) const;
   void push_unit_queue(literal_t l, clause_id cid);
   void clear_unit_queue();
   void clean_unit_queue();
@@ -96,13 +84,10 @@ public:
   void backtrack(const clause_t& c);
   void add_clause(const clause_t& c);
   bool verify_resolution_expected(const clause_t& c);
-  clause_t learn_clause();
   size_t count_true_literals(const clause_t& clause) const;
   size_t count_false_literals(const clause_t& clause) const;
   literal_t find_last_falsified(clause_id cid);
 };
 
 
-std::ostream& operator<<(std::ostream& o, const trace_t::variable_state_t s);
-std::ostream& operator<<(std::ostream& o, const std::vector<trace_t::variable_state_t>& s);
 std::ostream& operator<<(std::ostream& o, const trace_t& t);
