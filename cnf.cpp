@@ -106,3 +106,13 @@ cnf_t load_cnf(std::istream& in) {
   }
   return cnf;
 }
+
+variable_t max_variable(const cnf_t& cnf) {
+  literal_t m = 0;
+  for (const clause_t& c : cnf) {
+    for (const literal_t l : c) {
+      m = std::max(std::abs(l), m);
+    }
+  }
+  return m;
+}

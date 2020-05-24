@@ -2,9 +2,18 @@
 
 #include "trace.h"
 
-watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t) {}
+typedef std::vector<clause_id> clause_list_t;
+
+
+std::ostream& operator<<(std::ostream& o, const watcher_t& w);
+
+watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t), literals_to_watcher(t.cnf) {}
 
 bool active = true;
+
+bool watch_contains(const watcher_t& w, literal_t l) {
+  return w.l1 == l || w.l2 == l;
+}
 
 // Add in a new clause to be watched
 void watched_literals_t::watch_clause(clause_id cid) {
@@ -89,7 +98,7 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
   }
   // If we can, then we swap to that.
   else {
-#if SAT_DEBUG_MODE
+#ifdef SAT_DEBUG_MODE
     if (trace.count_unassigned_literals(c) + trace.count_true_literals(c) <= 1) {
       std::cout << "Falsing " << l << " means {" << c << "} " << "watched by " << w << " has " << trace.count_unassigned_literals(c) << " free literals, found candidate n = " << n << std::endl;
       std::cout << trace << std::endl << cnf << std::endl;
@@ -103,9 +112,6 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
 
 
 
-bool watched_literals_t::watch_contains(const watcher_t& w, literal_t l) {
-  return w.l1 == l || w.l2 == l;
-}
 literal_t watched_literals_t::find_next_watcher(const clause_t& c, const watcher_t& w) {
   for (literal_t l : c) {
     if (watch_contains(w, l)) continue;
@@ -119,7 +125,7 @@ literal_t watched_literals_t::find_next_watcher(const clause_t& c, const watcher
 }
 
 
-void watched_literals_t::watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
+void watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
   SAT_ASSERT(watch_contains(w, o));
   SAT_ASSERT(!watch_contains(w, n));
   if (w.l1 == o) {
@@ -131,7 +137,7 @@ void watched_literals_t::watcher_literal_swap(watcher_t& w, literal_t o, literal
   SAT_ASSERT(watch_contains(w, n));
 }
 
-void watched_literals_t::watcher_list_remove_clause(clause_list_t& clause_list, clause_id cid) {
+void watcher_list_remove_clause(clause_list_t& clause_list, clause_id cid) {
   auto it = std::remove(std::begin(clause_list), std::end(clause_list), cid);
   SAT_ASSERT(it != std::end(clause_list));
   SAT_ASSERT(it == std::prev(std::end(clause_list)));
@@ -150,19 +156,23 @@ void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o, 
   watcher_literal_swap(w, o, n);
 }
 
+#ifdef SAT_DEBUG_MODE
 void watched_literals_t::print_watch_state() const {
   for (auto&& [cid, w] : watched_literals) {
     std::cout << cnf[cid] << " watched by " << w << std::endl;
   }
-  for (auto&& [literal, clause_list] : literals_to_watcher) {
-    std::cout << "Literal " << literal << " watching: ";
-    for (const auto& cid : clause_list) {
+  //for (auto&& [literal, clause_list] : literals_to_watcher) {
+  for (literal_t l = literals_to_watcher.first_index(); l < literals_to_watcher.end_index(); l++) {
+    if (l == 0) continue;
+    std::cout << "Literal " << l << " watching: ";
+    for (const auto& cid : literals_to_watcher[l]) {
       const clause_t& c = cnf[cid];
       std::cout << c << "; ";
     }
     std::cout << std::endl;
   }
 }
+#endif
 
 bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals.find(cid) != watched_literals.end(); }
 bool watched_literals_t::validate_state() {
@@ -223,12 +233,16 @@ bool watched_literals_t::validate_state() {
   // The literals_to_watcher maps shouldn't have extra edges
   // For every clause that a literal says it watches, that clause should say it's
   // watched by that literal.
-  for (auto&& [l, cl] : literals_to_watcher) {
+#ifdef SAT_DEBUG_MODE
+  for (literal_t l = literals_to_watcher.first_index(); l < literals_to_watcher.end_index(); l++) {
+    if (l == 0) continue;
+    const auto& cl = literals_to_watcher[l];
     for (auto cid : cl) {
       auto w = watched_literals[cid];
       SAT_ASSERT(watch_contains(w, l));
     }
   }
+#endif
   return true;
 }
 
@@ -236,6 +250,7 @@ std::ostream& operator<<(std::ostream& o, const watcher_t& w) {
   return o << "[" << w.l1 << ", " << w.l2 << "]";
 }
 std::ostream& operator<<(std::ostream& o, const watched_literals_t& w) {
-  w.print_watch_state();
+  assert(0);
+  //w.print_watch_state();
   return o;
 }

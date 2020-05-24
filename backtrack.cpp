@@ -14,7 +14,7 @@ void backtrack(const clause_t& c, trail_t& actions) {
   else if (backtrack_mode == backtrack_mode_t::nonchron) {
     SAT_ASSERT(std::prev(actions.end())->action_kind == action_t::action_kind_t::halt_conflict);
     actions.pop();
-    SAT_ASSERT(clause_unsat(c));
+    SAT_ASSERT(actions.clause_unsat(c));
 
     // Find the most recent decision. If we pop "just" this, we'll have naive backtracking (that somehow still doesn't
     // work, in that there are unsat clauses in areas where there shouldn't be).
@@ -39,7 +39,7 @@ void backtrack(const clause_t& c, trail_t& actions) {
     // Actually do the erasure:
     actions.drop_from(to_erase);
 
-    SAT_ASSERT(count_unassigned_literals(c) == 1);
+    SAT_ASSERT(actions.count_unassigned_literals(c) == 1);
     //literal_t l = find_unassigned_literal(c);
     //SAT_ASSERT(l == new_implied); // derived from when we learned the clause, this passed all our tests.
     //SAT_ASSERT(cnf[cnf.size()-1] == c);

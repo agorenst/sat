@@ -111,7 +111,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
           }
         }
       }
-      if (it->is_decision() && contains(stamped, it->get_literal())) {
+      if (it != std::rend(actions) && it->is_decision() && contains(stamped, it->get_literal())) {
         C.push_back(-it->get_literal());
       }
 
@@ -127,7 +127,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
 
 
 
-    SAT_ASSERT(verify_resolution_expected(C));
+    SAT_ASSERT(verify_resolution_expected(C, actions));
 
     learned_clause_minimization(cnf, C, actions);
     return C;

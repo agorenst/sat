@@ -77,6 +77,13 @@ void trail_t::pop() {
   }
 }
 
+bool trail_t::clause_unsat(const clause_t& c) const {
+  return std::all_of(std::begin(c), std::end(c), [this](literal_t l) { return this->literal_false(l); });
+}
+size_t trail_t::count_unassigned_literals(const clause_t& c) const {
+  return std::count_if(std::begin(c), std::end(c), [this](literal_t l) {return this->literal_unassigned(l);});
+}
+
 std::ostream& operator<<(std::ostream& o, const trail_t::v_state_t s) {
   switch(s) {
     case trail_t::v_state_t::unassigned: return o << "unassigned";

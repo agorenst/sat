@@ -31,8 +31,6 @@
 // and then refine things as they progress.
 
 
-variable_t max_variable = 0;
-
 // The perspective I want to take is not one of deriving an assignment,
 // but a trace exploring the recursive, DFS space of assignments.
 // We don't forget anything -- I even want to record backtracking.

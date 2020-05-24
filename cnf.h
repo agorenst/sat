@@ -38,3 +38,5 @@ std::ostream& operator<<(std::ostream& o, const cnf_t& c);
 void print_cnf(const cnf_t& cnf);
 
 cnf_t load_cnf(std::istream& in);
+
+variable_t max_variable(const cnf_t& cnf);

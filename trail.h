@@ -75,6 +75,10 @@ struct trail_t {
   bool literal_true(const literal_t l) const;
   bool literal_false(const literal_t l) const;
   bool literal_unassigned(const literal_t l) const;
+
+  bool clause_unsat(const clause_t& c) const;
+
+  size_t count_unassigned_literals(const clause_t& c) const;
 };
 
 std::ostream& operator<<(std::ostream& o, const trail_t::v_state_t s);

@@ -237,7 +237,7 @@ void trace_t::apply_unit(literal_t l, clause_id cid) {
 
 // Find a new, unassigned literal, and assign it.
 literal_t trace_t::decide_literal() {
-#if SAT_DEBUG_MODE
+#ifdef SAT_DEBUG_MODE
   SAT_ASSERT(!cnf_unsat());
   if (unit_clause_exists()) {
     std::cout << "Failing with trace: " << std::endl << *this << std::endl << cnf << std::endl;
