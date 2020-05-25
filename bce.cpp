@@ -73,7 +73,7 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
     literal_t l = worklist.back(); worklist.pop_back();
     auto& CL = literal_to_clauses[l];
     const auto& DL = literal_to_clauses[-l];
-    const auto orig_end = std::end(result);
+    const auto orig_size = result.size();
     for (clause_id cid : CL) {
 
       // If we've already eliminated this, skip.
@@ -98,12 +98,13 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
     }
     // To facilitate the loop, we "remove" the clauses
     // from our own data structure:
-    std::for_each(orig_end, std::end(result),
+    std::for_each(std::begin(result)+orig_size, std::end(result),
                   [&CL](clause_id cid) {
                     auto to_del = std::remove(std::begin(CL), std::end(CL), cid);
                     CL.erase(to_del, std::end(CL));
                   });
   }
+  //std::cerr << "[BCE] Total clauses removed: " << result.size();
 
   return result;
 }

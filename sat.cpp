@@ -22,6 +22,7 @@
 
 #include "clause_learning.h"
 #include "backtrack.h"
+#include "bce.h"
 
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
@@ -119,6 +120,11 @@ int main(int argc, char* argv[]) {
     //std::cout << "Trace: " << trace << std::endl;
     switch (state) {
     case solver_state_t::quiescent: {
+
+      auto blocked_clauses = BCE(cnf);
+      if (blocked_clauses.size() > 0) {
+        std::cerr << "[BCE] Blocked clauses found after learning: " << blocked_clauses.size() << std::endl;
+      }
 
       literal_t l = trace.decide_literal();
       if (l != 0) {
