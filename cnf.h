@@ -10,8 +10,30 @@ typedef int32_t variable_t;
 
 
 typedef std::vector<literal_t> clause_t;
-typedef std::vector<clause_t> cnf_t;
 typedef size_t clause_id;
+
+struct cnf_t {
+  // The raw memory containing the actual clauses
+  typedef size_t clause_k;
+  std::vector<clause_t> mem;
+
+  // This extra layer of indirection supports
+  // clause removal in an efficient way (hopefully).
+  std::vector<size_t> key_to_mem;
+
+  // For now, let's pretend we're a vector of clauses.
+  size_t size() const { return mem.size(); }
+  clause_t& operator[](size_t i) { return mem[i]; }
+  const clause_t& operator[](size_t i) const { return mem[i]; }
+  void push_back(const clause_t& c) { mem.push_back(c); }
+
+  auto begin() const { return mem.begin(); }
+  auto end() const { return mem.end(); }
+  auto begin() { return mem.begin(); }
+  auto end() { return mem.end(); }
+  template<typename IT>
+  void erase(IT a, IT e) { mem.erase(a, e); }
+};
 
 
 // These are some helper functions for clauses that
@@ -40,3 +62,4 @@ void print_cnf(const cnf_t& cnf);
 cnf_t load_cnf(std::istream& in);
 
 variable_t max_variable(const cnf_t& cnf);
+
