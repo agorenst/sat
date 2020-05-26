@@ -7,7 +7,7 @@ typedef std::vector<clause_id> clause_list_t;
 
 std::ostream& operator<<(std::ostream& o, const watcher_t& w);
 
-watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t), literals_to_watcher(t.cnf) {}
+watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t), literals_to_watcher(t.cnf), watched_literals(cnf.size()) {}
 
 bool active = true;
 
@@ -68,7 +68,7 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
 
 
   watcher_t& w = watched_literals[cid];
-  watcher_t oldw = w;
+  //watcher_t oldw = w;
   SAT_ASSERT(contains(c, -l));
   SAT_ASSERT(watch_contains(w, -l));
 
@@ -179,7 +179,7 @@ void watched_literals_t::print_watch_state() const {
 }
 #endif
 
-bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals.find(cid) != watched_literals.end(); }
+bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals[cid].l1 == 0; }
 bool watched_literals_t::validate_state() {
   for (clause_id cid = 0; cid < cnf.size(); cid++) {
 
