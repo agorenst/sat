@@ -66,7 +66,7 @@ bool immediately_unsat(const cnf_t& cnf) {
   return contains(cnf, clause_t());
 }
 bool immediately_sat(const cnf_t& cnf) {
-  return cnf.size() == 0;
+  return cnf.clause_count() == 0;
 }
 
 

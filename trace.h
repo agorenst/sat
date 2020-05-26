@@ -8,6 +8,7 @@
 #include "watched_literals.h"
 #include "action.h"
 #include "trail.h"
+#include "vsids.h"
 
 enum class backtrack_mode_t {
                              simplest,
@@ -36,6 +37,7 @@ struct trace_t {
 private:
 public:
   trail_t actions;
+  vsids_t vsids;
   void print_actions(std::ostream&) const;
 
   cnf_t& cnf;
@@ -81,7 +83,7 @@ public:
   void apply_unit(literal_t l, clause_id cid);
   literal_t decide_literal();
   std::pair<literal_t, clause_id> prop_unit();
-  void add_clause(const clause_t& c);
+  cnf_t::clause_k add_clause(const clause_t& c);
   bool verify_resolution_expected(const clause_t& c);
   size_t count_true_literals(const clause_t& clause) const;
   size_t count_false_literals(const clause_t& clause) const;

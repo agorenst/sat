@@ -4,6 +4,7 @@
 
 #include "clause_learning.h"
 #include "backtrack.h"
+#include "vsids.h"
 
 // Defaults: fast and working...
 backtrack_mode_t backtrack_mode = backtrack_mode_t::nonchron;
@@ -37,7 +38,12 @@ void trace_t::reset() {
 
 }
 
-trace_t::trace_t(cnf_t& cnf): cnf(cnf), watch(*this) {
+trace_t::trace_t(cnf_t& cnf): cnf(cnf), watch(*this),
+                              // Actions is invalid at this point, but we don't read it
+                              // until after it's constructed. We're really just taking a pointer
+                              // to it.
+                              vsids(cnf, actions)
+{
   reset();
 }
 
@@ -249,13 +255,15 @@ literal_t trace_t::decide_literal() {
   if (variable_choice_mode == variable_choice_mode_t::nextliteral) {
     assert(0);
   }
-  else{
+  else if (false) {
     auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
                                                              return !clause_sat(clause) && this->count_unassigned_literals(clause) > 0;
                                                            });
     if (it != std::end(cnf)) {
       l = find_unassigned_literal(*it);
     }
+  } else {
+    l = vsids.choose();
   }
   //SAT_ASSERT(it != std::end(cnf));
   if (l == 0) {
@@ -297,9 +305,9 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
   return std::make_pair(0,0);
 }
 
-void trace_t::add_clause(const clause_t& c) {
+cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
   size_t id = cnf.size();
-  cnf.push_back(c);
+  auto ret_val = cnf.push_back(c);
 
   for (literal_t l : c) {
     literal_to_clause[l].push_back(id);
@@ -307,6 +315,7 @@ void trace_t::add_clause(const clause_t& c) {
   if (c.size() > 1) watch.watch_clause(id);
   
   if (unit_prop_mode == unit_prop_mode_t::watched) SAT_ASSERT(watch.validate_state());
+  return ret_val;
 }
 
 

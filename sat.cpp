@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 
   // Instantiate our CNF object
   cnf_t cnf = load_cnf(std::cin);
-  SAT_ASSERT(cnf.size() > 0); // make sure parsing worked.
+  SAT_ASSERT(cnf.clause_count() > 0); // make sure parsing worked.
 
   preprocess(cnf);
 
@@ -172,8 +172,9 @@ int main(int argc, char* argv[]) {
 
       backtrack(c, trace.actions);
       trace.clear_unit_queue(); // ???
+      trace.vsids.clause_learned(c);
 
-      trace.add_clause(c);
+      cnf_t::clause_k key = trace.add_clause(c);
       if (unit_prop_mode == unit_prop_mode_t::watched) SAT_ASSERT(trace.watch.validate_state());
 
       if (unit_prop_mode == unit_prop_mode_t::queue ||
@@ -183,7 +184,7 @@ int main(int argc, char* argv[]) {
         }
         if (trace.count_unassigned_literals(c) == 1) {
           literal_t l = trace.find_unassigned_literal(c);
-          trace.push_unit_queue(l, cnf.size()-1);
+          trace.push_unit_queue(l, key);
         }
       }
 

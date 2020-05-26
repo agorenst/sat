@@ -42,7 +42,12 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
 
 
   literal_incidence_map_t literal_to_clauses(cnf);
-  literal_to_clauses.populate(cnf);
+  for (clause_id cid = 0; cid < cnf.size(); cid++) {
+    const clause_t& c = cnf[cid];
+    for (literal_t l : c) {
+      literal_to_clauses[l].push_back(cid);
+    }
+  }
 
   variable_t max_var = max_variable(cnf);
 

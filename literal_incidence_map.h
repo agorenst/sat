@@ -1,16 +1,17 @@
+#pragma once
 #include "cnf.h"
 
-struct literal_incidence_map_t {
-  // The backing memory
-  std::vector<std::vector<clause_id>> mem;
-  variable_t max_var = 0;
+template<typename T>
+struct literal_map_t {
+  typedef std::vector<T> mem_t;
+  mem_t mem;
+  variable_t max_var;
 
-  // This does the index mapping for you!
-  std::vector<clause_id>& operator[](literal_t l);
-  const std::vector<clause_id>& operator[](literal_t l) const;
-  // Create the mapping.
-  literal_incidence_map_t(const cnf_t& cnf);
-  void populate(const cnf_t& cnf);
+  // Initialize the size based on the max var.
+  literal_map_t(const cnf_t& cnf);
+
+  T& operator[](literal_t l);
+  const T& operator[](literal_t l) const;
 
   auto begin() { return mem.begin(); }
   auto end() { return mem.end(); }
@@ -20,4 +21,7 @@ struct literal_incidence_map_t {
   literal_t first_index() const { return -max_var; }
   literal_t end_index() const { return max_var+1; }
 
+  literal_t iter_to_literal(typename mem_t::const_iterator it) const;
 };
+
+typedef literal_map_t<std::vector<clause_id>> literal_incidence_map_t;

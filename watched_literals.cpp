@@ -72,6 +72,11 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
   SAT_ASSERT(contains(c, -l));
   SAT_ASSERT(watch_contains(w, -l));
 
+  // This seems correct, but weirdly doesn't seem to actually improve any runtime.
+  //if (trace.actions.literal_true(w.l1) || trace.actions.literal_true(w.l2)) {
+  //return;
+  //}
+
   // see if we can find a new watching value.
   literal_t n = find_next_watcher(c, w);
 

@@ -21,11 +21,11 @@ struct cnf_t {
   // clause removal in an efficient way (hopefully).
   std::vector<size_t> key_to_mem;
 
-  // For now, let's pretend we're a vector of clauses.
   size_t size() const { return mem.size(); }
+  size_t clause_count() const { return mem.size(); }
   clause_t& operator[](size_t i) { return mem[i]; }
   const clause_t& operator[](size_t i) const { return mem[i]; }
-  void push_back(const clause_t& c) { mem.push_back(c); }
+  clause_k push_back(const clause_t& c) { mem.push_back(c); return mem.size()-1;}
 
   auto begin() const { return mem.begin(); }
   auto end() const { return mem.end(); }
@@ -33,6 +33,9 @@ struct cnf_t {
   auto end() { return mem.end(); }
   template<typename IT>
   void erase(IT a, IT e) { mem.erase(a, e); }
+
+  // We have an iterator that needs to be smart, to skip over
+  // the now-removed memory locations.
 };
 
 
