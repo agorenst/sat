@@ -1,6 +1,6 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++1z -g -O2
+CXXFLAGS=-Wall -std=c++1z -g -O2 -flto
 
 uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cnf)))
 
@@ -16,7 +16,7 @@ uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
 
-sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o
+sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o
 
 tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
 #tests: $(uf20-91-tests)
@@ -32,30 +32,30 @@ unit: sat
 
 %.unsatresult : %.cnf sat
 	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b s | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b s | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b s | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b s | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - UNSAT
 %.satresult : %.cnf sat
 	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b s | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b s | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b s | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b n | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b s | tail -n 1 | diff - SAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - SAT
 
 
 # a sequence of basic tests, really trivial CNFs

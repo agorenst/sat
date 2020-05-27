@@ -163,9 +163,9 @@ void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o, 
 
 #ifdef SAT_DEBUG_MODE
 void watched_literals_t::print_watch_state() const {
-  for (auto&& [cid, w] : watched_literals) {
-    std::cout << cnf[cid] << " watched by " << w << std::endl;
-  }
+  //for (auto&& [cid, w] : watched_literals) {
+  //std::cout << cnf[cid] << " watched by " << w << std::endl;
+  //}
   //for (auto&& [literal, clause_list] : literals_to_watcher) {
   for (literal_t l = literals_to_watcher.first_index(); l < literals_to_watcher.end_index(); l++) {
     if (l == 0) continue;
@@ -179,7 +179,7 @@ void watched_literals_t::print_watch_state() const {
 }
 #endif
 
-bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals[cid].l1 == 0; }
+bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals[cid].l1 != 0; }
 bool watched_literals_t::validate_state() {
   for (clause_id cid = 0; cid < cnf.size(); cid++) {
 

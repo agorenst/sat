@@ -34,8 +34,6 @@ struct cnf_t {
   template<typename IT>
   void erase(IT a, IT e) { mem.erase(a, e); }
 
-  // We have an iterator that needs to be smart, to skip over
-  // the now-removed memory locations.
 };
 
 

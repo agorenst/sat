@@ -138,18 +138,18 @@ void trace_t::push_unit_queue(literal_t l, clause_id cid) {
   a.action_kind = action_t::action_kind_t::unit_prop;
   a.unit_prop.propped_literal = l;
   a.unit_prop.reason = cid;
-  units.push_back(a);
+  units.push(a);
 }
 void trace_t::clear_unit_queue() {
   units.clear();
 }
-void trace_t::clean_unit_queue() {
-  auto new_end = std::remove_if(std::begin(units), std::end(units), [this](const action_t& a) {
-                                                                      SAT_ASSERT(count_unassigned_literals(a.unit_prop.reason) > 0);
-                                                                      return count_unassigned_literals(a.unit_prop.reason) != 1;
-                                                                    });
-  units.erase(new_end, std::end(units));
-}
+//void trace_t::clean_unit_queue() {
+//  auto new_end = std::remove_if(std::begin(units), std::end(units), [this](const action_t& a) {
+//                                                                      SAT_ASSERT(count_unassigned_literals(a.unit_prop.reason) > 0);
+//                                                                      return count_unassigned_literals(a.unit_prop.reason) != 1;
+//                                                                    });
+//  units.erase(new_end, std::end(units));
+//}
 
 void trace_t::push_conflict(clause_id cid) {
   action_t action;
@@ -283,7 +283,7 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
     }
 
     // Transfer the action from the queue into our trail.
-    action_t a = units.front(); units.pop_front();
+    action_t a = units.pop();
     SAT_ASSERT(a.action_kind == action_t::action_kind_t::unit_prop);
     return std::make_pair(a.get_literal(), a.get_clause());
   }

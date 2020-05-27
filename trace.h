@@ -10,6 +10,8 @@
 #include "trail.h"
 #include "vsids.h"
 
+#include "unit_queue.h"
+
 enum class backtrack_mode_t {
                              simplest,
                              nonchron,
@@ -46,7 +48,8 @@ public:
   std::map<literal_t, std::vector<clause_id>> literal_to_clause;
 
   // store the unit-props we're still getting through.
-  std::list<action_t> units;
+  //std::list<action_t> units;
+  unit_queue_t units;
 
   watched_literals_t watch;
 

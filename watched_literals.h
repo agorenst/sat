@@ -21,14 +21,9 @@ struct watcher_t {
 struct watched_literals_t {
   cnf_t& cnf;
   trace_t& trace;
-  //std::map<clause_id, watcher_t> watched_literals;
   literal_incidence_map_t literals_to_watcher;
   clause_map_t<watcher_t> watched_literals;
   typedef std::vector<clause_id> clause_list_t;
-  //std::map<literal_t, clause_list_t> literals_to_watcher;
-
-  std::vector<literal_t> units;
-
 
   watched_literals_t(trace_t& t);
   void watch_clause(clause_id cid);
