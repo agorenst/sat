@@ -32,6 +32,12 @@
 // and then refine things as they progress.
 
 
+namespace counters {
+  size_t conflicts = 0;
+  size_t decisions = 0;
+  size_t propagations = 0;
+}
+
 // The perspective I want to take is not one of deriving an assignment,
 // but a trace exploring the recursive, DFS space of assignments.
 // We don't forget anything -- I even want to record backtracking.
@@ -86,7 +92,7 @@ int main(int argc, char* argv[]) {
 
   // Instantiate our CNF object
   cnf_t cnf = load_cnf(std::cin);
-  SAT_ASSERT(cnf.clause_count() > 0); // make sure parsing worked.
+  SAT_ASSERT(cnf.live_clause_count() > 0); // make sure parsing worked.
 
   preprocess(cnf);
 
@@ -125,6 +131,7 @@ int main(int argc, char* argv[]) {
       //if (blocked_clauses.size() > 0) {
       //  std::cerr << "[BCE] Blocked clauses found after learning: " << blocked_clauses.size() << std::endl;
       //}
+      counters::decisions++;
 
       literal_t l = trace.decide_literal();
       if (l != 0) {
@@ -144,6 +151,7 @@ int main(int argc, char* argv[]) {
 
       for (;;) {
         auto [l, cid] = trace.prop_unit();
+        counters::propagations++;
         //std::cout << "Found unit prop: " << l << " " << cid << std::endl;
         if (l == 0) break;
         trace.apply_unit(l, cid);
@@ -161,6 +169,8 @@ int main(int argc, char* argv[]) {
       break;
 
     case solver_state_t::conflict: {
+
+      counters::conflicts++;
 
       const clause_t c = learn_clause(cnf, trace.actions);
 

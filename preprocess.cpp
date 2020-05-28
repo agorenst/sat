@@ -10,7 +10,8 @@
 literal_t find_pure_literal(const cnf_t& cnf) {
   std::vector<literal_t> positives;
   std::vector<literal_t> negatives;
-  for (const clause_t& c : cnf) {
+  for (const clause_id cid : cnf) {
+    const clause_t& c = cnf[cid];
     for (const literal_t l : c) {
       if (l < 0) {
         if (!contains(negatives, -l)) {
@@ -67,7 +68,7 @@ bool clauses_self_subsume(variable_t v, const clause_t& pclause, const clause_t&
 void naive_self_subsumption(cnf_t& cnf) {
   std::map<literal_t, std::vector<clause_id>> literal_to_clauses;
   variable_t max_var = 0;
-  for (clause_id i = 0; i < cnf.size(); i++) {
+  for (clause_id i : cnf) {
     for (literal_t l : cnf[i]) {
       literal_to_clauses[l].push_back(i);
       max_var = std::max(std::abs(l), max_var);
@@ -92,7 +93,11 @@ void preprocess(cnf_t& cnf) {
   // Niavely unit-prop
   bool did_work = true;
   // this will be useful for self-subsumption.
-  std::for_each(std::begin(cnf), std::end(cnf), [](auto& c) { std::sort(std::begin(c), std::end(c)); });
+  std::for_each(std::begin(cnf), std::end(cnf),
+                [&](clause_id cid) {
+                  clause_t& c = cnf[cid];
+                  std::sort(std::begin(c), std::end(c));
+                });
   while (did_work) {
     did_work = false;
     while (literal_t u = find_unit(cnf)) {
@@ -119,15 +124,10 @@ void preprocess(cnf_t& cnf) {
       std::cout << "Removing: " << bc.size() << " from " << cnf.size() << std::endl;
       std::cout << cnf << std::endl;
 #endif
-      auto end_iterator = std::prev(cnf.end());
-      for (clause_id i : bc) {
-        //std::cout << "  Removing clause " << cnf[i] << std::endl;
-        std::swap(cnf[i], *end_iterator);
-        end_iterator--;
-        did_work = true;
-      }
-      cnf.erase(std::next(end_iterator), std::end(cnf));
-      //std::cout << "Removed: " << cnf.size() << std::endl;
+      auto to_erase = std::remove_if(std::begin(cnf), std::end(cnf), [&bc](clause_id cid) { return contains(bc, cid); });
+      //std::cout << "About to remove: " << cnf.live_clause_count() << std::endl;
+      cnf.erase(to_erase, std::end(cnf));
+      //std::cout << "Removed: " << cnf.live_clause_count() << std::endl;
       //std::cout << cnf << std::endl;
     }
   }

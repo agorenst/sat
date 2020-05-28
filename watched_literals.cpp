@@ -7,7 +7,7 @@ typedef std::vector<clause_id> clause_list_t;
 
 std::ostream& operator<<(std::ostream& o, const watcher_t& w);
 
-watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t), literals_to_watcher(t.cnf), watched_literals(cnf.size()) {}
+watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t), literals_to_watcher(t.cnf), watched_literals(cnf.live_clause_count()) {}
 
 bool active = true;
 
@@ -181,7 +181,7 @@ void watched_literals_t::print_watch_state() const {
 
 bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals[cid].l1 != 0; }
 bool watched_literals_t::validate_state() {
-  for (clause_id cid = 0; cid < cnf.size(); cid++) {
+  for (clause_id cid : cnf) {
 
     // We are, or aren't, watching this clause, as appropriate.
     const clause_t& c = cnf[cid];
@@ -196,6 +196,9 @@ bool watched_literals_t::validate_state() {
 
     // The two literals watching us are in the clause.
     const watcher_t w = watched_literals[cid];
+    if (!contains(c, w.l1)) {
+      std::cout << "Failing with #" << cid << "= {" << c << "} and w: " << w << ", specifically: " << w.l1 << std::endl;
+    }
     SAT_ASSERT(contains(c, w.l1));
     if (!contains(c, w.l2)) {
       std::cout << "Failing with " << c << " and w: " << w << ", specifically: " << w.l2 << std::endl;

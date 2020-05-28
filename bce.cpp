@@ -29,7 +29,8 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
 
   // Prepare the CNF itself by sorting the contents of its clauses.
   // This does not invalidate our indexing, though it is risky...
-  for (clause_t& c : cnf) {
+  for (clause_id cid : cnf) {
+    clause_t& c = cnf[cid];
     std::sort(std::begin(c), std::end(c),
               [](literal_t l1, literal_t l2) {
                 return std::abs(l1) < std::abs(l2);
@@ -42,7 +43,7 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
 
 
   literal_incidence_map_t literal_to_clauses(cnf);
-  for (clause_id cid = 0; cid < cnf.size(); cid++) {
+  for (clause_id cid : cnf) {
     const clause_t& c = cnf[cid];
     for (literal_t l : c) {
       literal_to_clauses[l].push_back(cid);

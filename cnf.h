@@ -14,6 +14,7 @@ typedef size_t clause_id;
 
 struct cnf_t {
   // The raw memory containing the actual clauses
+  // We ONLY append to this.
   typedef size_t clause_k;
   std::vector<clause_t> mem;
 
@@ -21,18 +22,28 @@ struct cnf_t {
   // clause removal in an efficient way (hopefully).
   std::vector<size_t> key_to_mem;
 
-  size_t size() const { return mem.size(); }
-  size_t clause_count() const { return mem.size(); }
-  clause_t& operator[](size_t i) { return mem[i]; }
-  const clause_t& operator[](size_t i) const { return mem[i]; }
-  clause_k push_back(const clause_t& c) { mem.push_back(c); return mem.size()-1;}
+  size_t live_clause_count() const {
+    return key_to_mem.size();
+  }
+  clause_t& operator[](size_t i) {
+    return mem[i];
+  }
+  const clause_t& operator[](size_t i) const {
+    return mem[i];
+  }
+  clause_k push_back(const clause_t& c) {
+    clause_id key = mem.size();
+    mem.push_back(c);
+    key_to_mem.push_back(key);
+    return key;
+  }
 
-  auto begin() const { return mem.begin(); }
-  auto end() const { return mem.end(); }
-  auto begin() { return mem.begin(); }
-  auto end() { return mem.end(); }
+  auto begin() const { return key_to_mem.begin(); }
+  auto end() const { return key_to_mem.end(); }
+  auto begin() { return key_to_mem.begin(); }
+  auto end() { return key_to_mem.end(); }
   template<typename IT>
-  void erase(IT a, IT e) { mem.erase(a, e); }
+  void erase(IT a, IT e) { key_to_mem.erase(a, e); }
 
 };
 

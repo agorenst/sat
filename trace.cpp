@@ -19,7 +19,7 @@ void trace_t::reset() {
   units.clear();
 
   variable_t max_var = 0;
-  for (size_t i = 0; i < cnf.size(); i++) {
+  for (clause_id i : cnf) {
     const auto& clause = cnf[i];
     SAT_ASSERT(clause.size() > 1); // for watched literals, TODO, make this more robust.
     for (auto& literal : clause) {
@@ -30,7 +30,7 @@ void trace_t::reset() {
 
   actions.construct(max_var+1);
 
-  for (size_t i = 0; i < cnf.size(); i++) {
+  for (clause_id i : cnf) {
     watch.watch_clause(i);
   }
 
@@ -121,10 +121,13 @@ literal_t trace_t::find_unassigned_literal(clause_id cid) const {
 
 // Purely for debugging.
 bool trace_t::unit_clause_exists() const {
-  auto tt = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
-                                                           return !clause_sat(clause) && this->count_unassigned_literals(clause) == 1;
-                                                         });
-  return tt != std::end(cnf);
+  for (clause_id cid : cnf) {
+    const clause_t& c = cnf[cid];
+    if (!clause_sat(c) && count_unassigned_literals(c) == 1) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // Really, "no conflict found". That's why we don't have the counterpart.
@@ -175,7 +178,11 @@ void trace_t::push_unsat() {
 // This may also change our state by finding a conflict
 void trace_t::register_false_literal(literal_t l) {
   // We should never falsify a literal for which we have a unit clause asserting that it should be true.
-  SAT_ASSERT(std::find_if(std::begin(cnf), std::end(cnf), [l](const clause_t& c) { return c.size() == 1 && contains(c, -l); }) == std::end(cnf));
+  SAT_ASSERT(std::find_if(std::begin(cnf), std::end(cnf),
+                          [&](const clause_id cid) {
+                            const clause_t& c = cnf[cid];
+                            return c.size() == 1 && contains(c, -l); })
+             == std::end(cnf));
   // Here we look for conflicts and new units!
   if (unit_prop_mode == unit_prop_mode_t::watched) {
     watch.literal_falsed(l);
@@ -206,7 +213,7 @@ void trace_t::register_false_literal(literal_t l) {
   // All we look for is conflicts, here.
   else if (unit_prop_mode == unit_prop_mode_t::simplest) {
     // we don't put in the queue, but we still look for conflicts.
-    for (size_t cid = 0; cid < cnf.size(); cid++) {
+    for (clause_id cid : cnf) {
       const clause_t& c = cnf[cid];
       if (contains(c, -l)) {
         if (clause_unsat(c)) {
@@ -256,11 +263,12 @@ literal_t trace_t::decide_literal() {
     assert(0);
   }
   else if (false) {
-    auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_t& clause) {
+    auto it = std::find_if(std::begin(cnf), std::end(cnf), [this](const clause_id cid) {
+                                                             const clause_t& clause = cnf[cid];
                                                              return !clause_sat(clause) && this->count_unassigned_literals(clause) > 0;
                                                            });
     if (it != std::end(cnf)) {
-      l = find_unassigned_literal(*it);
+      l = find_unassigned_literal(cnf[*it]);
     }
   } else {
     l = vsids.choose();
@@ -289,7 +297,7 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
   }
   // Otherwise, just look manually for a unit
   else if (unit_prop_mode == unit_prop_mode_t::simplest) {
-    for (clause_id i = 0; i < cnf.size(); i++) {
+    for (clause_id i : cnf) {
       auto& c = cnf[i];
       SAT_ASSERT(!clause_unsat(c));
       if (clause_sat(c)) {
@@ -306,8 +314,7 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
 }
 
 cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
-  size_t id = cnf.size();
-  auto ret_val = cnf.push_back(c);
+  clause_id id = cnf.push_back(c);
 
   for (literal_t l : c) {
     literal_to_clause[l].push_back(id);
@@ -315,7 +322,7 @@ cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
   if (c.size() > 1) watch.watch_clause(id);
   
   if (unit_prop_mode == unit_prop_mode_t::watched) SAT_ASSERT(watch.validate_state());
-  return ret_val;
+  return id;
 }
 
 

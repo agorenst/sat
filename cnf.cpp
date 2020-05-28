@@ -46,33 +46,38 @@ literal_t resolve_candidate(clause_t c1, clause_t c2) {
 
 void commit_literal(cnf_t& cnf, literal_t l) {
   auto new_end = 
-    std::remove_if(std::begin(cnf), std::end(cnf), [l](const clause_t& c) { return contains(c, l); });
+    std::remove_if(std::begin(cnf), std::end(cnf), [&](const clause_id cid) { return contains(cnf[cid], l); });
   cnf.erase(new_end, std::end(cnf));
-  for (auto& c : cnf) {
+  for (auto cid : cnf) {
+    clause_t& c = cnf[cid];
     auto new_end = std::remove(std::begin(c), std::end(c), -l);
     c.erase(new_end, std::end(c));
   }
 }
 
 literal_t find_unit(const cnf_t& cnf) {
-  auto it = std::find_if(std::begin(cnf), std::end(cnf), [](const clause_t& c) { return c.size() == 1; });
+  auto it = std::find_if(std::begin(cnf), std::end(cnf),
+                         [&](const clause_id cid) { return cnf[cid].size() == 1; });
   if (it != std::end(cnf)) {
-    return (*it)[0];
+    return cnf[*it][0];
   }
   return 0;
 }
 
 bool immediately_unsat(const cnf_t& cnf) {
-  return contains(cnf, clause_t());
+  for (clause_id cid : cnf) {
+    if (cnf[cid].size() == 0) { return true; }
+  }
+  return false;
 }
 bool immediately_sat(const cnf_t& cnf) {
-  return cnf.clause_count() == 0;
+  return cnf.live_clause_count() == 0;
 }
 
 
 std::ostream& operator<<(std::ostream& o, const cnf_t& cnf) {
-  for (auto&& c : cnf) {
-    for (auto&& l : c) {
+  for (auto&& cid : cnf) {
+    for (auto&& l : cnf[cid]) {
       o << l << " ";
     }
     o << "0" << std::endl;
@@ -109,8 +114,8 @@ cnf_t load_cnf(std::istream& in) {
 
 variable_t max_variable(const cnf_t& cnf) {
   literal_t m = 0;
-  for (const clause_t& c : cnf) {
-    for (const literal_t l : c) {
+  for (const clause_id cid : cnf) {
+    for (const literal_t l : cnf[cid]) {
       m = std::max(std::abs(l), m);
     }
   }

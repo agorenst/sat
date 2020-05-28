@@ -2,9 +2,9 @@
 #include "debug.h"
 
 void unit_queue_t::push(action_t a) {
-  #if 0
+#ifdef OLD_UNITS
   queue.push_back(a);
-  #else
+#else
   if (e == queue.size()) {
     queue.push_back(a);
     e++;
@@ -14,26 +14,26 @@ void unit_queue_t::push(action_t a) {
     queue[e] = a;
     e++;
   }
-  #endif
+#endif
 }
 
 action_t unit_queue_t::pop() {
-  #if 0
+#ifdef OLD_UNITS
   action_t a = queue.back();
   queue.pop_back();
   return a;
-  #else
+#else
   SAT_ASSERT(b < e);
   action_t a = queue[b];
   b++;
   return a;
-  #endif
+#endif
 }
 
 bool unit_queue_t::empty() {
-  #if 0
+#ifdef OLD_UNITS
   return queue.empty();
-  #else
+#else
   if (b == e) {
     clear();
     return true;
@@ -43,10 +43,10 @@ bool unit_queue_t::empty() {
 }
 
 void unit_queue_t::clear() {
-  #if 0
+#ifdef OLD_UNITS
   queue.clear();
-  #else
+#else
   b = 0;
   e = 0;
-  #endif
+#endif
 }
