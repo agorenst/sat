@@ -103,3 +103,10 @@ std::ostream& operator<<(std::ostream& o, const std::vector<trail_t::v_state_t>&
   }
   return o << "}";
 }
+
+std::ostream& operator<<(std::ostream& o, const trail_t& t) {
+  for (auto a : t) {
+    o << '\t' <<  a << std::endl;
+  }
+  return o;
+}

@@ -161,6 +161,14 @@ void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o, 
   watcher_literal_swap(w, o, n);
 }
 
+void watched_literals_t::remove_clause(clause_id id) {
+  watcher_t& w = watched_literals[id];
+  watcher_list_remove_clause(literals_to_watcher[w.l1], id);
+  watcher_list_remove_clause(literals_to_watcher[w.l2], id);
+  w.l1 = 0;
+  w.l2 = 0;
+}
+
 #ifdef SAT_DEBUG_MODE
 void watched_literals_t::print_watch_state() const {
   //for (auto&& [cid, w] : watched_literals) {

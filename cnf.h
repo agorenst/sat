@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 
+#include "debug.h"
+
 typedef int32_t literal_t;
 // Really, we can be clever and use unsigned, but come on.
 typedef int32_t variable_t;
@@ -11,6 +13,12 @@ typedef int32_t variable_t;
 
 typedef std::vector<literal_t> clause_t;
 typedef size_t clause_id;
+
+template<typename C, typename V>
+bool contains(const C& c, const V& v) {
+  return std::find(std::begin(c), std::end(c), v) != std::end(c);
+}
+
 
 struct cnf_t {
   // The raw memory containing the actual clauses
@@ -45,6 +53,14 @@ struct cnf_t {
   template<typename IT>
   void erase(IT a, IT e) { key_to_mem.erase(a, e); }
 
+  template<typename C>
+  void remove_clauses(const C& container) {
+    SAT_ASSERT(std::all_of(std::begin(container), std::end(container), [&](clause_id cid) { contains(key_to_mem, cid); }));
+    auto et = std::remove_if(std::begin(key_to_mem), std::end(key_to_mem),
+                [&](clause_id cid) { return contains(container, cid); });
+    key_to_mem.erase(et, std::end(key_to_mem));
+  }
+
 };
 
 
@@ -60,11 +76,6 @@ literal_t find_unit(const cnf_t& cnf);
 bool immediately_unsat(const cnf_t& cnf);
 bool immediately_sat(const cnf_t& cnf);
 
-
-template<typename C, typename V>
-bool contains(const C& c, const V& v) {
-  return std::find(std::begin(c), std::end(c), v) != std::end(c);
-}
 
 
 std::ostream& operator<<(std::ostream& o, const clause_t& c);

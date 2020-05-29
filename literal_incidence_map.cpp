@@ -45,3 +45,6 @@ template struct literal_map_t<std::vector<clause_id>>;
 
 // for VSIDS
 template struct literal_map_t<float>;
+
+// For lcm helper?
+template struct literal_map_t<int>;

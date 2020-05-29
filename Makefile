@@ -78,7 +78,9 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/uf20-91/uf20-0941.cnf
+	./sat -u w -l r -b n < tests/uuf150-645/uuf150-01.cnf
+	cat tests/uuf150-645/uuf150-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre -verb=2 -rinc=1000000 -ccmin-mode=0
+#	gdb -q -batch -ex run -ex backtrace ./sat < tests/uf20-91/uf20-0941.cnf
 
 #gdb -q -batch -ex run -ex backtrace ./sat < watched_bug_5.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uf20-91/uf20-093.cnf

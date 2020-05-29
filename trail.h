@@ -83,3 +83,4 @@ struct trail_t {
 
 std::ostream& operator<<(std::ostream& o, const trail_t::v_state_t s);
 std::ostream& operator<<(std::ostream& o, const std::vector<trail_t::v_state_t>& s);
+std::ostream& operator<<(std::ostream& o, const trail_t& t);

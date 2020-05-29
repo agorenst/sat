@@ -13,6 +13,7 @@
 
 #include <getopt.h>
 
+
 #include "cnf.h"
 
 #include "debug.h"
@@ -23,6 +24,9 @@
 #include "clause_learning.h"
 #include "backtrack.h"
 #include "bce.h"
+#include "lcm.h"
+
+#include "lbm.h"
 
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
@@ -33,9 +37,49 @@
 
 
 namespace counters {
+  size_t restarts = 0;
   size_t conflicts = 0;
   size_t decisions = 0;
   size_t propagations = 0;
+  // learned clause size histogram
+  std::map<int, int> lcsh;
+  void print() {
+    std::cout << "Restarts: " << restarts << std::endl;
+    std::cout << "Conflicts: " << conflicts << std::endl;
+    std::cout << "Decisions: " << decisions << std::endl;
+    std::cout << "Propagations: " << propagations << std::endl;
+    int max_index = 0;
+    int max_value = 0;
+    int total_count = 0;
+    int total_length = 0;
+    for (auto&& [l, c] : lcsh) {
+      max_index = std::max(l, max_index);
+      max_value = std::max(c, max_value);
+      total_count += c;
+      total_length += c*l;
+    }
+    for (int i = 0; i < 10; i++) {
+      for (int j = 0; j < max_index; j++) {
+        int count = lcsh[j];
+        float normalized = float(100*count) / float(total_count);
+        if (normalized >= 10-i) {
+          std::cout << "#  ";
+        }
+        else {
+          std::cout << "   ";
+        }
+      }
+      std::cout << std::endl;
+    }
+    for (int j = 0; j < max_index; j++) {
+      std::cout << j;
+      if (j < 10) std::cout << " ";
+      if (j < 100) std::cout << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Average learned clause length: " << float(total_length) << " " <<  float(conflicts) << std::endl;
+    std::cout << "Average learned clause length: " << float(total_length)/float(conflicts) << std::endl;
+  }
 }
 
 // The perspective I want to take is not one of deriving an assignment,
@@ -121,17 +165,45 @@ int main(int argc, char* argv[]) {
   };
   solver_state_t state = solver_state_t::quiescent;
 
+  lbm_t lbm(cnf);
+
   for (;;) {
     //std::cout << "State: " << static_cast<int>(state) << std::endl;
     //std::cout << "Trace: " << trace << std::endl;
     switch (state) {
     case solver_state_t::quiescent: {
 
-      //auto blocked_clauses = BCE(cnf);
-      //if (blocked_clauses.size() > 0) {
-      //  std::cerr << "[BCE] Blocked clauses found after learning: " << blocked_clauses.size() << std::endl;
-      //}
+      if (false) {
+        auto blocked_clauses = BCE(cnf);
+        if (blocked_clauses.size() > 0) {
+          std::cerr << "[BCE] Blocked clauses found after learning: " << blocked_clauses.size() << std::endl;
+          for (clause_id cid : blocked_clauses) {
+            trace.watch.remove_clause(cid);
+          }
+          cnf.remove_clauses(blocked_clauses);
+        }
+      }
+
+      if (lbm.should_clean(cnf)) {
+        auto cids_to_remove = lbm.clean(cnf);
+        //std::cout << "Cnf size = " <<  cnf.live_clause_count() << std::endl;
+        for (auto cid : cnf) {
+          //std::cout << cnf[cid] << " " << lbm.lbm[cid] << std::endl;
+        }
+        //std::cout << "====================Clauses to remove: " << cids_to_remove.size() << std::endl;
+        for (clause_id cid : cids_to_remove) {
+          trace.watch.remove_clause(cid);
+          //std::cout << cnf[cid] << " " << lbm.lbm[cid] << std::endl;
+        }
+        //std::cout << "====================" << std::endl;
+        cnf.remove_clauses(cids_to_remove);
+        //std::cout << "New size = " << cnf.live_clause_count() << std::endl;
+      }
+
       counters::decisions++;
+      if (trace.actions.level() == 0) {
+        counters::restarts++;
+      }
 
       literal_t l = trace.decide_literal();
       if (l != 0) {
@@ -172,7 +244,13 @@ int main(int argc, char* argv[]) {
 
       counters::conflicts++;
 
-      const clause_t c = learn_clause(cnf, trace.actions);
+      clause_t c = learn_clause(cnf, trace.actions);
+
+      //auto orig_c = c.size();
+      learned_clause_minimization(cnf, c, trace.actions);
+      //if (orig_c > c.size()) std::cout << "[LCM] size from " << orig_c << " to " << c.size() << std::endl;
+
+      counters::lcsh[c.size()]++;
 
       // early out in the unsat case.
       if (c.size() == 0) {
@@ -180,11 +258,14 @@ int main(int argc, char* argv[]) {
         break;
       }
 
+
+      size_t lbm_value = lbm.compute_value(c, trace.actions);
       backtrack(c, trace.actions);
       trace.clear_unit_queue(); // ???
       trace.vsids.clause_learned(c);
 
       cnf_t::clause_k key = trace.add_clause(c);
+      //lbm.lbm[key] = lbm_value;
       if (unit_prop_mode == unit_prop_mode_t::watched) SAT_ASSERT(trace.watch.validate_state());
 
       if (unit_prop_mode == unit_prop_mode_t::queue ||
@@ -208,9 +289,11 @@ int main(int argc, char* argv[]) {
     }
 
     case solver_state_t::sat:
+      counters::print();
       std::cout << "SATISFIABLE" << std::endl;
       return 0; // quit entirely
     case solver_state_t::unsat:
+      counters::print();
       std::cout << "UNSATISFIABLE" << std::endl;
       return 0; // quit entirely
     }

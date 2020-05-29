@@ -49,26 +49,26 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
   }
 
   else if (learn_mode == learn_mode_t::explicit_resolution) {
-    /*
-      auto it = actions.rbegin();
-      SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
-      // We make an explicit copy of that conflict clause
-      clause_t c = cnf[it->conflict_clause_id];
+    std::vector<literal_t> C;
+#if 0
+    auto it = actions.rbegin();
+    SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
+    // We make an explicit copy of that conflict clause
+    clause_t c = cnf[it->conflict_clause_id];
 
-      it++;
+    it++;
 
-      // now go backwards until the decision, resolving things against it
-      for (; it != std::rend(actions) && it->action_kind != action_t::action_kind_t::decision; it++) {
+    // now go backwards until the decision, resolving things against it
+    for (; it != std::rend(actions) && it->action_kind != action_t::action_kind_t::decision; it++) {
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
       clause_t d = cnf[it->unit_prop.reason];
       if (literal_t r = resolve_candidate(c, d)) {
-      c = resolve(c, d, r);
+        c = resolve(c, d, r);
       }
-      }
-    */
-
+    }
+    C = c;
+#else
     // now try the stamping method
-    std::vector<literal_t> C;
     {
       const size_t D = actions.level();
       auto it = actions.rbegin();
@@ -124,12 +124,11 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
     }
     //std::cout << "C: " << C << "; c: " << c << std::endl;
     //assert(C == c);
+    #endif
 
 
 
     SAT_ASSERT(verify_resolution_expected(C, actions));
-
-    learned_clause_minimization(cnf, C, actions);
     return C;
   }
   assert(0);
