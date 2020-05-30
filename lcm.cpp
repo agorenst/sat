@@ -7,44 +7,51 @@
 
 void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
 
-  literal_map_t<int> depends_on_decision(cnf);
-  std::fill(std::begin(depends_on_decision), std::end(depends_on_decision), 0);
+  bool didWork = true;
+  while (didWork) {
+    didWork = false;
+    literal_map_t<int> depends_on_decision(cnf);
+    std::fill(std::begin(depends_on_decision), std::end(depends_on_decision), 0);
 
-  for (action_t a : trail) {
-    if (a.is_decision()) {
-      depends_on_decision[a.get_literal()] = 1;
-    }
-    else if (a.is_unit_prop()) {
-      literal_t l = a.get_literal();
-      const clause_t& r = cnf[a.get_clause()];
-      for (auto m : r) {
-        if (depends_on_decision[-m]) {
-          depends_on_decision[l] = 1;
+    for (action_t a : trail) {
+      if (a.is_decision()) {
+        depends_on_decision[a.get_literal()] = 1;
+      }
+      else if (a.is_unit_prop()) {
+        literal_t l = a.get_literal();
+        const clause_t& r = cnf[a.get_clause()];
+        for (auto m : r) {
+          if (depends_on_decision[-m]) {
+            depends_on_decision[l] = 1;
+          }
         }
       }
     }
+
+    auto is_decision = [&](literal_t l) {
+                         auto at = std::find_if(std::begin(trail), std::end(trail),
+                                                [l](action_t a) { return a.has_literal() && a.get_literal() == l; });
+                         assert(at != std::end(trail));
+                         return at->is_decision();
+                       };
+
+    auto et = std::remove_if(std::begin(c), std::end(c),
+                             [&](literal_t l) {
+                               return !is_decision(-l) && !depends_on_decision[-l];
+                             });
+    if (et != std::end(c)) {
+      didWork = true;
+    }
+    c.erase(et, std::end(c));
   }
-
-  auto is_decision = [&](literal_t l) {
-                       auto at = std::find_if(std::begin(trail), std::end(trail),
-                                              [l](action_t a) { return a.has_literal() && a.get_literal() == l; });
-                       assert(at != std::end(trail));
-                       return at->is_decision();
-                     };
-
-  auto et = std::remove_if(std::begin(c), std::end(c),
-                           [&](literal_t l) {
-                             return !is_decision(-l) && !depends_on_decision[-l];
-                           });
-  c.erase(et, std::end(c));
 }
 
 void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
   // Explicit search implementation
   //std::cout << "Minimizing " << c <<  " with trail " << std::endl << actions << std::endl;
 
-  //lcm(cnf, c, actions);
-  //return;
+  lcm(cnf, c, actions);
+  return;
 
   std::vector<literal_t> decisions;
   std::vector<literal_t> marked;

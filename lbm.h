@@ -9,8 +9,8 @@ struct lbm_t {
   clause_map_t<size_t> lbm;
 
   size_t max_size = 0;
-  float growth = 1.1;
-  float start_growth = 1.1;
+  float growth = 1.4;
+  float start_growth = 1.4;
 
   // We clean whenever we've since doubled in size.
   bool should_clean(const cnf_t& cnf) {

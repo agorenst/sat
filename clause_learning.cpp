@@ -38,6 +38,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
   //std::cout << "About to learn clause from: " << *this << std::endl;
 
   if (learn_mode == learn_mode_t::simplest) {
+    assert(0);
     clause_t new_clause;
     for (action_t a : actions) {
       if (a.action_kind == action_t::action_kind_t::decision) {

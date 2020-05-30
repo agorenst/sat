@@ -1,7 +1,9 @@
-#include "preprocess.h"
 #include <iostream>
 #include <map>
 #include <cassert>
+
+#include "preprocess.h"
+#include "subsumption.h"
 
 // PRE = preprocess
 // NUP = Niave unit prop
@@ -98,6 +100,7 @@ void preprocess(cnf_t& cnf) {
                   clause_t& c = cnf[cid];
                   std::sort(std::begin(c), std::end(c));
                 });
+
   while (did_work) {
     did_work = false;
     while (literal_t u = find_unit(cnf)) {
@@ -130,5 +133,43 @@ void preprocess(cnf_t& cnf) {
       //std::cout << "Removed: " << cnf.live_clause_count() << std::endl;
       //std::cout << cnf << std::endl;
     }
+
+    /*
+    std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
+                                                    std::sort(std::begin(cnf[cid]), std::end(cnf[cid])); });
+    for (auto cid : cnf) {
+      clause_t& c = cnf[cid];
+      for (size_t i = 0; i < c.size(); i++) {
+        c[i] = -c[i];
+        auto subsumes = find_subsumed(cnf, c);
+        for (auto did: subsumes) {
+          clause_t d = cnf[did];
+          std::cerr << "Strengthening " << d << " into ";
+          assert(contains(d, c[i]));
+          auto dt = std::remove(std::begin(d), std::end(d), c[i]);
+          d.erase(dt, std::end(d));
+          std::cerr << d << " thanks to " << c << "(with the " << i << "th element negated)" << std::endl;
+        }
+        c[i] = -c[i];
+      }
+    }
+    */
   }
+  //std::cerr << "Done preprocessing" << std::endl;
+
+  //for (auto cid : cnf) {
+  //  for (auto did : cnf) {
+  //    bool resolve_taut(const clause_t& c, const clause_t& d, literal_t l);
+  //    if (cid == did) continue;
+  //    const auto& c = cnf[cid];
+  //    const auto& d = cnf[did];
+  //    for (auto l : c) {
+  //      if (contains(d, -l)) {
+  //        if (resolve_taut(c, d, l)) {
+  //          std::cerr << c << " " << d << std::endl;
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
 }

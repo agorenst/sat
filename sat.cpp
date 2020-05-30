@@ -28,6 +28,8 @@
 
 #include "lbm.h"
 
+#include "subsumption.h"
+
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
 
@@ -167,6 +169,8 @@ int main(int argc, char* argv[]) {
 
   lbm_t lbm(cnf);
 
+  int counter = 0;
+
   for (;;) {
     //std::cout << "State: " << static_cast<int>(state) << std::endl;
     //std::cout << "Trace: " << trace << std::endl;
@@ -186,10 +190,10 @@ int main(int argc, char* argv[]) {
 
       if (lbm.should_clean(cnf)) {
         auto cids_to_remove = lbm.clean(cnf);
-        //std::cout << "Cnf size = " <<  cnf.live_clause_count() << std::endl;
-        for (auto cid : cnf) {
+        //std::cerr << "Cnf size = " <<  cnf.live_clause_count() << std::endl;
+        //for (auto cid : cnf) {
           //std::cout << cnf[cid] << " " << lbm.lbm[cid] << std::endl;
-        }
+        //}
         //std::cout << "====================Clauses to remove: " << cids_to_remove.size() << std::endl;
         for (clause_id cid : cids_to_remove) {
           trace.watch.remove_clause(cid);
@@ -197,12 +201,61 @@ int main(int argc, char* argv[]) {
         }
         //std::cout << "====================" << std::endl;
         cnf.remove_clauses(cids_to_remove);
-        //std::cout << "New size = " << cnf.live_clause_count() << std::endl;
+        //std::cerr << "New size = " << cnf.live_clause_count() << std::endl;
       }
 
+      counter++;
+      if (counter > 1000) {
+        while (trace.actions.level()) {
+          trace.actions.pop();
+        }
+        counter = 0;
+
+
+        #if 0
+        std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
+                                                        std::sort(std::begin(cnf[cid]), std::end(cnf[cid])); });
+        for (auto cid : cnf) {
+          clause_t& c = cnf[cid];
+          for (size_t i = 0; i < c.size(); i++) {
+            c[i] = -c[i];
+            std::sort(std::begin(c), std::end(c));
+            auto subsumes = find_subsumed(cnf, c);
+            for (auto did: subsumes) {
+              clause_t d = cnf[did];
+              std::cerr << "Strengthening " << d << " into ";
+              assert(contains(d, c[i]));
+              auto dt = std::remove(std::begin(d), std::end(d), c[i]);
+              d.erase(dt, std::end(d));
+              std::cerr << d << " thanks to " << c << "(with the " << i << "th element negated)" << std::endl;
+            }
+            c[i] = -c[i];
+            std::sort(std::begin(c), std::end(c));
+          }
+        }
+        #endif
+      }
       counters::decisions++;
       if (trace.actions.level() == 0) {
         counters::restarts++;
+
+        std::vector<clause_id> satisfied;
+        for (action_t a : trace.actions) {
+          if (a.has_literal()) {
+            literal_t l = a.get_literal();
+            for (clause_id cid : trace.literal_to_clause[l]) {
+              satisfied.push_back(cid);
+            }
+          }
+        }
+        std::sort(std::begin(satisfied), std::end(satisfied));
+        auto it = std::unique(std::begin(satisfied), std::end(satisfied));
+        satisfied.erase(it, std::end(satisfied));
+        //std::cout << "ERASING " << satisfied.size() << " clauses" << std::endl;
+        cnf.remove_clauses(satisfied);
+        for (clause_id cid : satisfied) {
+          trace.watch.remove_clause(cid);
+        }
       }
 
       literal_t l = trace.decide_literal();
@@ -246,9 +299,52 @@ int main(int argc, char* argv[]) {
 
       clause_t c = learn_clause(cnf, trace.actions);
 
-      //auto orig_c = c.size();
+      auto orig_c = c.size();
+      std::cerr << "Learned clause: " << orig_c << std::endl;
       learned_clause_minimization(cnf, c, trace.actions);
-      //if (orig_c > c.size()) std::cout << "[LCM] size from " << orig_c << " to " << c.size() << std::endl;
+      //if (orig_c > c.size()) std::cerr << "[LCM] size from " << orig_c << " to " << c.size() << std::endl;
+
+      // MINIMIZE BY SUBSUMPTION
+      /*
+      std::for_each(std::begin(cnf), std::end(cnf),
+                    [&cnf](clause_id cid) { std::sort(std::begin(cnf[cid]), std::end(cnf[cid])); });
+
+      literal_incidence_map_t literal_to_clause(cnf);
+      for (clause_id cid : cnf) {
+        const clause_t& c = cnf[cid];
+        for (literal_t l : c) {
+          literal_to_clause[l].push_back(cid);
+        }
+      }
+      // for everything in our new clause:
+      orig_c = c.size();
+      for (int i = 0; i < c.size(); i++) {
+        literal_t l = c[i];
+        // all possible resolvents
+        auto cids = literal_to_clause[-l];
+        for (clause_id cid : cids) {
+          auto d = cnf[cid];
+          auto it = std::find(std::begin(d), std::end(d), -l);
+          *it = -*it;
+          std::sort(std::begin(d), std::end(d));
+          // this means we can resolve the original d against c,
+          // and we'd end up with a clause just like c, but missing
+          // l.
+          if (subsumes(d, c)) {
+            auto et = std::remove(std::begin(c), std::end(c), l);
+            assert(std::distance(et, std::end(c)) == 1);
+            c.erase(et, std::end(c));
+            i--; // go back one.
+          }
+
+          *it = -*it;
+          std::sort(std::begin(d), std::end(d));
+        }
+      }
+      */
+      //if (orig_c > c.size()) std::cerr << "[SUBSUMPTION] Shrank learned clause from " << orig_c << " to " << c.size() << std::endl;
+
+      //////////////////////////
 
       counters::lcsh[c.size()]++;
 
@@ -265,7 +361,7 @@ int main(int argc, char* argv[]) {
       trace.vsids.clause_learned(c);
 
       cnf_t::clause_k key = trace.add_clause(c);
-      //lbm.lbm[key] = lbm_value;
+      lbm.lbm[key] = lbm_value;
       if (unit_prop_mode == unit_prop_mode_t::watched) SAT_ASSERT(trace.watch.validate_state());
 
       if (unit_prop_mode == unit_prop_mode_t::queue ||

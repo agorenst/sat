@@ -16,7 +16,7 @@ uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
 
-sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o
+sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o
 
 tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
 #tests: $(uf20-91-tests)
