@@ -30,6 +30,9 @@
 
 #include "subsumption.h"
 
+// Help with control flow and such...
+#include "plugins.h"
+
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
 
@@ -169,6 +172,18 @@ int main(int argc, char* argv[]) {
 
   lbm_t lbm(cnf);
 
+  remove_clause_listener_reg([&cnf](clause_id cid) { cnf.remove_clause(cid); });
+  remove_clause_listener_reg([&trace](clause_id cid) {
+                               if (trace.watch.clause_watched(cid)) trace.watch.remove_clause(cid);
+                               const clause_t& c = trace.cnf[cid];
+                               for (literal_t l : c) {
+                                 auto& incidence_list = trace.literal_to_clause[l];
+                                 SAT_ASSERT(contains(incidence_list, cid));
+                                 auto et = std::remove(std::begin(incidence_list), std::end(incidence_list), cid);
+                                 incidence_list.erase(et, std::end(incidence_list));
+                               }
+                             });
+
   int counter = 0;
 
   for (;;) {
@@ -177,14 +192,23 @@ int main(int argc, char* argv[]) {
     switch (state) {
     case solver_state_t::quiescent: {
 
+      // this is way too slow
       if (false) {
         auto blocked_clauses = BCE(cnf);
         if (blocked_clauses.size() > 0) {
-          std::cerr << "[BCE] Blocked clauses found after learning: " << blocked_clauses.size() << std::endl;
-          for (clause_id cid : blocked_clauses) {
-            trace.watch.remove_clause(cid);
+
+          auto et = std::end(blocked_clauses);
+          for (const action_t& a : trace.actions) {
+            if (a.has_clause()) {
+              et = std::remove(std::begin(blocked_clauses), et, a.get_clause());
+            }
           }
-          cnf.remove_clauses(blocked_clauses);
+          blocked_clauses.erase(et, std::end(blocked_clauses));
+
+          std::cerr << "[BCE] Blocked clauses found after learning: " << blocked_clauses.size() << std::endl;
+          for (auto cid : blocked_clauses) {
+            remove_clause(cid);
+          }
         }
       }
 
@@ -206,17 +230,8 @@ int main(int argc, char* argv[]) {
         cids_to_remove.erase(et, std::end(cids_to_remove));
 
         for (clause_id cid : cids_to_remove) {
-          if (trace.watch.clause_watched(cid)) trace.watch.remove_clause(cid);
-          const clause_t& c = cnf[cid];
-          for (literal_t l : c) {
-            auto& incidence_list = trace.literal_to_clause[l];
-            SAT_ASSERT(contains(incidence_list, cid));
-            auto et = std::remove(std::begin(incidence_list), std::end(incidence_list), cid);
-            incidence_list.erase(et, std::end(incidence_list));
-          }
+          remove_clause(cid);
         }
-        cnf.remove_clauses(cids_to_remove);
-        //std::cerr << "New size = " << cnf.live_clause_count() << std::endl;
       }
 
       counter++;
@@ -255,7 +270,6 @@ int main(int argc, char* argv[]) {
       if (trace.actions.level() == 0) {
         counters::restarts++;
 
-        #if 0
         std::vector<clause_id> satisfied;
         for (action_t a : trace.actions) {
           if (a.has_literal()) {
@@ -278,19 +292,9 @@ int main(int argc, char* argv[]) {
         }
         satisfied.erase(et, std::end(satisfied));
 
-        //std::cerr << "ERASING " << satisfied.size() << " clauses" << std::endl;
         for (clause_id cid : satisfied) {
-          if (trace.watch.clause_watched(cid)) trace.watch.remove_clause(cid);
-          const clause_t& c = cnf[cid];
-          for (literal_t l : c) {
-            auto& incidence_list = trace.literal_to_clause[l];
-            SAT_ASSERT(contains(incidence_list, cid));
-            auto et = std::remove(std::begin(incidence_list), std::end(incidence_list), cid);
-            incidence_list.erase(et, std::end(incidence_list));
-          }
+          remove_clause(cid);
         }
-        cnf.remove_clauses(satisfied);
-        #endif
       }
 
       literal_t l = trace.decide_literal();
