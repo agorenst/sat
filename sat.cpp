@@ -195,50 +195,67 @@ int main(int argc, char* argv[]) {
           //std::cout << cnf[cid] << " " << lbm.lbm[cid] << std::endl;
         //}
         //std::cout << "====================Clauses to remove: " << cids_to_remove.size() << std::endl;
-        for (clause_id cid : cids_to_remove) {
-          trace.watch.remove_clause(cid);
-          //std::cout << cnf[cid] << " " << lbm.lbm[cid] << std::endl;
+
+        // Don't remove anything on the trail.
+        auto et = std::end(cids_to_remove);
+        for (const action_t& a : trace.actions) {
+          if (a.has_clause()) {
+            et = std::remove(std::begin(cids_to_remove), et, a.get_clause());
+          }
         }
-        //std::cout << "====================" << std::endl;
+        cids_to_remove.erase(et, std::end(cids_to_remove));
+
+        for (clause_id cid : cids_to_remove) {
+          if (trace.watch.clause_watched(cid)) trace.watch.remove_clause(cid);
+          const clause_t& c = cnf[cid];
+          for (literal_t l : c) {
+            auto& incidence_list = trace.literal_to_clause[l];
+            SAT_ASSERT(contains(incidence_list, cid));
+            auto et = std::remove(std::begin(incidence_list), std::end(incidence_list), cid);
+            incidence_list.erase(et, std::end(incidence_list));
+          }
+        }
         cnf.remove_clauses(cids_to_remove);
         //std::cerr << "New size = " << cnf.live_clause_count() << std::endl;
       }
 
       counter++;
-      if (counter > 1000) {
-        while (trace.actions.level()) {
-          trace.actions.pop();
-        }
-        counter = 0;
+      //if (counter > 1000) {
+      //  while (trace.actions.level()) {
+      //    trace.actions.pop();
+      //  }
+      //  counter = 0;
 
 
-        #if 0
-        std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
-                                                        std::sort(std::begin(cnf[cid]), std::end(cnf[cid])); });
-        for (auto cid : cnf) {
-          clause_t& c = cnf[cid];
-          for (size_t i = 0; i < c.size(); i++) {
-            c[i] = -c[i];
-            std::sort(std::begin(c), std::end(c));
-            auto subsumes = find_subsumed(cnf, c);
-            for (auto did: subsumes) {
-              clause_t d = cnf[did];
-              std::cerr << "Strengthening " << d << " into ";
-              assert(contains(d, c[i]));
-              auto dt = std::remove(std::begin(d), std::end(d), c[i]);
-              d.erase(dt, std::end(d));
-              std::cerr << d << " thanks to " << c << "(with the " << i << "th element negated)" << std::endl;
-            }
-            c[i] = -c[i];
-            std::sort(std::begin(c), std::end(c));
-          }
-        }
-        #endif
-      }
+      //  #if 0
+      //  std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
+      //                                                  std::sort(std::begin(cnf[cid]), std::end(cnf[cid])); });
+      //  for (auto cid : cnf) {
+      //    clause_t& c = cnf[cid];
+      //    for (size_t i = 0; i < c.size(); i++) {
+      //      c[i] = -c[i];
+      //      std::sort(std::begin(c), std::end(c));
+      //      auto subsumes = find_subsumed(cnf, c);
+      //      for (auto did: subsumes) {
+      //        clause_t d = cnf[did];
+      //        std::cerr << "Strengthening " << d << " into ";
+      //        assert(contains(d, c[i]));
+      //        auto dt = std::remove(std::begin(d), std::end(d), c[i]);
+      //        d.erase(dt, std::end(d));
+      //        std::cerr << d << " thanks to " << c << "(with the " << i << "th element negated)" << std::endl;
+      //      }
+      //      c[i] = -c[i];
+      //      std::sort(std::begin(c), std::end(c));
+      //    }
+      //  }
+      //  #endif
+      //}
       counters::decisions++;
+
       if (trace.actions.level() == 0) {
         counters::restarts++;
 
+        #if 0
         std::vector<clause_id> satisfied;
         for (action_t a : trace.actions) {
           if (a.has_literal()) {
@@ -251,11 +268,29 @@ int main(int argc, char* argv[]) {
         std::sort(std::begin(satisfied), std::end(satisfied));
         auto it = std::unique(std::begin(satisfied), std::end(satisfied));
         satisfied.erase(it, std::end(satisfied));
-        //std::cout << "ERASING " << satisfied.size() << " clauses" << std::endl;
-        cnf.remove_clauses(satisfied);
-        for (clause_id cid : satisfied) {
-          trace.watch.remove_clause(cid);
+
+        // Don't remove anything on the trail.
+        auto et = std::end(satisfied);
+        for (const action_t& a : trace.actions) {
+          if (a.has_clause()) {
+            et = std::remove(std::begin(satisfied), et, a.get_clause());
+          }
         }
+        satisfied.erase(et, std::end(satisfied));
+
+        //std::cerr << "ERASING " << satisfied.size() << " clauses" << std::endl;
+        for (clause_id cid : satisfied) {
+          if (trace.watch.clause_watched(cid)) trace.watch.remove_clause(cid);
+          const clause_t& c = cnf[cid];
+          for (literal_t l : c) {
+            auto& incidence_list = trace.literal_to_clause[l];
+            SAT_ASSERT(contains(incidence_list, cid));
+            auto et = std::remove(std::begin(incidence_list), std::end(incidence_list), cid);
+            incidence_list.erase(et, std::end(incidence_list));
+          }
+        }
+        cnf.remove_clauses(satisfied);
+        #endif
       }
 
       literal_t l = trace.decide_literal();
@@ -300,7 +335,7 @@ int main(int argc, char* argv[]) {
       clause_t c = learn_clause(cnf, trace.actions);
 
       auto orig_c = c.size();
-      std::cerr << "Learned clause: " << orig_c << std::endl;
+      //std::cerr << "Learned clause: " << orig_c << std::endl;
       learned_clause_minimization(cnf, c, trace.actions);
       //if (orig_c > c.size()) std::cerr << "[LCM] size from " << orig_c << " to " << c.size() << std::endl;
 
@@ -385,11 +420,11 @@ int main(int argc, char* argv[]) {
     }
 
     case solver_state_t::sat:
-      counters::print();
+      //counters::print();
       std::cout << "SATISFIABLE" << std::endl;
       return 0; // quit entirely
     case solver_state_t::unsat:
-      counters::print();
+      //counters::print();
       std::cout << "UNSATISFIABLE" << std::endl;
       return 0; // quit entirely
     }

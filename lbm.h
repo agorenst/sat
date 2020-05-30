@@ -40,10 +40,13 @@ struct lbm_t {
     clauses_to_remove.insert(std::end(clauses_to_remove), to_remove, std::end(cnf));
 
 
+
     std::sort(to_filter, std::end(cnf));
     SAT_ASSERT(std::is_sorted(std::begin(cnf), std::end(cnf)));
 
     max_size *= growth;
+
+    SAT_ASSERT(std::all_of(std::begin(clauses_to_remove), std::end(clauses_to_remove), [&](clause_id cid) { return contains(cnf, cid); }));
 
     return clauses_to_remove;
   }

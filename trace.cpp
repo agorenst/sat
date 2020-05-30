@@ -325,7 +325,6 @@ cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
   return id;
 }
 
-
 void trace_t::print_actions(std::ostream& o) const {
   for (const auto& a : actions) {
     o << a << std::endl;

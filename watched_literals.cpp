@@ -163,6 +163,7 @@ void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o, 
 
 void watched_literals_t::remove_clause(clause_id id) {
   watcher_t& w = watched_literals[id];
+  //std::cerr << "w to remove: " << w << std::endl;
   watcher_list_remove_clause(literals_to_watcher[w.l1], id);
   watcher_list_remove_clause(literals_to_watcher[w.l2], id);
   w.l1 = 0;

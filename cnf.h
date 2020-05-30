@@ -54,11 +54,27 @@ struct cnf_t {
   void erase(IT a, IT e) { key_to_mem.erase(a, e); }
 
   template<typename C>
-  void remove_clauses(const C& container) {
-    SAT_ASSERT(std::all_of(std::begin(container), std::end(container), [&](clause_id cid) { contains(key_to_mem, cid); }));
+  void remove_clauses(const C& cids_to_remove) {
+
+    SAT_ASSERT(std::all_of(std::begin(cids_to_remove), std::end(cids_to_remove),
+                           [&](clause_id cid) { return contains(*this, cid); }));
+
     auto et = std::remove_if(std::begin(key_to_mem), std::end(key_to_mem),
-                [&](clause_id cid) { return contains(container, cid); });
+                [&](clause_id cid) { return contains(cids_to_remove, cid); });
+
     key_to_mem.erase(et, std::end(key_to_mem));
+  }
+
+  void remove_clause(clause_id cid) {
+    auto et = std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
+    key_to_mem.erase(et, std::end(key_to_mem));
+  }
+
+  void restore_clause(clause_id cid) {
+    SAT_ASSERT(!contains(key_to_mem, cid));
+    SAT_ASSERT(cid < mem.size());
+    key_to_mem.push_back(cid);
+    std::sort(std::begin(key_to_mem), std::end(key_to_mem));
   }
 
 };

@@ -50,8 +50,8 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
   // Explicit search implementation
   //std::cout << "Minimizing " << c <<  " with trail " << std::endl << actions << std::endl;
 
-  lcm(cnf, c, actions);
-  return;
+  //lcm(cnf, c, actions);
+  //return;
 
   std::vector<literal_t> decisions;
   std::vector<literal_t> marked;
