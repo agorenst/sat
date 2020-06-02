@@ -33,6 +33,9 @@
 // Help with control flow and such...
 #include "plugins.h"
 
+// Debugging and experiments.
+#include "visualizations.h"
+
 // TODO: Change clause_id to an iterator?
 // TODO: Exercise 257 to get shorter learned clauses
 
@@ -172,8 +175,62 @@ int main(int argc, char* argv[]) {
 
   lbm_t lbm(cnf);
 
-  remove_clause_listener_reg([&cnf](clause_id cid) { cnf.remove_clause(cid); });
-  remove_clause_listener_reg([&trace](clause_id cid) {
+  apply_literal.precondition([&trace](literal_t l) {
+                               SAT_ASSERT(std::find_if(std::begin(trace.cnf), std::end(trace.cnf),
+                                                       [&](const clause_id cid) {
+                                                         const clause_t& c = trace.cnf[cid];
+                                                         return c.size() == 1 && contains(c, -l); })
+                                          == std::end(trace.cnf));
+                             });
+
+  if (unit_prop_mode == unit_prop_mode_t::queue) {
+    apply_literal.add_listener([&trace](literal_t l) {
+                                 const auto& clause_ids = trace.literal_to_clause[-l];
+                                 for (auto clause_id : clause_ids) {
+                                   const auto& c = trace.cnf[clause_id];
+                                   if (trace.clause_sat(c)) {
+                                     continue;
+                                   }
+                                   //all_sat = false;
+                                   if (contains(c, -l)) {
+                                     if (trace.clause_unsat(c)) {
+                                       trace.push_conflict(clause_id);
+                                       return;
+                                     }
+                                     if (trace.count_unassigned_literals(c) == 1) {
+                                       literal_t p = trace.find_unassigned_literal(c);
+                                       trace.push_unit_queue(p, clause_id);
+                                     }
+                                   }
+                                 }
+                               });
+  }
+  else if (unit_prop_mode == unit_prop_mode_t::watched) {
+    apply_literal.add_listener([&trace](literal_t l) {
+                                 trace.watch.literal_falsed(l);
+                                 SAT_ASSERT(trace.halted() || trace.watch.validate_state());
+                               });
+  }
+  else if (unit_prop_mode == unit_prop_mode_t::simplest) {
+    apply_literal.add_listener([&trace](literal_t l) {
+                                 for (clause_id cid : trace.cnf) {
+                                   const clause_t& c = trace.cnf[cid];
+                                   if (contains(c, -l)) {
+                                     if (trace.clause_unsat(c)) {
+                                       //std::cout << "Found conflict: " << c << std::endl;
+                                       trace.push_conflict(cid);
+                                       return;
+                                     }
+                                   }
+                                   else {
+                                     SAT_ASSERT(!trace.clause_unsat(c));
+                                   }
+                                 }
+                               });
+  }
+
+  remove_clause.add_listener([&cnf](clause_id cid) { cnf.remove_clause(cid); });
+  remove_clause.add_listener([&trace](clause_id cid) {
                                if (trace.watch.clause_watched(cid)) trace.watch.remove_clause(cid);
                                const clause_t& c = trace.cnf[cid];
                                for (literal_t l : c) {
@@ -183,6 +240,7 @@ int main(int argc, char* argv[]) {
                                  incidence_list.erase(et, std::end(incidence_list));
                                }
                              });
+
 
   int counter = 0;
 
@@ -300,7 +358,7 @@ int main(int argc, char* argv[]) {
       literal_t l = trace.decide_literal();
       if (l != 0) {
         trace.apply_decision(l);
-        trace.register_false_literal(l);
+        apply_literal(l);
       }
 
       if (trace.final_state()) {
@@ -319,7 +377,7 @@ int main(int argc, char* argv[]) {
         //std::cout << "Found unit prop: " << l << " " << cid << std::endl;
         if (l == 0) break;
         trace.apply_unit(l, cid);
-        trace.register_false_literal(l);
+        apply_literal(l);
         if (trace.halted()) break;
       }
 
@@ -336,11 +394,18 @@ int main(int argc, char* argv[]) {
 
       counters::conflicts++;
 
+      print_conflict_graph(cnf, trace.actions);
       clause_t c = learn_clause(cnf, trace.actions);
+      std::cerr << "Learned clause: " << c << std::endl;
 
       auto orig_c = c.size();
       //std::cerr << "Learned clause: " << orig_c << std::endl;
       learned_clause_minimization(cnf, c, trace.actions);
+      std::cerr << "Minimized clause: " << c << std::endl;
+
+      assert(0);
+
+      learned_clause(c, trace.actions);
       //if (orig_c > c.size()) std::cerr << "[LCM] size from " << orig_c << " to " << c.size() << std::endl;
 
       // MINIMIZE BY SUBSUMPTION

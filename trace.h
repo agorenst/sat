@@ -45,7 +45,7 @@ public:
   cnf_t& cnf;
 
   // this is hugely expensive data structure. We'll see.
-  std::map<literal_t, std::vector<clause_id>> literal_to_clause;
+  literal_incidence_map_t literal_to_clause;
 
   // store the unit-props we're still getting through.
   //std::list<action_t> units;
@@ -80,7 +80,6 @@ public:
   bool has_conflict() const;
   void push_sat();
   void push_unsat();
-  void register_false_literal(literal_t l);
   void apply_literal(literal_t l);
   void apply_decision(literal_t l);
   void apply_unit(literal_t l, clause_id cid);

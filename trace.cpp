@@ -15,7 +15,7 @@ variable_choice_mode_t variable_choice_mode = variable_choice_mode_t::nextclause
 
 void trace_t::reset() {
   actions.clear();
-  literal_to_clause.clear();
+  std::for_each(std::begin(literal_to_clause), std::end(literal_to_clause), [](auto m) { m.clear(); });
   units.clear();
 
   variable_t max_var = 0;
@@ -42,7 +42,8 @@ trace_t::trace_t(cnf_t& cnf): cnf(cnf), watch(*this),
                               // Actions is invalid at this point, but we don't read it
                               // until after it's constructed. We're really just taking a pointer
                               // to it.
-                              vsids(cnf, actions)
+                              vsids(cnf, actions),
+                              literal_to_clause(cnf)
 {
   reset();
 }
@@ -173,61 +174,6 @@ void trace_t::push_unsat() {
   actions.append(action);
 }
 
-// We've just applied l, and now we do various machineries to queue up
-// the newly-implied units.
-// This may also change our state by finding a conflict
-void trace_t::register_false_literal(literal_t l) {
-  // We should never falsify a literal for which we have a unit clause asserting that it should be true.
-  SAT_ASSERT(std::find_if(std::begin(cnf), std::end(cnf),
-                          [&](const clause_id cid) {
-                            const clause_t& c = cnf[cid];
-                            return c.size() == 1 && contains(c, -l); })
-             == std::end(cnf));
-  // Here we look for conflicts and new units!
-  if (unit_prop_mode == unit_prop_mode_t::watched) {
-    watch.literal_falsed(l);
-    SAT_ASSERT(halted() || watch.validate_state());
-  }
-  else if (unit_prop_mode == unit_prop_mode_t::queue) {
-
-
-    const auto& clause_ids = literal_to_clause[-l];
-    for (auto clause_id : clause_ids) {
-      const auto& c = cnf[clause_id];
-      if (clause_sat(c)) {
-        continue;
-      }
-      //all_sat = false;
-      if (contains(c, -l)) {
-        if (clause_unsat(c)) {
-          push_conflict(clause_id);
-          return;
-        }
-        if (count_unassigned_literals(c) == 1) {
-          literal_t p = find_unassigned_literal(c);
-          push_unit_queue(p, clause_id);
-        }
-      }
-    }
-  }
-  // All we look for is conflicts, here.
-  else if (unit_prop_mode == unit_prop_mode_t::simplest) {
-    // we don't put in the queue, but we still look for conflicts.
-    for (clause_id cid : cnf) {
-      const clause_t& c = cnf[cid];
-      if (contains(c, -l)) {
-        if (clause_unsat(c)) {
-          //std::cout << "Found conflict: " << c << std::endl;
-          push_conflict(cid);
-          return;
-        }
-      }
-      else {
-        SAT_ASSERT(!clause_unsat(c));
-      }
-    }
-  }
-}
 
 // This applies the action to make l true in our trail.
 void trace_t::apply_decision(literal_t l) {
