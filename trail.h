@@ -69,6 +69,18 @@ struct trail_t {
     return varlevel[std::abs(l)];
   }
 
+  size_t level(action_t a) const {
+    size_t l = 0;
+    for (action_t b : *this) {
+      if (b.is_decision()) l++;
+      if (b == a) {
+        return l;
+      }
+    }
+    assert(0);
+    return 0;
+  }
+
   size_t level() const {
     return dlevel;
   }

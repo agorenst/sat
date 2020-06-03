@@ -1,6 +1,6 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++1z -g -O2 -flto
+CXXFLAGS=-Wall -std=c++1z -g -O2
 
 uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cnf)))
 
@@ -16,7 +16,7 @@ uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
 
-sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o
+sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o
 
 tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
 #tests: $(uf20-91-tests)
@@ -78,7 +78,7 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0495.cnf
+	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
 #	./sat -u w -l r -b n < tests/uuf150-645/uuf150-01.cnf
 #	cat tests/uuf150-645/uuf150-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre -verb=2 -rinc=1000000 -ccmin-mode=0
 

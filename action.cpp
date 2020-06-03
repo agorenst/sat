@@ -22,6 +22,9 @@ bool action_t::is_decision() const {
 bool action_t::is_unit_prop() const {
   return action_kind == action_kind_t::unit_prop;
 }
+bool action_t::is_conflict() const {
+  return action_kind == action_kind_t::halt_conflict;
+}
 bool action_t::has_clause() const {
   return action_kind == action_kind_t::halt_conflict || action_kind == action_kind_t::unit_prop;
 }

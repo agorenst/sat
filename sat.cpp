@@ -394,16 +394,14 @@ int main(int argc, char* argv[]) {
 
       counters::conflicts++;
 
-      print_conflict_graph(cnf, trace.actions);
+      //print_conflict_graph(cnf, trace.actions);
       clause_t c = learn_clause(cnf, trace.actions);
-      std::cerr << "Learned clause: " << c << std::endl;
+      //std::cerr << "Learned clause: " << c << std::endl;
 
       auto orig_c = c.size();
       //std::cerr << "Learned clause: " << orig_c << std::endl;
       learned_clause_minimization(cnf, c, trace.actions);
-      std::cerr << "Minimized clause: " << c << std::endl;
-
-      assert(0);
+      //std::cerr << "Minimized clause: " << c << std::endl;
 
       learned_clause(c, trace.actions);
       //if (orig_c > c.size()) std::cerr << "[LCM] size from " << orig_c << " to " << c.size() << std::endl;

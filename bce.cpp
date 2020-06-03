@@ -76,41 +76,49 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
 
   // Now we work through our worklist!
   while (!worklist.empty()) {
+
     literal_t l = worklist.back(); worklist.pop_back();
+
     auto& CL = literal_to_clauses[l];
     const auto& DL = literal_to_clauses[-l];
     const auto orig_size = result.size();
+
     for (clause_id cid : CL) {
 
       // If we've already eliminated this, skip.
       if (contains(result, cid)) continue;
 
-      bool is_blocked = true;
-      for (clause_id did : DL) {
-        if (!resolve_taut(cnf[cid], cnf[did], l)) {
-          is_blocked = false;
-          break;
+      bool is_blocked = std::all_of(std::begin(DL), std::end(DL),
+                                    [l,cid,&cnf](clause_id did) {
+                                      return resolve_taut(cnf[cid], cnf[did], l);
+                                    });
+
+      if (!is_blocked) continue;
+
+      result.push_back(cid);
+
+      for (literal_t m : cnf[cid]) {
+        if (!contains(worklist, -m)) {
+          worklist.push_back(-m);
         }
       }
 
-      if (is_blocked) {
-        result.push_back(cid);
-        for (literal_t m : cnf[cid]) {
-          if (!contains(worklist, -m)) {
-            worklist.push_back(-m);
-          }
-        }
-      }
     }
-    // To facilitate the loop, we "remove" the clauses
+
+    // To facilitate the loop, we remove the clauses
     // from our own data structure:
-    std::for_each(std::begin(result)+orig_size, std::end(result),
-                  [&CL](clause_id cid) {
-                    auto to_del = std::remove(std::begin(CL), std::end(CL), cid);
-                    CL.erase(to_del, std::end(CL));
+    auto orig_end = result.begin() + orig_size;
+    std::for_each(orig_end, std::end(result),
+                  [&](clause_id cid) {
+                    for (literal_t l : cnf[cid]) {
+                      auto& cl = literal_to_clauses[l];
+                      auto dit = std::remove(std::begin(cl), std::end(cl), cid);
+                      cl.erase(dit, std::end(cl));
+                    }
                   });
   }
-  //std::cerr << "[BCE] Total clauses removed: " << result.size();
+  //if (result.size()) std::cerr << "[BCE] Total clauses removed: " << result.size() << std::endl;
+  //if (result.size()) std::cerr << result.size() << std::endl;
 
   return result;
 }

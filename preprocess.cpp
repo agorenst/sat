@@ -4,6 +4,7 @@
 
 #include "preprocess.h"
 #include "subsumption.h"
+#include "bce.h"
 
 // PRE = preprocess
 // NUP = Niave unit prop
@@ -90,7 +91,6 @@ void naive_self_subsumption(cnf_t& cnf) {
   }
 }
 
-std::vector<clause_id> BCE(cnf_t& cnf);
 void preprocess(cnf_t& cnf) {
   // Niavely unit-prop
   bool did_work = true;
@@ -114,25 +114,22 @@ void preprocess(cnf_t& cnf) {
     //  did_work = true;
     //}
 
-    //naive_self_subsumption(cnf);
-    if (true) {
-      std::vector<clause_id> bc = BCE(cnf);
-      std::sort(std::begin(bc), std::end(bc), [](clause_id c1, clause_id c2) { return c2 < c1; });
+    std::vector<clause_id> bc = BCE(cnf);
+    std::sort(std::begin(bc), std::end(bc), [](clause_id c1, clause_id c2) { return c2 < c1; });
 #if 0
-      std::cout << "To remove clause_ids: (should be from highest index to lowest: " << std::endl;
-      for (clause_id cid : bc) {
-        std::cout << " " << cid;
-      }
-      std::cout << std::endl;
-      std::cout << "Removing: " << bc.size() << " from " << cnf.size() << std::endl;
-      std::cout << cnf << std::endl;
-#endif
-      auto to_erase = std::remove_if(std::begin(cnf), std::end(cnf), [&bc](clause_id cid) { return contains(bc, cid); });
-      //std::cout << "About to remove: " << cnf.live_clause_count() << std::endl;
-      cnf.erase(to_erase, std::end(cnf));
-      //std::cout << "Removed: " << cnf.live_clause_count() << std::endl;
-      //std::cout << cnf << std::endl;
+    std::cout << "To remove clause_ids: (should be from highest index to lowest: " << std::endl;
+    for (clause_id cid : bc) {
+      std::cout << " " << cid;
     }
+    std::cout << std::endl;
+    std::cout << "Removing: " << bc.size() << " from " << cnf.size() << std::endl;
+    std::cout << cnf << std::endl;
+#endif
+    auto to_erase = std::remove_if(std::begin(cnf), std::end(cnf), [&bc](clause_id cid) { return contains(bc, cid); });
+    //std::cout << "About to remove: " << cnf.live_clause_count() << std::endl;
+    cnf.erase(to_erase, std::end(cnf));
+    //std::cout << "Removed: " << cnf.live_clause_count() << std::endl;
+    //std::cout << cnf << std::endl;
 
     /*
     std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
@@ -156,20 +153,7 @@ void preprocess(cnf_t& cnf) {
     */
   }
   //std::cerr << "Done preprocessing" << std::endl;
-
-  //for (auto cid : cnf) {
-  //  for (auto did : cnf) {
-  //    bool resolve_taut(const clause_t& c, const clause_t& d, literal_t l);
-  //    if (cid == did) continue;
-  //    const auto& c = cnf[cid];
-  //    const auto& d = cnf[did];
-  //    for (auto l : c) {
-  //      if (contains(d, -l)) {
-  //        if (resolve_taut(c, d, l)) {
-  //          std::cerr << c << " " << d << std::endl;
-  //        }
-  //      }
-  //    }
-  //  }
-  //}
 }
+
+
+// This should be entirely subsumed by BCE
