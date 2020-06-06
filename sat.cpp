@@ -293,11 +293,14 @@ int main(int argc, char* argv[]) {
       }
 
       counter++;
-      //if (counter > 1000) {
-      //  while (trace.actions.level()) {
-      //    trace.actions.pop();
-      //  }
-      //  counter = 0;
+      if (counter > 1000) {
+        while (trace.actions.level()) {
+          trace.actions.pop();
+        }
+        counter = 0;
+        //size_t total_strengthened = naive_self_subsume(cnf);
+        //if (total_strengthened) std::cerr << "[NSS] " << total_strengthened << std::endl;
+      }
 
 
       //  #if 0
@@ -487,11 +490,11 @@ int main(int argc, char* argv[]) {
     }
 
     case solver_state_t::sat:
-      //counters::print();
+      counters::print();
       std::cout << "SATISFIABLE" << std::endl;
       return 0; // quit entirely
     case solver_state_t::unsat:
-      //counters::print();
+      counters::print();
       std::cout << "UNSATISFIABLE" << std::endl;
       return 0; // quit entirely
     }

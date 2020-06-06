@@ -38,6 +38,16 @@ literal_t literal_map_t<T>::iter_to_literal(typename mem_t::const_iterator it) c
   }
   return index / 2;
 }
+literal_incidence_map_t build_incidence_map(const cnf_t& cnf) {
+  literal_incidence_map_t literal_to_clause(cnf);
+  for (clause_id cid : cnf) {
+    const clause_t& c = cnf[cid];
+    for (literal_t l : c) {
+      literal_to_clause[l].push_back(cid);
+    }
+  }
+  return literal_to_clause;
+}
 
 // We explicitly instantiate templates because we know how we're
 // going to be using this type.

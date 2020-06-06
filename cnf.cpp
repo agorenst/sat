@@ -35,8 +35,18 @@ clause_t resolve(clause_t c1, clause_t c2, literal_t l) {
   return c3;
 }
 
-literal_t resolve_candidate(clause_t c1, clause_t c2) {
+literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after = 0) {
+  bool seen = (after == 0);
+
   for (literal_t l : c1) {
+
+    // Skip everything until after "after"
+    if (l == after) {
+      seen = true;
+      continue;
+    }
+    if (!seen) continue;
+
     for (literal_t m : c2) {
       if (l == -m) return l;
     }

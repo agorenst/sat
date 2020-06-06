@@ -13,10 +13,12 @@ uuf100-430-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/u
 uuf100-430-tests-medium = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/uuf100-01*.cnf)))
 uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/*.cnf)))
 
+uuf150-645-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf150-645/*.cnf)))
+
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
 
-sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o
+sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o circuit.o
 
 tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
 #tests: $(uf20-91-tests)
@@ -26,9 +28,12 @@ benchmark2: $(uuf100-430-tests-brief)
 benchmark3: $(uuf100-430-tests-medium)
 benchmark4: $(uuf100-430-tests)
 benchmark5: $(uf100-430-tests-medium)
+benchmark6: $(uuf150-645-tests)
 
 unit: sat
 	./sat < tests/units1.cnf | diff - SAT
+
+# minisat -no-pre -no-elim -no-luby -rfirst=100000
 
 %.unsatresult : %.cnf sat
 	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - UNSAT

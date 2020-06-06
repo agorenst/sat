@@ -84,7 +84,7 @@ struct cnf_t {
 // don't need the state implicit in a trail:
 clause_t resolve(clause_t c1, clause_t c2, literal_t l);
 
-literal_t resolve_candidate(clause_t c1, clause_t c2);
+literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after);
 
 // this is for units, unconditionally simplifying the CNF.
 void commit_literal(cnf_t& cnf, literal_t l);

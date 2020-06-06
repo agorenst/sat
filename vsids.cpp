@@ -1,12 +1,16 @@
 #include <cassert>
 #include "vsids.h"
 
-vsids_t::vsids_t(const cnf_t& cnf, const trail_t& trail): activity(cnf), trail(trail) {
+vsids_t::vsids_t(const cnf_t& cnf, const trail_t& trail): activity(cnf),
+                                                          //polarity(cnf),
+                                                          trail(trail) {
   std::fill(std::begin(activity), std::end(activity), 0.0);
+  //std::fill(std::begin(polarity), std::end(polarity), false);
 }
 
 void vsids_t::clause_learned(const clause_t& c) {
   for (literal_t l : c) {
+    activity[-l] += bump;
     activity[l] += bump;
   }
   std::for_each(std::begin(activity), std::end(activity), [this](float& s) {

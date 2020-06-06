@@ -25,3 +25,5 @@ struct literal_map_t {
 };
 
 typedef literal_map_t<std::vector<clause_id>> literal_incidence_map_t;
+
+literal_incidence_map_t build_incidence_map(const cnf_t& cnf);

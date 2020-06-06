@@ -13,5 +13,6 @@ struct vsids_t {
   // This is the activity. One day we'll have a better heap.
   // (Right now we're obliged to do a lot of linear scans, not great.)
   literal_map_t<float> activity;
+  //literal_map_t<bool> polarity;
   const trail_t& trail;
 };

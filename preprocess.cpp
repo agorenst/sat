@@ -5,10 +5,12 @@
 #include "preprocess.h"
 #include "subsumption.h"
 #include "bce.h"
+#include "circuit.h"
 
 // PRE = preprocess
 // NUP = Niave unit prop
 // PLE = Pure literal elimination
+size_t naive_self_subsume(cnf_t& cnf);
 
 literal_t find_pure_literal(const cnf_t& cnf) {
   std::vector<literal_t> positives;
@@ -131,6 +133,11 @@ void preprocess(cnf_t& cnf) {
     //std::cout << "Removed: " << cnf.live_clause_count() << std::endl;
     //std::cout << cnf << std::endl;
 
+    size_t total_strengthened = naive_self_subsume(cnf);
+    if (total_strengthened) {
+      //std::cerr << "[NSS] " << total_strengthened << std::endl;
+      did_work = true;
+    }
     /*
     std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
                                                     std::sort(std::begin(cnf[cid]), std::end(cnf[cid])); });
@@ -148,6 +155,20 @@ void preprocess(cnf_t& cnf) {
           std::cerr << d << " thanks to " << c << "(with the " << i << "th element negated)" << std::endl;
         }
         c[i] = -c[i];
+      }
+    }
+    */
+
+    /*
+      // THIS HAS A CORRECTNESS BUG???
+    auto v = binary_saturation(cnf);
+    for (auto e : v) {
+      if (std::all_of(std::begin(cnf), std::end(cnf),
+                       [&](clause_id cid) {
+                         return cnf[cid] != e;
+                       })) {
+        cnf.push_back(e);
+        did_work = true;
       }
     }
     */
