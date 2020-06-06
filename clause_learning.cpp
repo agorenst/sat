@@ -87,8 +87,8 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
     //std::cout << "DONE" << std::endl;
     C = c;
 
-    std::cout << "Counter: " << count_level_literals(C) << std::endl;
-      std::cout << "Learned: " << C << std::endl;
+    //std::cout << "Counter: " << count_level_literals(C) << std::endl;
+    //std::cout << "Learned: " << C << std::endl;
       //assert(counter == 1);
       std::sort(std::begin(C), std::end(C));
 #else

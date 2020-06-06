@@ -31,7 +31,7 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
     auto is_decision = [&](literal_t l) {
                          auto at = std::find_if(std::begin(trail), std::end(trail),
                                                 [l](action_t a) { return a.has_literal() && a.get_literal() == l; });
-                         assert(at != std::end(trail));
+                         SAT_ASSERT(at != std::end(trail));
                          return at->is_decision();
                        };
 
@@ -64,7 +64,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
     // Find the action for this
     auto at = std::find_if(std::begin(actions), std::end(actions), [l](action_t a) {
                                       return a.has_literal() && a.get_literal() == -l;});
-    assert(at != std::end(actions));
+    SAT_ASSERT(at != std::end(actions));
     action_t a = *at;
 
     if (a.is_decision()) {
@@ -84,9 +84,9 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
     // hence falsifying l.
     auto at = std::find_if(std::begin(actions), std::end(actions), [l](action_t a) {
                                       return a.has_literal() && a.get_literal() == -l;});
-    assert(at != std::end(actions));
+    SAT_ASSERT(at != std::end(actions));
     action_t a = *at;
-    assert(a.is_unit_prop());
+    SAT_ASSERT(a.is_unit_prop());
 
     // This is the reason that we have to include l in our learned clause.
     // If every other literal in r, however, is already in our clause, then we don't need
@@ -96,7 +96,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
     const clause_t& r = cnf[a.get_clause()];
 
     std::vector<literal_t> work_list;
-    assert(contains(r, -l));
+    SAT_ASSERT(contains(r, -l));
     for (literal_t p : r) {
       if (p == -l) continue; // this is the resolvent, so skip it.
       work_list.push_back(p);
@@ -128,7 +128,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
       // really finding -p.
       auto at = std::find_if(std::begin(actions), std::end(actions), [p](action_t a) {
                                           return a.has_literal() && a.get_literal() == -p;});
-      assert(at != std::end(actions));
+      SAT_ASSERT(at != std::end(actions));
       action_t a = *at;
 
       // Our dominating set has a decision, we fail, quit.
@@ -139,9 +139,9 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
 
       // if it's not a decision, it's unit-prop. Add its units.
       // I don't think order matters for correctness.;
-      assert(a.is_unit_prop());
+      SAT_ASSERT(a.is_unit_prop());
       const clause_t& pr = cnf[a.get_clause()];
-      SAT_ASSERT(contains(pr, p));
+      SAT_ASSERT(contains(pr, -p));
       for (literal_t q : pr) {
         if (q == -p) continue;
         work_list.push_back(q);

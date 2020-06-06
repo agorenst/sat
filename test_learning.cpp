@@ -25,8 +25,10 @@ struct test_instance {
   cnf_t cnf;
   clause_t goal;
   clause_t learned;
+  clause_t pre_min;
   bool test() {
     learned = learn_clause(cnf, trail);
+    pre_min = learned;
     learned_clause_minimization(cnf, learned, trail);
     std::sort(std::begin(learned), std::end(learned));
     std::sort(std::begin(goal), std::end(goal));
@@ -172,6 +174,7 @@ int main() {
   pretty_print_trail(smallest_test->cnf, smallest_test->trail);
   std::cout << "goal: " << smallest_test->goal << std::endl;
   std::cout << "learned: " << smallest_test->learned << std::endl;
+  std::cout << "pre-min: " << smallest_test->pre_min << std::endl;
   print_conflict_graph(smallest_test->cnf, smallest_test->trail);
   return 0;
 }
