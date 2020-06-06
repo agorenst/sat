@@ -50,6 +50,7 @@ test_instance test_learning(std::istream& in) {
   // Read in the log file:
   std::string line;
   while (std::getline(in, line)) {
+    if (line.size() && line[0] == '#') continue;
     std::istringstream iss(line);
     std::string word;
     iss >> word;
