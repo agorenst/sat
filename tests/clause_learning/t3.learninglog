@@ -1,0 +1,103 @@
+# cat tests/uf20-91/uf20-01.cnf | sed s/%// | sed s/^0// | minisat_local/bin/minisat -no-pre -no-elim -no-luby -rfirst=100000 -ccmin-mode=2 -verb=0 > tests/clause_learning/t3.learninglog 
+===============================
+decision: -1
+decision: -20
+decision: -19
+decision: -18
+decision: -17
+unitprop: 5 ; 5 17 19 
+unitprop: 16 ; 16 17 1 
+unitprop: 3 ; 3 -5 18 
+unitprop: -8 ; -8 -5 19 
+unitprop: 9 ; 9 -5 20 
+conflict: -9 -5 1 
+learned: -5 20 1 
+===============================
+decision: -1
+decision: -20
+unitprop: -5 ; -5 20 1 
+decision: 9
+decision: -18
+decision: -17
+unitprop: 19 ; 19 17 5 
+unitprop: 16 ; 16 17 1 
+unitprop: -6 ; -6 17 5 
+unitprop: -12 ; -12 17 -9 
+unitprop: 7 ; 7 17 -9 
+unitprop: 10 ; 10 -19 1 
+conflict: 12 -19 18 
+learned: 17 18 -9 5 
+===============================
+decision: -1
+decision: -20
+unitprop: -5 ; -5 20 1 
+decision: 9
+decision: -18
+unitprop: 17 ; 17 18 -9 5 
+unitprop: -11 ; -11 -17 20 
+unitprop: 6 ; 6 11 1 
+unitprop: -8 ; -8 -6 -17 
+decision: -12
+unitprop: -19 ; -19 12 18 
+unitprop: -7 ; -7 12 -17 
+unitprop: 4 ; 4 12 20 
+unitprop: 14 ; 14 12 -6 
+unitprop: -3 ; -3 12 11 
+unitprop: -2 ; -2 19 -9 
+unitprop: -16 ; -16 -4 18 
+unitprop: -13 ; -13 -4 -9 
+unitprop: 10 ; 10 -4 13 
+unitprop: -15 ; -15 -14 20 
+conflict: -10 13 18 
+learned: -4 18 -9 
+===============================
+decision: -1
+decision: -20
+unitprop: -5 ; -5 20 1 
+decision: 9
+decision: -18
+unitprop: 17 ; 17 18 -9 5 
+unitprop: -11 ; -11 -17 20 
+unitprop: 6 ; 6 11 1 
+unitprop: -8 ; -8 -6 -17 
+unitprop: -4 ; -4 18 -9 
+unitprop: 12 ; 12 4 20 
+unitprop: 15 ; 15 4 18 
+conflict: -15 -12 5 
+learned: 18 -9 20 5 
+===============================
+decision: -1
+decision: -20
+unitprop: -5 ; -5 20 1 
+decision: 9
+unitprop: 18 ; 18 -9 20 5 
+unitprop: -2 ; -2 -18 20 
+unitprop: 14 ; 14 -18 1 
+unitprop: -10 ; -10 -18 2 
+unitprop: -15 ; -15 -14 20 
+unitprop: -13 ; -13 10 15 
+unitprop: -4 ; -4 10 13 
+unitprop: -19 ; -19 10 1 
+conflict: 13 15 -9 
+learned: -9 20 1 
+===============================
+decision: -1
+decision: -20
+unitprop: -5 ; -5 20 1 
+unitprop: -9 ; -9 20 1 
+unitprop: 4 ; 4 9 20 
+unitprop: 6 ; 6 9 1 
+unitprop: 17 ; 17 -6 5 
+unitprop: -11 ; -11 -17 20 
+unitprop: 15 ; 15 -17 9 
+unitprop: -8 ; -8 -17 -6 
+unitprop: -14 ; -14 -15 20 
+unitprop: -16 ; -16 -15 20 
+unitprop: -12 ; -12 -15 5 
+unitprop: -2 ; -2 -15 -6 
+unitprop: -3 ; -3 -15 -6 
+unitprop: 13 ; 13 -15 9 
+unitprop: -18 ; -18 14 1 
+unitprop: 19 ; 19 14 11 
+conflict: 12 14 -6 
+learned: 20 1 

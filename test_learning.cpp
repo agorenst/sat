@@ -5,6 +5,7 @@
 #include "trail.h"
 #include "clause_learning.h"
 #include "lcm.h"
+#include "visualizations.h"
 
 variable_t max_var = 0;
 
@@ -171,5 +172,6 @@ int main() {
   pretty_print_trail(smallest_test->cnf, smallest_test->trail);
   std::cout << "goal: " << smallest_test->goal << std::endl;
   std::cout << "learned: " << smallest_test->learned << std::endl;
+  print_conflict_graph(smallest_test->cnf, smallest_test->trail);
   return 0;
 }
