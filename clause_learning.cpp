@@ -2,6 +2,8 @@
 #include "trace.h"
 #include "lcm.h"
 
+learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
+
 // Debugging purposes
 bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
   if (!c.empty()) {

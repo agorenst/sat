@@ -8,7 +8,6 @@
 
 // Defaults: fast and working...
 backtrack_mode_t backtrack_mode = backtrack_mode_t::nonchron;
-learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
 //unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::queue;
 unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::watched;
 variable_choice_mode_t variable_choice_mode = variable_choice_mode_t::nextclause;

@@ -19,8 +19,25 @@ clause_t get_clause(std::istream& iss) {
   return c;
 }
 
+struct test_instance {
+  trail_t trail;
+  cnf_t cnf;
+  clause_t goal;
+  clause_t learned;
+  bool test() {
+    learned = learn_clause(cnf, trail);
+    learned_clause_minimization(cnf, learned, trail);
+    std::sort(std::begin(learned), std::end(learned));
+    std::sort(std::begin(goal), std::end(goal));
+    if (learned != goal) {
+      return false;
+    }
+    return true;
+  }
+};
+
 // Do a single iteration of the test.
-bool test_learning(std::istream& in) {
+test_instance test_learning(std::istream& in) {
   cnf_t cnf;
 
   std::vector<action_t> dynamic_trail;
@@ -70,7 +87,6 @@ bool test_learning(std::istream& in) {
 
   trail_t trail;
   trail.construct(max_var);
-  std::cout << "Done constructing, max_var = " << max_var << std::endl;
 
   // TODO: Confirm that each unit-prop really does only contain literals
   // from earlier in the trail. Standard correctness checks.
@@ -95,19 +111,34 @@ bool test_learning(std::istream& in) {
     trail.append(a);
   }
 
-  // Now we have our real trail, and our real cnf.
+  test_instance T{std::move(trail), cnf, goal};
+  max_var = 0;
+  return T;
+}
 
-  clause_t learned = learn_clause(cnf, trail);
-  learned_clause_minimization(cnf, learned, trail);
-  std::sort(std::begin(learned), std::end(learned));
-  std::sort(std::begin(goal), std::end(goal));
-  std::cout << "Learned: " << learned << std::endl;
-  std::cout << "Goal:    " << goal << std::endl;
-  if (learned != goal) {
-    std::cout << "DIFFERENT" << std::endl;
-    return false;
+void pretty_print_trail(const cnf_t& cnf, const trail_t& t) {
+  for (action_t a : t) {
+    if (a.is_decision()) {
+      std::cout << "decision: " << a.get_literal() << std::endl;
+    }
+    else if (a.is_unit_prop()) {
+      std::cout << "unitprop: " << a.get_literal() << " ; ";
+      for (auto l : cnf[a.get_clause()]) {
+        std::cout << l << " ";
+      }
+      std::cout << std::endl;
+    }
+    else if (a.is_conflict()) {
+      std::cout << "conflict: ";
+      for (auto l : cnf[a.get_clause()]) {
+        std::cout << l << " ";
+      }
+      std::cout << std::endl;
+    }
+    else {
+      assert(0);
+    }
   }
-  return true;
 }
 
 int main() {
@@ -115,12 +146,30 @@ int main() {
   std::istream& in = std::cin;
 
   std::string line;
+  std::vector<test_instance> differences;
   while (std::getline(in, line)) {
+    if (line.size() > 0 && line[0] == '#') continue; // comment!
     if (line == "===============================") {
-      if (!test_learning(in)) {
-        return 1;
+      test_instance T = test_learning(in);
+      if (!T.test()) {
+        differences.emplace_back(std::move(T));
       }
     }
   }
+  if (differences.empty()) {
+    std::cout << "No differences found!" << std::endl;
+    return 0;
+  }
+  auto smallest_test = std::min_element(std::begin(differences),
+                                        std::end(differences),
+                                        [](const test_instance& t1,
+                                           const test_instance& t2) {
+                                          //return t1.trail.level() < t2.trail.level();
+                                          return std::distance(std::begin(t1.trail), std::end(t1.trail)) <
+                                            std::distance(std::begin(t2.trail), std::end(t2.trail));
+                                        });
+  pretty_print_trail(smallest_test->cnf, smallest_test->trail);
+  std::cout << "goal: " << smallest_test->goal << std::endl;
+  std::cout << "learned: " << smallest_test->learned << std::endl;
   return 0;
 }

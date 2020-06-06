@@ -16,10 +16,6 @@ enum class backtrack_mode_t {
                              simplest,
                              nonchron,
 };
-enum class learn_mode_t {
-                         simplest,
-                         explicit_resolution
-};
 enum class unit_prop_mode_t {
                              simplest,
                                queue,
@@ -31,7 +27,6 @@ enum class variable_choice_mode_t {
     };
 
 extern backtrack_mode_t backtrack_mode;
-extern learn_mode_t learn_mode;
 extern unit_prop_mode_t unit_prop_mode;
 extern variable_choice_mode_t variable_choice_mode;
 

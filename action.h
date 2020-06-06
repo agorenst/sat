@@ -42,4 +42,7 @@ struct action_t {
   }
 };
 
+action_t make_decision(literal_t l);
+action_t make_unit_prop(literal_t l, clause_id cid);
+action_t make_conflict(clause_id cid);
 std::ostream& operator<<(std::ostream& o, const action_t a);

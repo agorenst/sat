@@ -83,6 +83,9 @@ bool trail_t::clause_unsat(const clause_t& c) const {
 size_t trail_t::count_unassigned_literals(const clause_t& c) const {
   return std::count_if(std::begin(c), std::end(c), [this](literal_t l) {return this->literal_unassigned(l);});
 }
+literal_t trail_t::find_unassigned_literal(const clause_t& c) const {
+  return *std::find_if(std::begin(c), std::end(c), [this](literal_t l) {return this->literal_unassigned(l);});
+}
 
 std::ostream& operator<<(std::ostream& o, const trail_t::v_state_t s) {
   switch(s) {

@@ -38,6 +38,26 @@ clause_id action_t::get_clause() const {
   assert(0);
 }
 
+action_t make_decision(literal_t l) {
+  action_t a;
+  a.action_kind = action_t::action_kind_t::decision;
+  a.decision_literal = l;
+  return a;
+}
+action_t make_unit_prop(literal_t l, clause_id cid) {
+  action_t a;
+  a.action_kind = action_t::action_kind_t::unit_prop;
+  a.unit_prop.propped_literal = l;
+  a.unit_prop.reason = cid;
+  return a;
+}
+action_t make_conflict(clause_id cid) {
+  action_t a;
+  a.action_kind = action_t::action_kind_t::halt_conflict;
+  a.conflict_clause_id = cid;
+  return a;
+}
+
 std::ostream& operator<<(std::ostream& o, const action_t::action_kind_t a) {
   switch(a) {
   case action_t::action_kind_t::decision: return o << "decision";

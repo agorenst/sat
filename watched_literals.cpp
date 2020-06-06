@@ -52,13 +52,14 @@ void watched_literals_t::literal_falsed(literal_t l) {
   ////std::cout << "About to falsify " << l << ", with state being: " << std::endl << *this << std::endl;
   // Make a copy because we're about to transform this list.
   clause_list_t clauses = literals_to_watcher[-l];
+
   for (clause_id cid : clauses) {
     literal_falsed(l, cid);
     if (trace.halted()) {
       break;
     }
   }
-  //std::cout << "Just falsified" << l << ", with state being: " << std::endl << *this << std::endl;
+
   if (!trace.halted()) SAT_ASSERT(validate_state());
 }
 
