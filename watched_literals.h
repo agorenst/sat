@@ -20,12 +20,12 @@ struct watcher_t {
   literal_t l1 = 0;
   literal_t l2 = 0;
 };
+
 struct watched_literals_t {
   cnf_t& cnf;
   trace_t& trace;
   literal_incidence_map_t literals_to_watcher;
   clause_map_t<watcher_t> watched_literals;
-  typedef std::vector<clause_id> clause_list_t;
 
   watched_literals_t(trace_t& t);
   void watch_clause(clause_id cid);

@@ -2,8 +2,6 @@
 
 #include "trace.h"
 
-typedef std::vector<clause_id> clause_list_t;
-
 std::ostream& operator<<(std::ostream& o, const watcher_t& w);
 
 watched_literals_t::watched_literals_t(trace_t& t)
@@ -55,7 +53,10 @@ void watched_literals_t::literal_falsed(literal_t l) {
   ////std::cout << "About to falsify " << l << ", with state being: " <<
   /// std::endl << *this << std::endl;
   // Make a copy because we're about to transform this list.
-  clause_list_t clauses = literals_to_watcher[-l];
+  clause_list_t clauses;
+  for (clause_id cid : literals_to_watcher[-l]) {
+    clauses.push_back(cid);
+  }
 
   for (clause_id cid : clauses) {
     literal_falsed(l, cid);
@@ -153,12 +154,14 @@ void watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
   SAT_ASSERT(watch_contains(w, n));
 }
 
+#if 0
 void watcher_list_remove_clause(clause_list_t& clause_list, clause_id cid) {
   auto it = std::remove(std::begin(clause_list), std::end(clause_list), cid);
   SAT_ASSERT(it != std::end(clause_list));
   SAT_ASSERT(it == std::prev(std::end(clause_list)));
   clause_list.erase(it, std::end(clause_list));
 }
+#endif
 
 void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o,
                                       literal_t n) {
@@ -167,7 +170,8 @@ void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o,
   SAT_ASSERT(contains(old_list, cid));
   SAT_ASSERT(!contains(new_list, cid));
   // Update our lists data:
-  watcher_list_remove_clause(old_list, cid);
+  old_list.remove(cid);
+  //watcher_list_remove_clause(old_list, cid);
   new_list.push_back(cid);
   // Update our watcher data:
   watcher_literal_swap(w, o, n);
@@ -176,8 +180,10 @@ void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o,
 void watched_literals_t::remove_clause(clause_id id) {
   watcher_t& w = watched_literals[id];
   // std::cerr << "w to remove: " << w << std::endl;
-  watcher_list_remove_clause(literals_to_watcher[w.l1], id);
-  watcher_list_remove_clause(literals_to_watcher[w.l2], id);
+  //watcher_list_remove_clause(literals_to_watcher[w.l1], id);
+  //watcher_list_remove_clause(literals_to_watcher[w.l2], id);
+  literals_to_watcher[w.l1].remove(id);
+  literals_to_watcher[w.l2].remove(id);
   w.l1 = 0;
   w.l2 = 0;
 }

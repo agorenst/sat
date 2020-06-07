@@ -450,9 +450,10 @@ int main(int argc, char* argv[]) {
     for (literal_t l : c) {
       auto& incidence_list = trace.literal_to_clause[l];
       SAT_ASSERT(contains(incidence_list, cid));
-      auto et = std::remove(std::begin(incidence_list),
-                            std::end(incidence_list), cid);
-      incidence_list.erase(et, std::end(incidence_list));
+      incidence_list.remove(cid);
+      //auto et = std::remove(std::begin(incidence_list),
+      //std::end(incidence_list), cid);
+      //incidence_list.erase(et, std::end(incidence_list));
     }
   });
 

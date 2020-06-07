@@ -16,7 +16,7 @@ variable_choice_mode_t variable_choice_mode =
 void trace_t::reset() {
   actions.clear();
   std::for_each(std::begin(literal_to_clause), std::end(literal_to_clause),
-                [](auto m) { m.clear(); });
+                [](auto& m) { m.clear(); });
   units.clear();
 
   variable_t max_var = 0;
