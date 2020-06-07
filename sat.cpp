@@ -292,6 +292,7 @@ int main(int argc, char* argv[]) {
         }
       }
 
+      /* RESTART, DON"T.
       counter++;
       if (counter > 1000) {
         while (trace.actions.level()) {
@@ -301,6 +302,7 @@ int main(int argc, char* argv[]) {
         //size_t total_strengthened = naive_self_subsume(cnf);
         //if (total_strengthened) std::cerr << "[NSS] " << total_strengthened << std::endl;
       }
+      */
 
 
       //  #if 0
