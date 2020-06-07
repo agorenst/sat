@@ -10,10 +10,6 @@ struct unit_queue_t {
   bool empty();
   void clear();
 
-  auto begin() {
-    return queue.begin() + b;
-  }
-  auto end() {
-    return queue.begin() + e;
-  }
+  auto begin() { return queue.begin() + b; }
+  auto end() { return queue.begin() + e; }
 };

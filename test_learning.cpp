@@ -1,10 +1,10 @@
 #include <iostream>
 #include <sstream>
 
-#include "cnf.h"
-#include "trail.h"
 #include "clause_learning.h"
+#include "cnf.h"
 #include "lcm.h"
+#include "trail.h"
 #include "visualizations.h"
 
 variable_t max_var = 0;
@@ -60,8 +60,7 @@ test_instance test_learning(std::istream& in) {
       max_var = std::max(max_var, std::abs(l));
       action_t a = make_decision(l);
       dynamic_trail.push_back(a);
-    }
-    else if (word == "unitprop:") {
+    } else if (word == "unitprop:") {
       literal_t l;
       iss >> l;
       std::string semicolon;
@@ -73,18 +72,15 @@ test_instance test_learning(std::istream& in) {
       dynamic_trail.push_back(a);
 
       assert(contains(c, l));
-    }
-    else if (word == "conflict:") {
+    } else if (word == "conflict:") {
       clause_t c = get_clause(iss);
       auto key = cnf.push_back(c);
       action_t a = make_conflict(key);
       dynamic_trail.push_back(a);
-    }
-    else if (word == "learned:") {
+    } else if (word == "learned:") {
       goal = get_clause(iss);
       break;
-    }
-    else {
+    } else {
       assert(0);
     }
   }
@@ -102,12 +98,10 @@ test_instance test_learning(std::istream& in) {
       const clause_t& c = cnf[cid];
       assert(trail.count_unassigned_literals(c) == 1);
       assert(trail.find_unassigned_literal(c) == a.get_literal());
-    }
-    else if (a.is_decision()) {
+    } else if (a.is_decision()) {
       literal_t l = a.get_literal();
       assert(trail.literal_unassigned(l));
-    }
-    else if (a.is_conflict()) {
+    } else if (a.is_conflict()) {
       clause_id cid = a.get_clause();
       const clause_t& c = cnf[cid];
       assert(trail.clause_unsat(c));
@@ -124,22 +118,19 @@ void pretty_print_trail(const cnf_t& cnf, const trail_t& t) {
   for (action_t a : t) {
     if (a.is_decision()) {
       std::cout << "decision: " << a.get_literal() << std::endl;
-    }
-    else if (a.is_unit_prop()) {
+    } else if (a.is_unit_prop()) {
       std::cout << "unitprop: " << a.get_literal() << " ; ";
       for (auto l : cnf[a.get_clause()]) {
         std::cout << l << " ";
       }
       std::cout << std::endl;
-    }
-    else if (a.is_conflict()) {
+    } else if (a.is_conflict()) {
       std::cout << "conflict: ";
       for (auto l : cnf[a.get_clause()]) {
         std::cout << l << " ";
       }
       std::cout << std::endl;
-    }
-    else {
+    } else {
       assert(0);
     }
   }
@@ -152,7 +143,7 @@ int main() {
   std::string line;
   std::vector<test_instance> differences;
   while (std::getline(in, line)) {
-    if (line.size() > 0 && line[0] == '#') continue; // comment!
+    if (line.size() > 0 && line[0] == '#') continue;  // comment!
     if (line == "===============================") {
       test_instance T = test_learning(in);
       if (!T.test()) {
@@ -164,14 +155,13 @@ int main() {
     std::cout << "No differences found!" << std::endl;
     return 0;
   }
-  auto smallest_test = std::min_element(std::begin(differences),
-                                        std::end(differences),
-                                        [](const test_instance& t1,
-                                           const test_instance& t2) {
-                                          //return t1.trail.level() < t2.trail.level();
-                                          return std::distance(std::begin(t1.trail), std::end(t1.trail)) <
-                                            std::distance(std::begin(t2.trail), std::end(t2.trail));
-                                        });
+  auto smallest_test = std::min_element(
+      std::begin(differences), std::end(differences),
+      [](const test_instance& t1, const test_instance& t2) {
+        // return t1.trail.level() < t2.trail.level();
+        return std::distance(std::begin(t1.trail), std::end(t1.trail)) <
+               std::distance(std::begin(t2.trail), std::end(t2.trail));
+      });
   pretty_print_trail(smallest_test->cnf, smallest_test->trail);
   std::cout << "goal: " << smallest_test->goal << std::endl;
   std::cout << "learned: " << smallest_test->learned << std::endl;

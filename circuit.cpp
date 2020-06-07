@@ -18,7 +18,8 @@ std::vector<clause_t> binary_saturation(const cnf_t& cnf) {
         if (e.size() == 2) {
           std::sort(std::begin(e), std::end(e));
           res.push_back(e);
-          //std::cerr << "Found binary over " << l << ": " << e << " from " << c << " and " << d << std::endl;
+          // std::cerr << "Found binary over " << l << ": " << e << " from " <<
+          // c << " and " << d << std::endl;
         }
       }
     }

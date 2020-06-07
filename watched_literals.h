@@ -2,16 +2,18 @@
 #include <map>
 #include <vector>
 
-#include "debug.h"
-#include "cnf.h"
-#include "literal_incidence_map.h"
 #include "clause_key_map.h"
+#include "cnf.h"
+#include "debug.h"
+#include "literal_incidence_map.h"
 
 // This is ONLY for binary+ clauses, not unary or empty.
 // The main entry points:
 //  - watch_clause(cid): add a new clause to be watched
-//  - literal_falsed(l): inform the machine that a new literal has been marked false.
-//                       This will add more things to the unit-prop queue, or report a conflict.
+//  - literal_falsed(l): inform the machine that a new literal has been marked
+//  false.
+//                       This will add more things to the unit-prop queue, or
+//                       report a conflict.
 
 struct trace_t;
 struct watcher_t {

@@ -6,14 +6,12 @@
 #include "cnf.h"
 #include "debug.h"
 
-
 std::ostream& operator<<(std::ostream& o, const clause_t& c) {
   for (auto l : c) {
     o << l << " ";
   }
   return o;
 }
-
 
 clause_t resolve(clause_t c1, clause_t c2, literal_t l) {
   SAT_ASSERT(contains(c1, l));
@@ -39,24 +37,28 @@ literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after = 0) {
   bool seen = (after == 0);
 
   for (literal_t l : c1) {
-
     // Skip everything until after "after"
     if (l == after) {
       seen = true;
       continue;
     }
-    if (!seen) continue;
+    if (!seen) {
+      continue;
+    }
 
     for (literal_t m : c2) {
-      if (l == -m) return l;
+      if (l == -m) {
+        return l;
+      }
     }
   }
   return 0;
 }
 
 void commit_literal(cnf_t& cnf, literal_t l) {
-  auto new_end = 
-    std::remove_if(std::begin(cnf), std::end(cnf), [&](const clause_id cid) { return contains(cnf[cid], l); });
+  auto new_end = std::remove_if(
+      std::begin(cnf), std::end(cnf),
+      [&](const clause_id cid) { return contains(cnf[cid], l); });
   cnf.erase(new_end, std::end(cnf));
   for (auto cid : cnf) {
     clause_t& c = cnf[cid];
@@ -66,8 +68,9 @@ void commit_literal(cnf_t& cnf, literal_t l) {
 }
 
 literal_t find_unit(const cnf_t& cnf) {
-  auto it = std::find_if(std::begin(cnf), std::end(cnf),
-                         [&](const clause_id cid) { return cnf[cid].size() == 1; });
+  auto it =
+      std::find_if(std::begin(cnf), std::end(cnf),
+                   [&](const clause_id cid) { return cnf[cid].size() == 1; });
   if (it != std::end(cnf)) {
     return cnf[*it][0];
   }
@@ -76,14 +79,13 @@ literal_t find_unit(const cnf_t& cnf) {
 
 bool immediately_unsat(const cnf_t& cnf) {
   for (clause_id cid : cnf) {
-    if (cnf[cid].size() == 0) { return true; }
+    if (cnf[cid].empty()) {
+      return true;
+    }
   }
   return false;
 }
-bool immediately_sat(const cnf_t& cnf) {
-  return cnf.live_clause_count() == 0;
-}
-
+bool immediately_sat(const cnf_t& cnf) { return cnf.live_clause_count() == 0; }
 
 std::ostream& operator<<(std::ostream& o, const cnf_t& cnf) {
   for (auto&& cid : cnf) {
@@ -103,10 +105,14 @@ cnf_t load_cnf(std::istream& in) {
 
   std::string line;
   while (std::getline(in, line)) {
-    if (line.size() == 0) { continue; }
-    if (line[0] == 'c') { continue; }
+    if (line.empty()) {
+      continue;
+    }
+    if (line[0] == 'c') {
+      continue;
+    }
     if (line[0] == 'p') {
-      // TODO: do some error-checking;
+      // TODO(aaron): do some error-checking;
       break;
     }
   }

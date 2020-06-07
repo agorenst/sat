@@ -4,10 +4,13 @@
 
 typedef std::vector<clause_id> clause_list_t;
 
-
 std::ostream& operator<<(std::ostream& o, const watcher_t& w);
 
-watched_literals_t::watched_literals_t(trace_t& t): cnf(t.cnf), trace(t), literals_to_watcher(t.cnf), watched_literals(cnf.live_clause_count()) {}
+watched_literals_t::watched_literals_t(trace_t& t)
+    : cnf(t.cnf),
+      trace(t),
+      literals_to_watcher(t.cnf),
+      watched_literals(cnf.live_clause_count()) {}
 
 bool active = true;
 
@@ -25,31 +28,32 @@ void watched_literals_t::watch_clause(clause_id cid) {
 
   // Find a non-false watcher; one should exist.
   literal_t l1 = find_next_watcher(c, w);
-  SAT_ASSERT(l1); // shouldn't be 0, at least
+  SAT_ASSERT(l1);  // shouldn't be 0, at least
   w.l1 = l1;
 
   literal_t l2 = find_next_watcher(c, w);
 
   // We may already be a unit. If so, to maintain backtracking
-  // we want to have our other watcher be the last-falsified thing 
+  // we want to have our other watcher be the last-falsified thing
   if (l2 == 0) {
     literal_t l = trace.find_last_falsified(cid);
     w.l2 = l;
-  }
-  else {
+  } else {
     w.l2 = l2;
   }
   SAT_ASSERT(w.l2);
   SAT_ASSERT(w.l2 != w.l1);
 
-  //std::cout << "Watching #" << cid << " {" << c << "} with " << w << std::endl;
+  // std::cout << "Watching #" << cid << " {" << c << "} with " << w <<
+  // std::endl;
   literals_to_watcher[w.l1].push_back(cid);
   literals_to_watcher[w.l2].push_back(cid);
   watched_literals[cid] = w;
 }
 
 void watched_literals_t::literal_falsed(literal_t l) {
-  ////std::cout << "About to falsify " << l << ", with state being: " << std::endl << *this << std::endl;
+  ////std::cout << "About to falsify " << l << ", with state being: " <<
+  /// std::endl << *this << std::endl;
   // Make a copy because we're about to transform this list.
   clause_list_t clauses = literals_to_watcher[-l];
 
@@ -67,15 +71,15 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
   SAT_ASSERT(trace.actions.literal_true(l));
   const clause_t& c = cnf[cid];
 
-
   watcher_t& w = watched_literals[cid];
-  //watcher_t oldw = w;
+  // watcher_t oldw = w;
   SAT_ASSERT(contains(c, -l));
   SAT_ASSERT(watch_contains(w, -l));
 
-  // This seems correct, but weirdly doesn't seem to actually improve any runtime.
-  //if (trace.actions.literal_true(w.l1) || trace.actions.literal_true(w.l2)) {
-  //return;
+  // This seems correct, but weirdly doesn't seem to actually improve any
+  // runtime.
+  // if (trace.actions.literal_true(w.l1) || trace.actions.literal_true(w.l2)) {
+  // return;
   //}
 
   // see if we can find a new watching value.
@@ -89,36 +93,42 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
       if (s == 1) {
         literal_t u = trace.find_unassigned_literal(c);
         trace.push_unit_queue(u, cid);
-        //std::cout << "Falsing " << l << " in clause #" << cid << " {" << c << "} caused unit, no change to watcher " << w << std::endl;
-      }
-      else {
-        //std::cout << *this << std::endl;
+        // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c <<
+        // "} caused unit, no change to watcher " << w << std::endl;
+      } else {
+        // std::cout << *this << std::endl;
         SAT_ASSERT(trace.clause_unsat(cid));
         trace.push_conflict(cid);
-        //std::cout << "Falsing " << l << " in clause #" << cid << " {" << c << "} caused conflict, no change to watcher " << w << std::endl;
+        // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c <<
+        // "} caused conflict, no change to watcher " << w << std::endl;
       }
-    }
-    else {
-      //std::cout << "Falsing " << l << " in clause #" << cid << " {" << c << "} already sat, no change to watcher " << w << std::endl;
+    } else {
+      // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c <<
+      // "} already sat, no change to watcher " << w << std::endl;
     }
   }
   // If we can, then we swap to that.
   else {
 #ifdef SAT_DEBUG_MODE
-    if (trace.count_unassigned_literals(c) + trace.count_true_literals(c) <= 1) {
-      std::cout << "Falsing " << l << " means {" << c << "} " << "watched by " << w << " has " << trace.count_unassigned_literals(c) << " free literals, found candidate n = " << n << std::endl;
+    if (trace.count_unassigned_literals(c) + trace.count_true_literals(c) <=
+        1) {
+      std::cout << "Falsing " << l << " means {" << c << "} "
+                << "watched by " << w << " has "
+                << trace.count_unassigned_literals(c)
+                << " free literals, found candidate n = " << n << std::endl;
       std::cout << trace << std::endl << cnf << std::endl;
     }
-    SAT_ASSERT(trace.count_unassigned_literals(c) + trace.count_true_literals(c) > 1);
+    SAT_ASSERT(
+        trace.count_unassigned_literals(c) + trace.count_true_literals(c) > 1);
 #endif
     watcher_swap(cid, w, -l, n);
-    //std::cout << "Falsing " << l << " in clause #" << cid << " {" << c << "} has watcher go from: " << oldw << " to " << w << std::endl;
+    // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c << "}
+    // has watcher go from: " << oldw << " to " << w << std::endl;
   }
 }
 
-
-
-literal_t watched_literals_t::find_next_watcher(const clause_t& c, const watcher_t& w) {
+literal_t watched_literals_t::find_next_watcher(const clause_t& c,
+                                                const watcher_t& w) {
   for (literal_t l : c) {
     if (watch_contains(w, l)) continue;
     if (trace.actions.literal_true(l)) return l;
@@ -129,7 +139,6 @@ literal_t watched_literals_t::find_next_watcher(const clause_t& c, const watcher
   }
   return 0;
 }
-
 
 void watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
   SAT_ASSERT(watch_contains(w, o));
@@ -150,7 +159,8 @@ void watcher_list_remove_clause(clause_list_t& clause_list, clause_id cid) {
   clause_list.erase(it, std::end(clause_list));
 }
 
-void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o, literal_t n) {
+void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o,
+                                      literal_t n) {
   clause_list_t& old_list = literals_to_watcher[o];
   clause_list_t& new_list = literals_to_watcher[n];
   SAT_ASSERT(contains(old_list, cid));
@@ -164,7 +174,7 @@ void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o, 
 
 void watched_literals_t::remove_clause(clause_id id) {
   watcher_t& w = watched_literals[id];
-  //std::cerr << "w to remove: " << w << std::endl;
+  // std::cerr << "w to remove: " << w << std::endl;
   watcher_list_remove_clause(literals_to_watcher[w.l1], id);
   watcher_list_remove_clause(literals_to_watcher[w.l2], id);
   w.l1 = 0;
@@ -173,11 +183,12 @@ void watched_literals_t::remove_clause(clause_id id) {
 
 #ifdef SAT_DEBUG_MODE
 void watched_literals_t::print_watch_state() const {
-  //for (auto&& [cid, w] : watched_literals) {
-  //std::cout << cnf[cid] << " watched by " << w << std::endl;
+  // for (auto&& [cid, w] : watched_literals) {
+  // std::cout << cnf[cid] << " watched by " << w << std::endl;
   //}
-  //for (auto&& [literal, clause_list] : literals_to_watcher) {
-  for (literal_t l = literals_to_watcher.first_index(); l < literals_to_watcher.end_index(); l++) {
+  // for (auto&& [literal, clause_list] : literals_to_watcher) {
+  for (literal_t l = literals_to_watcher.first_index();
+       l < literals_to_watcher.end_index(); l++) {
     if (l == 0) continue;
     std::cout << "Literal " << l << " watching: ";
     for (const auto& cid : literals_to_watcher[l]) {
@@ -189,10 +200,11 @@ void watched_literals_t::print_watch_state() const {
 }
 #endif
 
-bool watched_literals_t::clause_watched(clause_id cid) { return watched_literals[cid].l1 != 0; }
+bool watched_literals_t::clause_watched(clause_id cid) {
+  return watched_literals[cid].l1 != 0;
+}
 bool watched_literals_t::validate_state() {
   for (clause_id cid : cnf) {
-
     // We are, or aren't, watching this clause, as appropriate.
     const clause_t& c = cnf[cid];
     if (c.size() < 2) {
@@ -200,18 +212,21 @@ bool watched_literals_t::validate_state() {
       continue;
     }
     if (!clause_watched(cid)) {
-      std::cout << "CID not watched: " << cid << " {" << cnf[cid] << "}" << std::endl;
+      std::cout << "CID not watched: " << cid << " {" << cnf[cid] << "}"
+                << std::endl;
     }
     SAT_ASSERT(clause_watched(cid));
 
     // The two literals watching us are in the clause.
     const watcher_t w = watched_literals[cid];
     if (!contains(c, w.l1)) {
-      std::cout << "Failing with #" << cid << "= {" << c << "} and w: " << w << ", specifically: " << w.l1 << std::endl;
+      std::cout << "Failing with #" << cid << "= {" << c << "} and w: " << w
+                << ", specifically: " << w.l1 << std::endl;
     }
     SAT_ASSERT(contains(c, w.l1));
     if (!contains(c, w.l2)) {
-      std::cout << "Failing with " << c << " and w: " << w << ", specifically: " << w.l2 << std::endl;
+      std::cout << "Failing with " << c << " and w: " << w
+                << ", specifically: " << w.l2 << std::endl;
     }
     SAT_ASSERT(contains(c, w.l2));
 
@@ -222,24 +237,32 @@ bool watched_literals_t::validate_state() {
     // I would think that the watched literals shouldn't be pointed to false,
     // but I'm not sure.
     if (trace.clause_sat(cid)) {
-      if(trace.actions.literal_false(w.l1) && trace.actions.literal_false(w.l2)) {
-        std::cout << "Error, clause is sat, but both watched literals false: #" << cid << "{" << c << "} with watch: " << w << std::endl;
+      if (trace.actions.literal_false(w.l1) &&
+          trace.actions.literal_false(w.l2)) {
+        std::cout << "Error, clause is sat, but both watched literals false: #"
+                  << cid << "{" << c << "} with watch: " << w << std::endl;
         std::cout << *this << std::endl;
         std::cout << trace << std::endl;
       }
-      SAT_ASSERT(!trace.actions.literal_false(w.l1) || !trace.actions.literal_false(w.l2));
+      SAT_ASSERT(!trace.actions.literal_false(w.l1) ||
+                 !trace.actions.literal_false(w.l2));
       continue;
     }
 
     // If both watches are false, the clause should be entirely unsat.
-    if (trace.actions.literal_false(w.l1) && trace.actions.literal_false(w.l2)) {
+    if (trace.actions.literal_false(w.l1) &&
+        trace.actions.literal_false(w.l2)) {
       SAT_ASSERT(trace.clause_unsat(cid));
     }
     // If exactly one watch is false, then the clause should be unit.
-    else if (trace.actions.literal_false(w.l1) || trace.actions.literal_false(w.l2)) {
+    else if (trace.actions.literal_false(w.l1) ||
+             trace.actions.literal_false(w.l2)) {
       if (trace.count_unassigned_literals(cid) != 1) {
-        std::cout << "Failing with unit inconsistencies in: " << std::endl << c << "; " << w << std::endl <<
-          *this << std::endl << "With trace state: " << std::endl << trace << std::endl;
+        std::cout << "Failing with unit inconsistencies in: " << std::endl
+                  << c << "; " << w << std::endl
+                  << *this << std::endl
+                  << "With trace state: " << std::endl
+                  << trace << std::endl;
       }
       SAT_ASSERT(trace.count_unassigned_literals(cid) == 1);
     }
@@ -249,10 +272,11 @@ bool watched_literals_t::validate_state() {
   }
 
   // The literals_to_watcher maps shouldn't have extra edges
-  // For every clause that a literal says it watches, that clause should say it's
-  // watched by that literal.
+  // For every clause that a literal says it watches, that clause should say
+  // it's watched by that literal.
 #ifdef SAT_DEBUG_MODE
-  for (literal_t l = literals_to_watcher.first_index(); l < literals_to_watcher.end_index(); l++) {
+  for (literal_t l = literals_to_watcher.first_index();
+       l < literals_to_watcher.end_index(); l++) {
     if (l == 0) continue;
     const auto& cl = literals_to_watcher[l];
     for (auto cid : cl) {
@@ -269,6 +293,6 @@ std::ostream& operator<<(std::ostream& o, const watcher_t& w) {
 }
 std::ostream& operator<<(std::ostream& o, const watched_literals_t& w) {
   assert(0);
-  //w.print_watch_state();
+  // w.print_watch_state();
   return o;
 }

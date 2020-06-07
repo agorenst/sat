@@ -1,11 +1,11 @@
+#include <cassert>
 #include <iostream>
 #include <map>
-#include <cassert>
 
-#include "preprocess.h"
-#include "subsumption.h"
 #include "bce.h"
 #include "circuit.h"
+#include "preprocess.h"
+#include "subsumption.h"
 
 // PRE = preprocess
 // NUP = Niave unit prop
@@ -35,8 +35,7 @@ literal_t find_pure_literal(const cnf_t& cnf) {
   // Do a "merge":
   auto pt = std::begin(positives);
   auto nt = std::begin(negatives);
-  while (pt != std::end(positives) &&
-         nt != std::end(negatives)) {
+  while (pt != std::end(positives) && nt != std::end(negatives)) {
     if (*pt < *nt) {
       return *pt;
     }
@@ -49,11 +48,11 @@ literal_t find_pure_literal(const cnf_t& cnf) {
   return 0;
 }
 
-bool clauses_self_subsume(variable_t v, const clause_t& pclause, const clause_t& nclause) {
+bool clauses_self_subsume(variable_t v, const clause_t& pclause,
+                          const clause_t& nclause) {
   auto pit = std::begin(pclause);
   auto nit = std::begin(nclause);
-  while (pit != std::end(pclause) &&
-         nit != std::end(nclause)) {
+  while (pit != std::end(pclause) && nit != std::end(nclause)) {
     if (*pit == v) {
       pit++;
       continue;
@@ -79,7 +78,7 @@ void naive_self_subsumption(cnf_t& cnf) {
       max_var = std::max(std::abs(l), max_var);
     }
   }
-  for (variable_t v = 1; v < max_var+1; v++) {
+  for (variable_t v = 1; v < max_var + 1; v++) {
     const auto& pos_clause_list = literal_to_clauses[v];
     const auto& neg_clause_list = literal_to_clauses[-v];
     for (auto pcid : pos_clause_list) {
@@ -97,27 +96,27 @@ void preprocess(cnf_t& cnf) {
   // Niavely unit-prop
   bool did_work = true;
   // this will be useful for self-subsumption.
-  std::for_each(std::begin(cnf), std::end(cnf),
-                [&](clause_id cid) {
-                  clause_t& c = cnf[cid];
-                  std::sort(std::begin(c), std::end(c));
-                });
+  std::for_each(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
+    clause_t& c = cnf[cid];
+    std::sort(std::begin(c), std::end(c));
+  });
 
   while (did_work) {
     did_work = false;
     while (literal_t u = find_unit(cnf)) {
-      //std::cout << "[PRE][NUP] " << u << std::endl;
+      // std::cout << "[PRE][NUP] " << u << std::endl;
       commit_literal(cnf, u);
       did_work = true;
     }
-    //while (literal_t p = find_pure_literal(cnf)) {
+    // while (literal_t p = find_pure_literal(cnf)) {
     //  std::cout << "[PRE][PLE] " << p << std::endl;
     //  commit_literal(cnf, p);
     //  did_work = true;
     //}
 
     std::vector<clause_id> bc = BCE(cnf);
-    std::sort(std::begin(bc), std::end(bc), [](clause_id c1, clause_id c2) { return c2 < c1; });
+    std::sort(std::begin(bc), std::end(bc),
+              [](clause_id c1, clause_id c2) { return c2 < c1; });
 #if 0
     std::cout << "To remove clause_ids: (should be from highest index to lowest: " << std::endl;
     for (clause_id cid : bc) {
@@ -127,32 +126,31 @@ void preprocess(cnf_t& cnf) {
     std::cout << "Removing: " << bc.size() << " from " << cnf.size() << std::endl;
     std::cout << cnf << std::endl;
 #endif
-    auto to_erase = std::remove_if(std::begin(cnf), std::end(cnf), [&bc](clause_id cid) { return contains(bc, cid); });
-    //std::cout << "About to remove: " << cnf.live_clause_count() << std::endl;
+    auto to_erase =
+        std::remove_if(std::begin(cnf), std::end(cnf),
+                       [&bc](clause_id cid) { return contains(bc, cid); });
+    // std::cout << "About to remove: " << cnf.live_clause_count() << std::endl;
     cnf.erase(to_erase, std::end(cnf));
-    //std::cout << "Removed: " << cnf.live_clause_count() << std::endl;
-    //std::cout << cnf << std::endl;
+    // std::cout << "Removed: " << cnf.live_clause_count() << std::endl;
+    // std::cout << cnf << std::endl;
 
     size_t total_strengthened = naive_self_subsume(cnf);
     if (total_strengthened) {
-      //std::cerr << "[NSS] " << total_strengthened << std::endl;
+      // std::cerr << "[NSS] " << total_strengthened << std::endl;
       did_work = true;
     }
     /*
     std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
-                                                    std::sort(std::begin(cnf[cid]), std::end(cnf[cid])); });
-    for (auto cid : cnf) {
-      clause_t& c = cnf[cid];
-      for (size_t i = 0; i < c.size(); i++) {
-        c[i] = -c[i];
-        auto subsumes = find_subsumed(cnf, c);
-        for (auto did: subsumes) {
-          clause_t d = cnf[did];
+                                                    std::sort(std::begin(cnf[cid]),
+    std::end(cnf[cid])); }); for (auto cid : cnf) { clause_t& c = cnf[cid]; for
+    (size_t i = 0; i < c.size(); i++) { c[i] = -c[i]; auto subsumes =
+    find_subsumed(cnf, c); for (auto did: subsumes) { clause_t d = cnf[did];
           std::cerr << "Strengthening " << d << " into ";
           assert(contains(d, c[i]));
           auto dt = std::remove(std::begin(d), std::end(d), c[i]);
           d.erase(dt, std::end(d));
-          std::cerr << d << " thanks to " << c << "(with the " << i << "th element negated)" << std::endl;
+          std::cerr << d << " thanks to " << c << "(with the " << i << "th
+    element negated)" << std::endl;
         }
         c[i] = -c[i];
       }
@@ -173,8 +171,7 @@ void preprocess(cnf_t& cnf) {
     }
     */
   }
-  //std::cerr << "Done preprocessing" << std::endl;
+  // std::cerr << "Done preprocessing" << std::endl;
 }
-
 
 // This should be entirely subsumed by BCE

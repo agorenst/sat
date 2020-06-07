@@ -1,6 +1,6 @@
 #include "clause_learning.h"
-#include "trace.h"
 #include "lcm.h"
+#include "trace.h"
 
 learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
 
@@ -26,26 +26,24 @@ bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
       new_implied = -it->get_literal();
     }
 
-    //std::cout << "Learned clause " << c << std::endl;
-    //std::cout << "Counter = " << counter << std::endl;
+    // std::cout << "Learned clause " << c << std::endl;
+    // std::cout << "Counter = " << counter << std::endl;
     SAT_ASSERT(counter == 1);
   }
   return true;
 }
 
-
-
 clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
-  SAT_ASSERT(actions.rbegin()->action_kind == action_t::action_kind_t::halt_conflict);
-  //std::cout << "About to learn clause from: " << *this << std::endl;
+  SAT_ASSERT(actions.rbegin()->action_kind ==
+             action_t::action_kind_t::halt_conflict);
+  // std::cout << "About to learn clause from: " << *this << std::endl;
 
   // Helper -- maybe make as a trail_t method?
   auto count_level_literals = [&actions](const clause_t& c) {
-                                return std::count_if(std::begin(c), std::end(c),
-                                                     [&actions](literal_t l) {
-                                                       return actions.level(l) == actions.level();
-                                                     });
-                              };
+    return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {
+      return actions.level(l) == actions.level();
+    });
+  };
 
   if (learn_mode == learn_mode_t::simplest) {
     assert(0);
@@ -55,7 +53,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
         new_clause.push_back(-a.decision_literal);
       }
     }
-    //std::cout << "Learned clause: " << new_clause << std::endl;
+    // std::cout << "Learned clause: " << new_clause << std::endl;
     return new_clause;
   }
 
@@ -97,7 +95,6 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
       const size_t D = actions.level();
       auto it = actions.rbegin();
 
-
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
       const clause_t& c = cnf[it->conflict_clause_id];
       it++;
@@ -106,16 +103,15 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
       int counter = count_level_literals(c);
 
       std::vector<literal_t> stamped;
-      for (literal_t l : c)  {
+      for (literal_t l : c) {
         stamped.push_back(-l);
         if (actions.level(-l) < D) {
           C.push_back(l);
         }
       }
 
-
-      //for (; it != std::rend(actions) && it->is_unit_prop(); it++) {
-      //for (; it != std::rend(actions) && it->is_unit_prop(); it++) {
+      // for (; it != std::rend(actions) && it->is_unit_prop(); it++) {
+      // for (; it != std::rend(actions) && it->is_unit_prop(); it++) {
       for (; counter > 1; it++) {
         assert(it->is_unit_prop());
         literal_t L = it->get_literal();
@@ -126,7 +122,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
         }
 
         // L *is* stamped, so we *can* resolve against it!
-        counter--; // track the number of resolutions we're doing.
+        counter--;  // track the number of resolutions we're doing.
 
         const clause_t& d = cnf[it->unit_prop.reason];
         for (literal_t a : d) {
@@ -149,18 +145,16 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
       assert(count_level_literals(C) == 1);
       assert(counter == 1);
 
-      //std::cout << "Counter: " << counter << std::endl;
-      //std::cout << "Learned: " << C << std::endl;
+      // std::cout << "Counter: " << counter << std::endl;
+      // std::cout << "Learned: " << C << std::endl;
       std::sort(std::begin(C), std::end(C));
 
       // Now we have a lot of things stamped. Everything that's not
       // in our current decision level compromises the actual learned clause
     }
-    //std::cout << "C: " << C << "; c: " << c << std::endl;
-    //assert(C == c);
-    #endif
-
-
+// std::cout << "C: " << C << "; c: " << c << std::endl;
+// assert(C == c);
+#endif
 
     SAT_ASSERT(verify_resolution_expected(C, actions));
     return C;

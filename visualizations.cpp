@@ -1,10 +1,10 @@
 #include "cnf.h"
 #include "trail.h"
 
-#include <stack>
 #include <map>
-#include <string>
 #include <set>
+#include <stack>
+#include <string>
 
 std::map<literal_t, std::string> literal_to_defn;
 
@@ -67,16 +67,17 @@ std::string render_action(const cnf_t& cnf, const action_t& a) {
   return res;
 }
 
-std::string draw_edge(const cnf_t& cnf, const trail_t& t, literal_t l, const action_t& p) {
-  auto al = std::find_if(std::begin(t), std::end(t),
-                      [l](action_t a) {
-                        if (a.has_literal()) return a.get_literal() == l;
-                        return false;
-                      });
+std::string draw_edge(const cnf_t& cnf, const trail_t& t, literal_t l,
+                      const action_t& p) {
+  auto al = std::find_if(std::begin(t), std::end(t), [l](action_t a) {
+    if (a.has_literal()) return a.get_literal() == l;
+    return false;
+  });
 
   assert(al != std::end(t));
 
-  std::string res = render_action(cnf, *al) + " -> " + render_action(cnf, p) + ";\n";
+  std::string res =
+      render_action(cnf, *al) + " -> " + render_action(cnf, p) + ";\n";
   return res;
 }
 
@@ -107,17 +108,16 @@ bool operator<(const action_t& a, const action_t b) {
 void print_conflict_graph(const cnf_t& cnf, const trail_t& trail) {
   std::ostream& o = std::cerr;
 
-  //std::set<action_t> printed;
+  // std::set<action_t> printed;
 
-  //o << "digraph implication {" << std::endl;
-  o << 
-    "\\RequirePackage{luatex85}" << std::endl <<
-    "\\documentclass[tikz]{standalone}" << std::endl <<
-    "%\\usepackage{forest}" << std::endl <<
-    "%\\usetikzlibrary{er}" << std::endl <<
-    "\\usetikzlibrary{graphs,graphdrawing,quotes}" << std::endl <<
-    "\\usegdlibrary{trees,layered}" << std::endl <<
-    "\\begin{document}" << std::endl;
+  // o << "digraph implication {" << std::endl;
+  o << "\\RequirePackage{luatex85}" << std::endl
+    << "\\documentclass[tikz]{standalone}" << std::endl
+    << "%\\usepackage{forest}" << std::endl
+    << "%\\usetikzlibrary{er}" << std::endl
+    << "\\usetikzlibrary{graphs,graphdrawing,quotes}" << std::endl
+    << "\\usegdlibrary{trees,layered}" << std::endl
+    << "\\begin{document}" << std::endl;
   o << "\\tikz\\graph[layered layout]{" << std::endl;
   std::stack<action_t> worklist;
   for (action_t a : trail) {
@@ -126,27 +126,30 @@ void print_conflict_graph(const cnf_t& cnf, const trail_t& trail) {
     }
   }
   while (!worklist.empty()) {
-    action_t a = worklist.top(); worklist.pop();
+    action_t a = worklist.top();
+    worklist.pop();
     auto r = render_action(cnf, a);
     size_t level = trail.level(a);
     auto& level_set = layers[level];
     level_set.insert(r);
 
-    //printed.insert(a);
+    // printed.insert(a);
 
-    o << r << ";" << std::endl; // render the appropriate node.
+    o << r << ";" << std::endl;  // render the appropriate node.
     if (a.is_unit_prop()) {
       const clause_t& c = cnf[a.get_clause()];
       for (literal_t l : c) {
-        if (l == a.get_literal()) { continue; }
+        if (l == a.get_literal()) {
+          continue;
+        }
 
         o << draw_edge(cnf, trail, -l, a) << std::endl;
 
-        auto al = std::find_if(std::begin(trail), std::end(trail),
-                               [l](action_t a) {
-                                 if (a.has_literal()) return a.get_literal() == -l;
-                                 return false;
-                               });
+        auto al =
+            std::find_if(std::begin(trail), std::end(trail), [l](action_t a) {
+              if (a.has_literal()) return a.get_literal() == -l;
+              return false;
+            });
         assert(al != std::end(trail));
         worklist.push(*al);
       }
@@ -156,18 +159,18 @@ void print_conflict_graph(const cnf_t& cnf, const trail_t& trail) {
       for (literal_t l : c) {
         o << draw_edge(cnf, trail, -l, a) << std::endl;
 
-        auto al = std::find_if(std::begin(trail), std::end(trail),
-                               [l](action_t a) {
-                                 if (a.has_literal()) return a.get_literal() == -l;
-                                 return false;
-                               });
+        auto al =
+            std::find_if(std::begin(trail), std::end(trail), [l](action_t a) {
+              if (a.has_literal()) return a.get_literal() == -l;
+              return false;
+            });
         assert(al != std::end(trail));
         worklist.push(*al);
       }
     }
   }
 
-  #if 0
+#if 0
   // Draw invisible edges to give an order to each decision.
   bool started_hierarchy = false;
   auto d1 = std::find_if(std::begin(trail), std::end(trail), [](action_t a) { return a.is_decision(); });
@@ -180,18 +183,15 @@ void print_conflict_graph(const cnf_t& cnf, const trail_t& trail) {
   }
   o << render_action(cnf, *d1); // terminating node.
   o << ";\n";
-  #endif
+#endif
 
   /*
   for (action_t a : trail) {
-    o << render_action(cnf, a) << ";" << std::endl; // render the appropriate node.
-    if (a.is_unit_prop()) {
-      const clause_t& c = cnf[a.get_clause()];
-      for (literal_t l : c) {
-        if (l == a.get_literal()) { continue; }
-        auto it = literal_to_defn.find(-l);
-        assert(it != std::end(literal_to_defn));
-        o << draw_edge(cnf, trail, -l, a) << std::endl;
+    o << render_action(cnf, a) << ";" << std::endl; // render the appropriate
+  node. if (a.is_unit_prop()) { const clause_t& c = cnf[a.get_clause()]; for
+  (literal_t l : c) { if (l == a.get_literal()) { continue; } auto it =
+  literal_to_defn.find(-l); assert(it != std::end(literal_to_defn)); o <<
+  draw_edge(cnf, trail, -l, a) << std::endl;
       }
     }
     if (a.is_conflict()) {

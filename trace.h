@@ -1,38 +1,31 @@
 #pragma once
+#include <list>
+#include <map>
 #include <utility>
 #include <vector>
-#include <map>
-#include <list>
 
-#include "cnf.h"
-#include "watched_literals.h"
 #include "action.h"
+#include "cnf.h"
 #include "trail.h"
 #include "vsids.h"
+#include "watched_literals.h"
 
 #include "unit_queue.h"
 
 enum class backtrack_mode_t {
-                             simplest,
-                             nonchron,
+  simplest,
+  nonchron,
 };
-enum class unit_prop_mode_t {
-                             simplest,
-                               queue,
-                               watched
-};
-enum class variable_choice_mode_t {
-  nextliteral,
-  nextclause
-    };
+enum class unit_prop_mode_t { simplest, queue, watched };
+enum class variable_choice_mode_t { nextliteral, nextclause };
 
 extern backtrack_mode_t backtrack_mode;
 extern unit_prop_mode_t unit_prop_mode;
 extern variable_choice_mode_t variable_choice_mode;
 
 struct trace_t {
-private:
-public:
+ private:
+ public:
   trail_t actions;
   vsids_t vsids;
   void print_actions(std::ostream&) const;
@@ -43,11 +36,10 @@ public:
   literal_incidence_map_t literal_to_clause;
 
   // store the unit-props we're still getting through.
-  //std::list<action_t> units;
+  // std::list<action_t> units;
   unit_queue_t units;
 
   watched_literals_t watch;
-
 
   void reset();
 
@@ -86,6 +78,5 @@ public:
   size_t count_false_literals(const clause_t& clause) const;
   literal_t find_last_falsified(clause_id cid);
 };
-
 
 std::ostream& operator<<(std::ostream& o, const trace_t& t);

@@ -1,7 +1,7 @@
 #pragma once
 #include "cnf.h"
 
-template<typename T>
+template <typename T>
 struct literal_map_t {
   typedef std::vector<T> mem_t;
   mem_t mem;
@@ -19,7 +19,7 @@ struct literal_map_t {
   auto end() const { return mem.end(); }
 
   literal_t first_index() const { return -max_var; }
-  literal_t end_index() const { return max_var+1; }
+  literal_t end_index() const { return max_var + 1; }
 
   literal_t iter_to_literal(typename mem_t::const_iterator it) const;
 };

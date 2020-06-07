@@ -9,7 +9,7 @@ trail_t::v_state_t satisfy_literal(literal_t l) {
 }
 
 void trail_t::construct(size_t max_var) {
-  size = max_var+1;
+  size = max_var + 1;
   next_index = 0;
   dlevel = 0;
   mem = std::make_unique<action_t[]>(size);
@@ -17,7 +17,7 @@ void trail_t::construct(size_t max_var) {
   varlevel = std::make_unique<size_t[]>(size);
   varstate = std::make_unique<v_state_t[]>(size);
 
-  std::fill(&varstate[0], &varstate[size-1], v_state_t::unassigned);
+  std::fill(&varstate[0], &varstate[size - 1], v_state_t::unassigned);
 }
 
 bool trail_t::literal_true(const literal_t l) const {
@@ -37,8 +37,8 @@ bool trail_t::literal_unassigned(const literal_t l) const {
 }
 
 void trail_t::append(action_t a) {
-  //std::cout << "next_index = " << next_index << ", size = " << size << std::endl;
-  //std::cout << a << std::endl;
+  // std::cout << "next_index = " << next_index << ", size = " << size <<
+  // std::endl; std::cout << a << std::endl;
   if (a.is_decision()) {
     dlevel++;
   }
@@ -52,10 +52,10 @@ void trail_t::append(action_t a) {
     varlevel[v] = dlevel;
     varstate[v] = satisfy_literal(a.get_literal());
   }
-  //if (next_index == size) {
-  //std::cout << "[DBG][ERR] No room for " << a << " in trail" << std::endl;
-  //for (const auto& a : *this) {
-  //std::cout << a << std::endl;
+  // if (next_index == size) {
+  // std::cout << "[DBG][ERR] No room for " << a << " in trail" << std::endl;
+  // for (const auto& a : *this) {
+  // std::cout << a << std::endl;
   //}
   //}
   SAT_ASSERT(next_index < size);
@@ -78,25 +78,34 @@ void trail_t::pop() {
 }
 
 bool trail_t::clause_unsat(const clause_t& c) const {
-  return std::all_of(std::begin(c), std::end(c), [this](literal_t l) { return this->literal_false(l); });
+  return std::all_of(std::begin(c), std::end(c),
+                     [this](literal_t l) { return this->literal_false(l); });
 }
 size_t trail_t::count_unassigned_literals(const clause_t& c) const {
-  return std::count_if(std::begin(c), std::end(c), [this](literal_t l) {return this->literal_unassigned(l);});
+  return std::count_if(std::begin(c), std::end(c), [this](literal_t l) {
+    return this->literal_unassigned(l);
+  });
 }
 literal_t trail_t::find_unassigned_literal(const clause_t& c) const {
-  return *std::find_if(std::begin(c), std::end(c), [this](literal_t l) {return this->literal_unassigned(l);});
+  return *std::find_if(std::begin(c), std::end(c), [this](literal_t l) {
+    return this->literal_unassigned(l);
+  });
 }
 
 std::ostream& operator<<(std::ostream& o, const trail_t::v_state_t s) {
-  switch(s) {
-    case trail_t::v_state_t::unassigned: return o << "unassigned";
-    case trail_t::v_state_t::var_true: return o << "true";
-    case trail_t::v_state_t::var_false: return o << "false";
+  switch (s) {
+    case trail_t::v_state_t::unassigned:
+      return o << "unassigned";
+    case trail_t::v_state_t::var_true:
+      return o << "true";
+    case trail_t::v_state_t::var_false:
+      return o << "false";
   };
   return o;
 }
 
-std::ostream& operator<<(std::ostream& o, const std::vector<trail_t::v_state_t>& s) {
+std::ostream& operator<<(std::ostream& o,
+                         const std::vector<trail_t::v_state_t>& s) {
   o << "{ ";
   for (size_t i = 0; i < s.size(); i++) {
     auto v = s[i];
@@ -109,7 +118,7 @@ std::ostream& operator<<(std::ostream& o, const std::vector<trail_t::v_state_t>&
 
 std::ostream& operator<<(std::ostream& o, const trail_t& t) {
   for (auto a : t) {
-    o << '\t' <<  a << std::endl;
+    o << '\t' << a << std::endl;
   }
   return o;
 }

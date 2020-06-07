@@ -1,23 +1,22 @@
+#include "action.h"
 #include "cnf.h"
 #include "debug.h"
-#include "action.h"
 #include "trail.h"
 
 #include "literal_incidence_map.h"
 
 void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
-
   bool didWork = true;
   while (didWork) {
     didWork = false;
     literal_map_t<int> depends_on_decision(cnf);
-    std::fill(std::begin(depends_on_decision), std::end(depends_on_decision), 0);
+    std::fill(std::begin(depends_on_decision), std::end(depends_on_decision),
+              0);
 
     for (action_t a : trail) {
       if (a.is_decision()) {
         depends_on_decision[a.get_literal()] = 1;
-      }
-      else if (a.is_unit_prop()) {
+      } else if (a.is_unit_prop()) {
         literal_t l = a.get_literal();
         const clause_t& r = cnf[a.get_clause()];
         for (auto m : r) {
@@ -29,16 +28,16 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
     }
 
     auto is_decision = [&](literal_t l) {
-                         auto at = std::find_if(std::begin(trail), std::end(trail),
-                                                [l](action_t a) { return a.has_literal() && a.get_literal() == l; });
-                         SAT_ASSERT(at != std::end(trail));
-                         return at->is_decision();
-                       };
+      auto at = std::find_if(
+          std::begin(trail), std::end(trail),
+          [l](action_t a) { return a.has_literal() && a.get_literal() == l; });
+      SAT_ASSERT(at != std::end(trail));
+      return at->is_decision();
+    };
 
-    auto et = std::remove_if(std::begin(c), std::end(c),
-                             [&](literal_t l) {
-                               return !is_decision(-l) && !depends_on_decision[-l];
-                             });
+    auto et = std::remove_if(std::begin(c), std::end(c), [&](literal_t l) {
+      return !is_decision(-l) && !depends_on_decision[-l];
+    });
     if (et != std::end(c)) {
       didWork = true;
     }
@@ -46,12 +45,14 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
   }
 }
 
-void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
+void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
+                                 const trail_t& actions) {
   // Explicit search implementation
-  //std::cout << "Minimizing " << c <<  " with trail " << std::endl << actions << std::endl;
+  // std::cout << "Minimizing " << c <<  " with trail " << std::endl << actions
+  // << std::endl;
 
-  //lcm(cnf, c, actions);
-  //return;
+  // lcm(cnf, c, actions);
+  // return;
 
   std::vector<literal_t> decisions;
   std::vector<literal_t> marked;
@@ -62,8 +63,9 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
 
   for (literal_t l : c) {
     // Find the action for this
-    auto at = std::find_if(std::begin(actions), std::end(actions), [l](action_t a) {
-                                      return a.has_literal() && a.get_literal() == -l;});
+    auto at = std::find_if(
+        std::begin(actions), std::end(actions),
+        [l](action_t a) { return a.has_literal() && a.get_literal() == -l; });
     SAT_ASSERT(at != std::end(actions));
     action_t a = *at;
 
@@ -78,27 +80,30 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
   }
 
   while (!candidates.empty()) {
-    literal_t l = candidates.back(); candidates.pop_back();
+    literal_t l = candidates.back();
+    candidates.pop_back();
 
     // Get the unit prop. This will be the thing that demands -l be satisfied,
     // hence falsifying l.
-    auto at = std::find_if(std::begin(actions), std::end(actions), [l](action_t a) {
-                                      return a.has_literal() && a.get_literal() == -l;});
+    auto at = std::find_if(
+        std::begin(actions), std::end(actions),
+        [l](action_t a) { return a.has_literal() && a.get_literal() == -l; });
     SAT_ASSERT(at != std::end(actions));
     action_t a = *at;
     SAT_ASSERT(a.is_unit_prop());
 
     // This is the reason that we have to include l in our learned clause.
-    // If every other literal in r, however, is already in our clause, then we don't need
-    // it. We implicitly resolve c against that reason to get a subsuming resolvent (c, but without l).
-    // Moreover, for those r's not in our clause, we can search backwards for /their/ implicants,
-    // to set up the same, more advanced version of this.
+    // If every other literal in r, however, is already in our clause, then we
+    // don't need it. We implicitly resolve c against that reason to get a
+    // subsuming resolvent (c, but without l). Moreover, for those r's not in
+    // our clause, we can search backwards for /their/ implicants, to set up the
+    // same, more advanced version of this.
     const clause_t& r = cnf[a.get_clause()];
 
     std::vector<literal_t> work_list;
     SAT_ASSERT(contains(r, -l));
     for (literal_t p : r) {
-      if (p == -l) continue; // this is the resolvent, so skip it.
+      if (p == -l) continue;  // this is the resolvent, so skip it.
       work_list.push_back(p);
     }
 
@@ -106,10 +111,10 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
 
     bool is_removable = true;
     while (!work_list.empty()) {
-      //std::cout << "Processing work-list: " << work_list << std::endl;
+      // std::cout << "Processing work-list: " << work_list << std::endl;
 
       literal_t p = work_list.back();
-      //std::cout << "Considering candidate: " << p << std::endl;
+      // std::cout << "Considering candidate: " << p << std::endl;
       work_list.pop_back();
 
       if (contains(seen, p)) {
@@ -126,8 +131,9 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
 
       // Otherwise, find its reason. Recall that p is falsified, so we're
       // really finding -p.
-      auto at = std::find_if(std::begin(actions), std::end(actions), [p](action_t a) {
-                                          return a.has_literal() && a.get_literal() == -p;});
+      auto at = std::find_if(
+          std::begin(actions), std::end(actions),
+          [p](action_t a) { return a.has_literal() && a.get_literal() == -p; });
       SAT_ASSERT(at != std::end(actions));
       action_t a = *at;
 
@@ -154,6 +160,8 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c, const trail_t& a
   }
 
   // Now we have all the things we want to remove.
-  auto et = std::remove_if(std::begin(c), std::end(c), [&to_remove](auto l) {return contains(to_remove, l);});
+  auto et = std::remove_if(std::begin(c), std::end(c), [&to_remove](auto l) {
+    return contains(to_remove, l);
+  });
   c.erase(et, std::end(c));
 }

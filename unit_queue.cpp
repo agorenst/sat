@@ -8,8 +8,7 @@ void unit_queue_t::push(action_t a) {
   if (e == queue.size()) {
     queue.push_back(a);
     e++;
-  }
-  else {
+  } else {
     SAT_ASSERT(queue.size() > e);
     queue[e] = a;
     e++;
