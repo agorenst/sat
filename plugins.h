@@ -29,11 +29,3 @@ struct plugin {
     }
   }
 };
-
-static plugin<literal_t> apply_literal;
-static plugin<clause_id> remove_clause;
-
-// This is the moment we enter the conflict.
-static plugin<const cnf_t&, trail_t&> on_conflict;
-// this is before we commit the learned clause to the CNF.
-static plugin<clause_t&, trail_t&> learned_clause;

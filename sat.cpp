@@ -35,12 +35,52 @@
 // Debugging and experiments.
 #include "visualizations.h"
 
-// TODO(aaron): Change clause_id to an iterator?
-// TODO(aaron): Exercise 257 to get shorter learned clauses
-
 // The understanding of this project is that it will evolve
 // frequently. We'll first start with the basic data structures,
 // and then refine things as they progress.
+
+#if 0
+// This captures the whole state of a solver instance.
+struct solver_t {
+
+  // These plugins are the sequence of things to do for a specific action.
+  // The "default" action is to at least touch the fundamental data structures:
+  // the CNF and the trail. Even that's manual, though.
+  plugin<literal_t> apply_literal;
+  plugin<clause_id> remove_clause;
+  // This is the moment we enter the conflict.
+  plugin<const cnf_t&, trail_t&> on_conflict;
+  // this is before we commit the learned clause to the CNF.
+  plugin<clause_t&, trail_t&> learned_clause;
+
+  enum class state_t { quiescent, check_units, conflict, sat, unsat };
+  solver_state_t s = state_t::quiescent;
+
+  // Construct all the different things
+  solver_t(cnf_t& cnf): cnf(cnf) {
+  }
+
+  // This is the "go" method.
+  void solve() {
+    for (;;) {
+      switch (s) {
+      case state_t::quiescent: {
+        enter_quiescent(cnf);
+        literal_t l = decide_literal();
+        apply_literal(l);
+
+        if (trace.final_state()) {
+          s = state_t::sat;
+        }
+        else {
+          s = state_t::check_units;
+        }
+      }
+      }
+    }
+  }
+}
+#endif
 
 namespace counters {
 size_t restarts = 0;
@@ -146,6 +186,178 @@ void process_flags(int argc, char* argv[]) {
   // static_cast<int>(backtrack_mode) << " " << static_cast<int>(unit_prop_mode)
   // << std::endl;
 }
+
+// This is the start of refactoring things to get a solver into its own object,
+// to facilitate the (possibility) of having multiple solvers, etc. etc.
+
+plugin<literal_t> apply_literal;
+plugin<clause_id> remove_clause;
+plugin<clause_id> clause_added;
+// This is the moment we enter the conflict.
+plugin<const cnf_t&, trail_t&> on_conflict;
+plugin<cnf_t&> before_decision;
+// this is before we commit the learned clause to the CNF.
+plugin<clause_t&, trail_t&> learned_clause;
+
+// Plug in all the listeners for watched literals:
+void install_watched_literals(trace_t& trace) {
+  // When we apply a literal, we need to tell the watched literals so it
+  // can propogate the effects of -l being unsat.
+  apply_literal.add_listener([&trace](literal_t l) {
+    trace.watch.literal_falsed(l);
+    SAT_ASSERT(trace.halted() || trace.watch.validate_state());
+  });
+
+  // When a clause is removed, we want to (if our TWL is watching it at all)
+  // remove it!
+  remove_clause.add_listener([&trace](clause_id cid) {
+    if (trace.watch.clause_watched(cid)) {
+      trace.watch.remove_clause(cid);
+    }
+  });
+
+  // When a clause is added, if it's big enough to watch, we should.
+  clause_added.add_listener([&trace](clause_id cid) {
+    const clause_t& c = trace.cnf[cid];
+    if (c.size() > 1) trace.watch.watch_clause(cid);
+    SAT_ASSERT(trace.watch.validate_state());
+  });
+}
+
+std::unique_ptr<lbm_t> lbm;
+void install_lbm(trace_t& trace) {
+  lbm = std::make_unique<lbm_t>(trace.cnf);
+
+  // Every time before we make a new decision, LBM should
+  // have a chance to go.
+  before_decision.add_listener([&trace](cnf_t& cnf) {
+    if (lbm->should_clean(cnf)) {
+      auto cids_to_remove = lbm->clean(cnf);
+      // std::cerr << "Cnf size = " <<  cnf.live_clause_count() << std::endl;
+      // for (auto cid : cnf) { std::cout << cnf[cid] << " " <<
+      // lbm.lbm[cid] << std::endl;
+      //}
+      // std::cout << "====================Clauses to remove: " <<
+      // cids_to_remove.size() << std::endl;
+
+      // Don't remove anything on the trail.
+      auto et = std::end(cids_to_remove);
+      for (const action_t& a : trace.actions) {
+        if (a.has_clause()) {
+          et = std::remove(std::begin(cids_to_remove), et, a.get_clause());
+        }
+      }
+      cids_to_remove.erase(et, std::end(cids_to_remove));
+
+      for (clause_id cid : cids_to_remove) {
+        // THIS IS ANOTHER PLUGIN
+        remove_clause(cid);
+      }
+    }
+  });
+
+  // Actually caching the LBM value is a bit janky: we key things in by
+  // their clause-id, but that's only computed *after* we backtrack.
+  // So what we do is right after having learned the conflict, we save
+  // an (anonymous) LBM value.
+  //
+  // Then, we listen in to the next clause to be added to the CNF. When
+  // *that* happens, we get the key we want to associate things with.
+
+  // be careful to do this only after learned-clause minimization
+  // TODO(aaron): on uuf250-01.cnf, removing *any* sequence of clauses
+  // seems to be enough, the LBM score is there and is used, but doesn't
+  // actually improve the runtime.
+  learned_clause.add_listener(
+      [](clause_t& c, trail_t& trail) { lbm->push_value(c, trail); });
+
+  clause_added.add_listener([](clause_id cid) { lbm->flush_value(cid); });
+}
+
+void install_lcm(const cnf_t& cnf) {
+  learned_clause.add_listener([&cnf](clause_t& c, trail_t& trail) {
+    learned_clause_minimization(cnf, c, trail);
+  });
+}
+void install_lcm_subsumption(cnf_t& cnf) {
+  learned_clause.add_listener([&cnf](clause_t& c, trail_t& trail) {
+    // MINIMIZE BY SUBSUMPTION
+    std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
+      std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
+    });
+
+    literal_incidence_map_t literal_to_clause(cnf);
+    for (clause_id cid : cnf) {
+      const clause_t& c = cnf[cid];
+      for (literal_t l : c) {
+        literal_to_clause[l].push_back(cid);
+      }
+    }
+    // for everything in our new clause:
+    size_t orig_c = c.size();
+    for (int i = 0; i < c.size(); i++) {
+      literal_t l = c[i];
+      // all possible resolvents
+      auto cids = literal_to_clause[-l];
+      for (clause_id cid : cids) {
+        auto d = cnf[cid];
+        auto it = std::find(std::begin(d), std::end(d), -l);
+        *it = -*it;
+        std::sort(std::begin(d), std::end(d));
+        // this means we can resolve the original d against c,
+        // and we'd end up with a clause just like c, but missing
+        // l.
+        if (subsumes(d, c)) {
+          auto et = std::remove(std::begin(c), std::end(c), l);
+          assert(std::distance(et, std::end(c)) == 1);
+          c.erase(et, std::end(c));
+          i--;  // go back one.
+        }
+
+        *it = -*it;
+        std::sort(std::begin(d), std::end(d));
+      }
+    }
+    // if (orig_c > c.size())
+    // std::cerr << "[SUBSUMPTION] Shrank learned clause from " << orig_c
+    //<< " to " << c.size() << std::endl;
+  });
+}
+
+void install_naive_cleaning(trace_t& trace) {
+  before_decision.add_listener([&trace](cnf_t cnf) {
+    if (trace.actions.level() == 0) {
+      counters::restarts++;
+
+      std::vector<clause_id> satisfied;
+      for (action_t a : trace.actions) {
+        if (a.has_literal()) {
+          literal_t l = a.get_literal();
+          for (clause_id cid : trace.literal_to_clause[l]) {
+            satisfied.push_back(cid);
+          }
+        }
+      }
+      std::sort(std::begin(satisfied), std::end(satisfied));
+      auto it = std::unique(std::begin(satisfied), std::end(satisfied));
+      satisfied.erase(it, std::end(satisfied));
+
+      // Don't remove anything on the trail.
+      auto et = std::end(satisfied);
+      for (const action_t& a : trace.actions) {
+        if (a.has_clause()) {
+          et = std::remove(std::begin(satisfied), et, a.get_clause());
+        }
+      }
+      satisfied.erase(et, std::end(satisfied));
+
+      for (clause_id cid : satisfied) {
+        remove_clause(cid);
+      }
+    }
+  });
+}
+
 // The real goal here is to find conflicts as fast as possible.
 int main(int argc, char* argv[]) {
   // Instantiate our CNF object
@@ -173,8 +385,18 @@ int main(int argc, char* argv[]) {
   enum class solver_state_t { quiescent, check_units, conflict, sat, unsat };
   solver_state_t state = solver_state_t::quiescent;
 
-  lbm_t lbm(cnf);
+  if (unit_prop_mode == unit_prop_mode_t::watched) {
+    install_watched_literals(trace);
+  }
 
+  // Deliberate bug: we will compute the LBM score before LCM,
+  // so the score will presumably be much worse.
+  install_lcm(cnf);
+  install_lbm(trace);
+
+  // install_naive_cleaning(trace);
+
+  // Adding some invariants for correctness.
   apply_literal.precondition([&trace](literal_t l) {
     SAT_ASSERT(std::find_if(std::begin(trace.cnf), std::end(trace.cnf),
                             [&](const clause_id cid) {
@@ -204,11 +426,6 @@ int main(int argc, char* argv[]) {
         }
       }
     });
-  } else if (unit_prop_mode == unit_prop_mode_t::watched) {
-    apply_literal.add_listener([&trace](literal_t l) {
-      trace.watch.literal_falsed(l);
-      SAT_ASSERT(trace.halted() || trace.watch.validate_state());
-    });
   } else if (unit_prop_mode == unit_prop_mode_t::simplest) {
     apply_literal.add_listener([&trace](literal_t l) {
       for (clause_id cid : trace.cnf) {
@@ -227,10 +444,8 @@ int main(int argc, char* argv[]) {
   }
 
   remove_clause.add_listener([&cnf](clause_id cid) { cnf.remove_clause(cid); });
+
   remove_clause.add_listener([&trace](clause_id cid) {
-    if (trace.watch.clause_watched(cid)) {
-      trace.watch.remove_clause(cid);
-    }
     const clause_t& c = trace.cnf[cid];
     for (literal_t l : c) {
       auto& incidence_list = trace.literal_to_clause[l];
@@ -269,28 +484,7 @@ int main(int argc, char* argv[]) {
           }
         }
 
-        if (lbm.should_clean(cnf)) {
-          auto cids_to_remove = lbm.clean(cnf);
-          // std::cerr << "Cnf size = " <<  cnf.live_clause_count() <<
-          // std::endl; for (auto cid : cnf) { std::cout << cnf[cid] << " " <<
-          // lbm.lbm[cid] << std::endl;
-          //}
-          // std::cout << "====================Clauses to remove: " <<
-          // cids_to_remove.size() << std::endl;
-
-          // Don't remove anything on the trail.
-          auto et = std::end(cids_to_remove);
-          for (const action_t& a : trace.actions) {
-            if (a.has_clause()) {
-              et = std::remove(std::begin(cids_to_remove), et, a.get_clause());
-            }
-          }
-          cids_to_remove.erase(et, std::end(cids_to_remove));
-
-          for (clause_id cid : cids_to_remove) {
-            remove_clause(cid);
-          }
-        }
+        before_decision(cnf);
 
         /* RESTART, DON"T.
     counter++;
@@ -333,36 +527,6 @@ int main(int argc, char* argv[]) {
         //  #endif
         //}
         counters::decisions++;
-
-        if (trace.actions.level() == 0) {
-          counters::restarts++;
-
-          std::vector<clause_id> satisfied;
-          for (action_t a : trace.actions) {
-            if (a.has_literal()) {
-              literal_t l = a.get_literal();
-              for (clause_id cid : trace.literal_to_clause[l]) {
-                satisfied.push_back(cid);
-              }
-            }
-          }
-          std::sort(std::begin(satisfied), std::end(satisfied));
-          auto it = std::unique(std::begin(satisfied), std::end(satisfied));
-          satisfied.erase(it, std::end(satisfied));
-
-          // Don't remove anything on the trail.
-          auto et = std::end(satisfied);
-          for (const action_t& a : trace.actions) {
-            if (a.has_clause()) {
-              et = std::remove(std::begin(satisfied), et, a.get_clause());
-            }
-          }
-          satisfied.erase(et, std::end(satisfied));
-
-          for (clause_id cid : satisfied) {
-            remove_clause(cid);
-          }
-        }
 
         literal_t l = trace.decide_literal();
         if (l != 0) {
@@ -407,60 +571,9 @@ int main(int argc, char* argv[]) {
 
         // print_conflict_graph(cnf, trace.actions);
         clause_t c = learn_clause(cnf, trace.actions);
-        // std::cerr << "Learned clause: " << c << std::endl;
 
-        auto orig_c = c.size();
-        // std::cerr << "Learned clause: " << orig_c << std::endl;
-        learned_clause_minimization(cnf, c, trace.actions);
-        // std::cerr << "Minimized clause: " << c << std::endl;
-
+        // Minimize, cache lbm score, etc.
         learned_clause(c, trace.actions);
-        // if (orig_c > c.size()) std::cerr << "[LCM] size from " << orig_c << "
-        // to " << c.size() << std::endl;
-
-        // MINIMIZE BY SUBSUMPTION
-        /*
-    std::for_each(std::begin(cnf), std::end(cnf),
-                  [&cnf](clause_id cid) { std::sort(std::begin(cnf[cid]),
-    std::end(cnf[cid])); });
-
-    literal_incidence_map_t literal_to_clause(cnf);
-    for (clause_id cid : cnf) {
-      const clause_t& c = cnf[cid];
-      for (literal_t l : c) {
-        literal_to_clause[l].push_back(cid);
-      }
-    }
-    // for everything in our new clause:
-    orig_c = c.size();
-    for (int i = 0; i < c.size(); i++) {
-      literal_t l = c[i];
-      // all possible resolvents
-      auto cids = literal_to_clause[-l];
-      for (clause_id cid : cids) {
-        auto d = cnf[cid];
-        auto it = std::find(std::begin(d), std::end(d), -l);
-        *it = -*it;
-        std::sort(std::begin(d), std::end(d));
-        // this means we can resolve the original d against c,
-        // and we'd end up with a clause just like c, but missing
-        // l.
-        if (subsumes(d, c)) {
-          auto et = std::remove(std::begin(c), std::end(c), l);
-          assert(std::distance(et, std::end(c)) == 1);
-          c.erase(et, std::end(c));
-          i--; // go back one.
-        }
-
-        *it = -*it;
-        std::sort(std::begin(d), std::end(d));
-      }
-    }
-    */
-        // if (orig_c > c.size()) std::cerr << "[SUBSUMPTION] Shrank learned
-        // clause from " << orig_c << " to " << c.size() << std::endl;
-
-        //////////////////////////
 
         counters::lcsh[c.size()]++;
 
@@ -470,13 +583,15 @@ int main(int argc, char* argv[]) {
           break;
         }
 
-        size_t lbm_value = lbm.compute_value(c, trace.actions);
         backtrack(c, trace.actions);
+
         trace.clear_unit_queue();  // ???
         trace.vsids.clause_learned(c);
 
         cnf_t::clause_k key = trace.add_clause(c);
-        lbm.lbm[key] = lbm_value;
+
+        // Commit the clause, the LBM score of that clause, and so on.
+        clause_added(key);
         if (unit_prop_mode == unit_prop_mode_t::watched)
           SAT_ASSERT(trace.watch.validate_state());
 

@@ -74,9 +74,9 @@ bool trace_t::final_state() {
          action.action_kind == action_t::action_kind_t::halt_sat;
 }
 
+// TODO(aaron): This should not be called, anymore.
 bool trace_t::clause_sat(const clause_t& clause) const {
-  return std::any_of(std::begin(clause), std::end(clause),
-                     [this](auto& c) { return this->actions.literal_true(c); });
+  return this->actions.clause_sat(clause);
 }
 bool trace_t::clause_sat(clause_id cid) const { return clause_sat(cnf[cid]); }
 
@@ -99,9 +99,7 @@ auto trace_t::unsat_clause() const {
 bool trace_t::cnf_unsat() const { return unsat_clause() != std::end(cnf); }
 
 size_t trace_t::count_true_literals(const clause_t& clause) const {
-  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {
-    return this->actions.literal_true(c);
-  });
+  return this->actions.count_true_literals(clause);
 }
 size_t trace_t::count_false_literals(const clause_t& clause) const {
   return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {
@@ -278,10 +276,6 @@ cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
   for (literal_t l : c) {
     literal_to_clause[l].push_back(id);
   }
-  if (c.size() > 1) watch.watch_clause(id);
-
-  if (unit_prop_mode == unit_prop_mode_t::watched)
-    SAT_ASSERT(watch.validate_state());
   return id;
 }
 

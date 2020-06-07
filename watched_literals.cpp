@@ -36,7 +36,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
   // We may already be a unit. If so, to maintain backtracking
   // we want to have our other watcher be the last-falsified thing
   if (l2 == 0) {
-    literal_t l = trace.find_last_falsified(cid);
+    literal_t l = trace.actions.find_last_falsified(cnf[cid]);
     w.l2 = l;
   } else {
     w.l2 = l2;
@@ -87,17 +87,17 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
 
   // If we can't, we're either a unit or a conflict.
   if (n == 0) {
-    auto s = trace.count_unassigned_literals(c);
+    auto s = trace.actions.count_unassigned_literals(c);
     SAT_ASSERT(s < 2);
-    if (!trace.clause_sat(c) && active) {
+    if (!trace.actions.clause_sat(c) && active) {
       if (s == 1) {
-        literal_t u = trace.find_unassigned_literal(c);
+        literal_t u = trace.actions.find_unassigned_literal(c);
         trace.push_unit_queue(u, cid);
         // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c <<
         // "} caused unit, no change to watcher " << w << std::endl;
       } else {
         // std::cout << *this << std::endl;
-        SAT_ASSERT(trace.clause_unsat(cid));
+        SAT_ASSERT(trace.actions.clause_unsat(cnf[cid]));
         trace.push_conflict(cid);
         // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c <<
         // "} caused conflict, no change to watcher " << w << std::endl;
@@ -110,7 +110,8 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
   // If we can, then we swap to that.
   else {
 #ifdef SAT_DEBUG_MODE
-    if (trace.count_unassigned_literals(c) + trace.count_true_literals(c) <=
+    if (trace.actions.count_unassigned_literals(c) +
+            trace.actions.count_true_literals(c) <=
         1) {
       std::cout << "Falsing " << l << " means {" << c << "} "
                 << "watched by " << w << " has "

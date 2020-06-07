@@ -1,6 +1,6 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++1z -g -O2
+CXXFLAGS=-Wall -std=c++1z -g -O2 -flto
 
 uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cnf)))
 
@@ -14,6 +14,7 @@ uuf100-430-tests-medium = $(addsuffix .unsatresult, $(basename $(wildcard tests/
 uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/*.cnf)))
 
 uuf150-645-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf150-645/*.cnf)))
+uuf150-645-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf150-645/uuf150-01*.cnf)))
 
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
@@ -31,7 +32,7 @@ benchmark2: $(uuf100-430-tests-brief)
 benchmark3: $(uuf100-430-tests-medium)
 benchmark4: $(uuf100-430-tests)
 benchmark5: $(uf100-430-tests-medium)
-benchmark6: $(uuf150-645-tests)
+benchmark6: $(uuf150-645-tests-brief)
 
 unit: sat
 	./sat < tests/units1.cnf | diff - SAT

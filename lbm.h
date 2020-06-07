@@ -7,10 +7,11 @@ struct lbm_t {
   size_t last_original_key = 0;
 
   clause_map_t<size_t> lbm;
+  size_t value_cache = 0;
 
   size_t max_size = 0;
-  float growth = 1.3;
-  float start_growth = 1.3;
+  float growth = 1.2;
+  float start_growth = 1.2;
 
   // We clean whenever we've since doubled in size.
   bool should_clean(const cnf_t& cnf) {
@@ -28,11 +29,13 @@ struct lbm_t {
 
     std::sort(to_filter, std::end(cnf),
               [&](clause_id a, clause_id b) { return lbm[a] < lbm[b]; });
-    // std::cout << "Remove sequence LBM:" << std::endl;
-    // std::for_each(to_filter, std::end(cnf), [&](clause_id k) {
-    //                                          std::cout << lbm[k] << " ";
-    //                                        });
-    // std::cout << std::endl;
+#if 0
+    std::cerr << "Remove sequence LBM:" << std::endl;
+    std::for_each(to_filter, std::end(cnf), [&](clause_id k) {
+                                              std::cerr << lbm[k] << " ";
+                                            });
+#endif
+
     auto amount_to_remove = std::distance(to_filter, std::end(cnf)) / 2;
     auto to_remove = to_filter + amount_to_remove;
     std::vector<clause_id> clauses_to_remove;
@@ -48,6 +51,13 @@ struct lbm_t {
                            std::end(clauses_to_remove),
                            [&](clause_id cid) { return contains(cnf, cid); }));
 
+#if 0
+    std::cerr << "REMOVING: ";
+    std::for_each(std::begin(clauses_to_remove), std::end(clauses_to_remove), [&](clause_id k) {
+                                                                                std::cerr << lbm[k] << " ";
+                                                                              });
+#endif
+
     return clauses_to_remove;
   }
 
@@ -59,6 +69,16 @@ struct lbm_t {
     std::sort(std::begin(levels), std::end(levels));
     auto ut = std::unique(std::begin(levels), std::end(levels));
     return std::distance(std::begin(levels), ut);
+  }
+
+  void push_value(const clause_t& c, const trail_t& trail) {
+    SAT_ASSERT(value_cache == 0);
+    value_cache = compute_value(c, trail);
+  }
+  void flush_value(clause_id cid) {
+    SAT_ASSERT(value_cache != 0);
+    lbm[cid] = value_cache;
+    value_cache = 0;
   }
 
   void insert(const clause_t& c, clause_id cid, const trail_t& trail) {

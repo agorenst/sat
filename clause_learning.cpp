@@ -13,17 +13,25 @@ bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
     literal_t new_implied = 0;
     auto it = std::next(actions.rbegin());
 
-    for (; it->action_kind != action_t::action_kind_t::decision; it++) {
+    for (; it != std::rend(actions) &&
+           it->action_kind != action_t::action_kind_t::decision;
+         it++) {
+      if (it->action_kind != action_t::action_kind_t::unit_prop) {
+        std::cerr << actions << std::endl;
+        std::cerr << *it << std::endl;
+      }
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
       if (contains(c, -it->unit_prop.propped_literal)) {
         counter++;
         new_implied = it->get_literal();
       }
     }
-    SAT_ASSERT(it->action_kind == action_t::action_kind_t::decision);
-    if (contains(c, -it->decision_literal)) {
-      counter++;
-      new_implied = -it->get_literal();
+    if (it != std::rend(actions)) {
+      SAT_ASSERT(it->action_kind == action_t::action_kind_t::decision);
+      if (contains(c, -it->decision_literal)) {
+        counter++;
+        new_implied = -it->get_literal();
+      }
     }
 
     // std::cout << "Learned clause " << c << std::endl;
