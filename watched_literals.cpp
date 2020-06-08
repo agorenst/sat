@@ -10,8 +10,6 @@ watched_literals_t::watched_literals_t(trace_t& t)
       literals_to_watcher(t.cnf),
       watched_literals(cnf.live_clause_count()) {}
 
-bool active = true;
-
 bool watch_contains(const watcher_t& w, literal_t l) {
   return w.l1 == l || w.l2 == l;
 }
@@ -77,35 +75,28 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
   SAT_ASSERT(contains(c, -l));
   SAT_ASSERT(watch_contains(w, -l));
 
-  // This seems correct, but weirdly doesn't seem to actually improve any
-  // runtime.
-  // if (trace.actions.literal_true(w.l1) || trace.actions.literal_true(w.l2)) {
-  // return;
-  //}
+  if (trace.actions.literal_true(w.l1) || trace.actions.literal_true(w.l2)) {
+   return;
+  }
 
   // see if we can find a new watching value.
   literal_t n = find_next_watcher(c, w);
+  //literal_t o = w.l1 == -l ? w.l2 : w.l1;
+  //literal_t n = find_next_watcher(c, o);
 
   // If we can't, we're either a unit or a conflict.
   if (n == 0) {
-    auto s = trace.actions.count_unassigned_literals(c);
-    SAT_ASSERT(s < 2);
-    if (!trace.actions.clause_sat(c) && active) {
-      if (s == 1) {
-        literal_t u = trace.actions.find_unassigned_literal(c);
-        trace.push_unit_queue(u, cid);
-        // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c <<
-        // "} caused unit, no change to watcher " << w << std::endl;
-      } else {
-        // std::cout << *this << std::endl;
-        SAT_ASSERT(trace.actions.clause_unsat(cnf[cid]));
-        trace.push_conflict(cid);
-        // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c <<
-        // "} caused conflict, no change to watcher " << w << std::endl;
-      }
-    } else {
-      // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c <<
-      // "} already sat, no change to watcher " << w << std::endl;
+    SAT_ASSERT(trace.actions.count_unassigned_literals(c) < 2);
+    literal_t u = trace.actions.literal_unassigned(w.l1) ? w.l1 : w.l2;
+    if (trace.actions.literal_false(u)) {
+      SAT_ASSERT(trace.actions.clause_unsat(cnf[cid]));
+      trace.push_conflict(cid);
+    }
+    else {
+      SAT_ASSERT(trace.actions.literal_unassigned(u));
+      SAT_ASSERT(trace.actions.count_unassigned_literals(c) == 1);
+      SAT_ASSERT(trace.actions.find_unassigned_literal(c) == u);
+      trace.push_unit_queue(u, cid);
     }
   }
   // If we can, then we swap to that.
@@ -127,6 +118,28 @@ void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
     // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c << "}
     // has watcher go from: " << oldw << " to " << w << std::endl;
   }
+}
+
+literal_t watched_literals_t::find_next_watcher(const clause_t& c, literal_t o) {
+  /* Somehow this is slower :(
+  literal_t m = 0;
+  for (literal_t l : c) {
+    if (l == o) continue;
+    if (trace.actions.literal_false(l)) continue;
+    if (trace.actions.literal_true(l)) return l;
+    m = l;
+  }
+  return m;
+  */
+  for (literal_t l : c) {
+    if (l == o) continue;
+    if (trace.actions.literal_true(l)) return l;
+  }
+  for (literal_t l : c) {
+    if (l == o) continue;
+    if (!trace.actions.literal_false(l)) return l;
+  }
+  return 0;
 }
 
 literal_t watched_literals_t::find_next_watcher(const clause_t& c,
