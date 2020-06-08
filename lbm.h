@@ -1,9 +1,24 @@
+#pragma once
+#include "trail.h"
+#include "cnf.h"
 #include <algorithm>
 #include "clause_key_map.h"
+#include <queue>
 // Literal block distance, for glue clauses
 // Keeps track of the metrics, too.
+
+struct lbm_entry {
+  size_t score;
+  clause_id id;
+};
+static bool operator<(const lbm_entry& e1, const lbm_entry& e2) {
+  return e1.score < e2.score;
+}
+
 struct lbm_t {
   // Don't erase anything here!
+  //std::priority_queue<lbm_entry> worklist;
+  std::vector<lbm_entry> worklist;
   size_t last_original_key = 0;
 
   clause_map_t<size_t> lbm;
@@ -14,82 +29,31 @@ struct lbm_t {
   float start_growth = 1.2;
 
   // We clean whenever we've since doubled in size.
-  bool should_clean(const cnf_t& cnf) {
-    return max_size <= cnf.live_clause_count();
-  }
+  bool should_clean(const cnf_t& cnf);
 
-  std::vector<clause_id> clean(cnf_t& cnf) {
-    SAT_ASSERT(std::is_sorted(std::begin(cnf), std::end(cnf)));
-    // binary search to find the start of the range.
-    auto to_filter =
-        std::upper_bound(std::begin(cnf), std::end(cnf), last_original_key);
+  // Given a remove method...
+  template<typename R>
+  void clean(R clause_remover) {
+    size_t target_size = worklist.size() / 2;
 
-    SAT_ASSERT(to_filter != std::end(cnf));
-    SAT_ASSERT(*to_filter > last_original_key);
-
-    std::sort(to_filter, std::end(cnf),
-              [&](clause_id a, clause_id b) { return lbm[a] < lbm[b]; });
-#if 0
-    std::cerr << "Remove sequence LBM:" << std::endl;
-    std::for_each(to_filter, std::end(cnf), [&](clause_id k) {
-                                              std::cerr << lbm[k] << " ";
-                                            });
-#endif
-
-    auto amount_to_remove = std::distance(to_filter, std::end(cnf)) / 2;
-    auto to_remove = to_filter + amount_to_remove;
-    std::vector<clause_id> clauses_to_remove;
-    clauses_to_remove.insert(std::end(clauses_to_remove), to_remove,
-                             std::end(cnf));
-
-    std::sort(to_filter, std::end(cnf));
-    SAT_ASSERT(std::is_sorted(std::begin(cnf), std::end(cnf)));
-
-    max_size *= growth;
-
-    SAT_ASSERT(std::all_of(std::begin(clauses_to_remove),
-                           std::end(clauses_to_remove),
-                           [&](clause_id cid) { return contains(cnf, cid); }));
-
-#if 0
-    std::cerr << "REMOVING: ";
-    std::for_each(std::begin(clauses_to_remove), std::end(clauses_to_remove), [&](clause_id k) {
-                                                                                std::cerr << lbm[k] << " ";
-                                                                              });
-#endif
-
-    return clauses_to_remove;
-  }
-
-  size_t compute_value(const clause_t& c, const trail_t& trail) const {
-    std::vector<size_t> levels;
-    for (literal_t l : c) {
-      levels.push_back(trail.level(l));
+    std::sort(std::begin(worklist), std::end(worklist));
+    std::for_each(std::begin(worklist)+target_size, std::end(worklist), [&](auto& e) {
+      clause_remover(e.id);
+    });
+    worklist.erase(std::begin(worklist)+target_size, std::end(worklist));
+    /*
+    while (worklist.size() > target_size) {
+      lbm_entry e = worklist.top(); worklist.pop();
+      clause_remover(e.id);
     }
-    std::sort(std::begin(levels), std::end(levels));
-    auto ut = std::unique(std::begin(levels), std::end(levels));
-    return std::distance(std::begin(levels), ut);
+    */
+    max_size *= growth;
   }
 
-  void push_value(const clause_t& c, const trail_t& trail) {
-    SAT_ASSERT(value_cache == 0);
-    value_cache = compute_value(c, trail);
-  }
-  void flush_value(clause_id cid) {
-    SAT_ASSERT(value_cache != 0);
-    lbm[cid] = value_cache;
-    value_cache = 0;
-  }
+  size_t compute_value(const clause_t& c, const trail_t& trail) const;
 
-  void insert(const clause_t& c, clause_id cid, const trail_t& trail) {
-    size_t v = compute_value(c, trail);
-    lbm[cid] = v;
-  }
+  void push_value(const clause_t& c, const trail_t& trail);
+  void flush_value(clause_id cid);
 
-  size_t get(clause_id cid) { return lbm[cid]; }
-
-  lbm_t(const cnf_t& cnf) : lbm(cnf.live_clause_count()) {
-    max_size = cnf.live_clause_count() * start_growth;
-    last_original_key = *std::prev(std::end(cnf));
-  }
+  lbm_t(const cnf_t& cnf);
 };

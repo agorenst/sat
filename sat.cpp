@@ -232,27 +232,7 @@ void install_lbm(trace_t& trace) {
   // have a chance to go.
   before_decision.add_listener([&trace](cnf_t& cnf) {
     if (lbm->should_clean(cnf)) {
-      auto cids_to_remove = lbm->clean(cnf);
-      // std::cerr << "Cnf size = " <<  cnf.live_clause_count() << std::endl;
-      // for (auto cid : cnf) { std::cout << cnf[cid] << " " <<
-      // lbm.lbm[cid] << std::endl;
-      //}
-      // std::cout << "====================Clauses to remove: " <<
-      // cids_to_remove.size() << std::endl;
-
-      // Don't remove anything on the trail.
-      auto et = std::end(cids_to_remove);
-      for (const action_t& a : trace.actions) {
-        if (a.has_clause()) {
-          et = std::remove(std::begin(cids_to_remove), et, a.get_clause());
-        }
-      }
-      cids_to_remove.erase(et, std::end(cids_to_remove));
-
-      for (clause_id cid : cids_to_remove) {
-        // THIS IS ANOTHER PLUGIN
-        remove_clause(cid);
-      }
+      lbm->clean(remove_clause);
     }
   });
 
