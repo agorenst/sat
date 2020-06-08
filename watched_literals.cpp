@@ -151,6 +151,7 @@ void watched_literals_t::remove_clause(clause_id id) {
   literals_to_watcher[w.l2].remove(id);
   w.l1 = 0;
   w.l2 = 0;
+  SAT_ASSERT(!clause_watched(id));
 }
 
 #ifdef SAT_DEBUG_MODE

@@ -271,7 +271,7 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
 }
 
 cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
-  clause_id id = cnf.push_back(c);
+  clause_id id = cnf.add_clause(c);
 
   for (literal_t l : c) {
     literal_to_clause[l].push_back(id);

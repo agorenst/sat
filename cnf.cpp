@@ -119,7 +119,7 @@ cnf_t load_cnf(std::istream& in) {
 
   while (in >> next_literal) {
     if (next_literal == 0) {
-      cnf.push_back(next_clause);
+      cnf.add_clause(next_clause);
       next_clause.clear();
       continue;
     }

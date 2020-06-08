@@ -232,7 +232,15 @@ void install_lbm(trace_t& trace) {
   // have a chance to go.
   before_decision.add_listener([&trace](cnf_t& cnf) {
     if (lbm->should_clean(cnf)) {
-      lbm->clean(remove_clause);
+      auto to_remove = lbm->clean(remove_clause);
+      auto et = std::remove_if(std::begin(to_remove), std::end(to_remove),
+                            [&](clause_id cid) {
+                              return trace.actions.uses_clause(cid);
+                            });
+      to_remove.erase(et, std::end(to_remove));
+      for (clause_id cid : to_remove) {
+        remove_clause(cid);
+      }
     }
   });
 
@@ -423,6 +431,13 @@ int main(int argc, char* argv[]) {
     });
   }
 
+  remove_clause.precondition([&trace](clause_id cid) {
+                                   for (action_t a : trace.actions) {
+                                     if (a.has_clause()) {
+                                       SAT_ASSERT(a.get_clause() != cid);
+                                     }
+                                   }
+                                 });
   remove_clause.add_listener([&cnf](clause_id cid) { cnf.remove_clause(cid); });
 
   remove_clause.add_listener([&trace](clause_id cid) {

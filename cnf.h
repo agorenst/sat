@@ -26,7 +26,7 @@ struct cnf_t {
   std::vector<clause_t> mem;
 
   // keep track of the old key vacancies.
-  std::priority_queue<clause_id, std::vector<clause_id>, std::greater<clause_id>> keys;
+  std::priority_queue<clause_id, std::vector<clause_id>, std::greater<clause_id>> free_keys;
 
   // This extra layer of indirection supports
   // clause removal in an efficient way (hopefully).
@@ -35,11 +35,27 @@ struct cnf_t {
   size_t live_clause_count() const { return key_to_mem.size(); }
   clause_t& operator[](size_t i) { return mem[i]; }
   const clause_t& operator[](size_t i) const { return mem[i]; }
-  clause_k push_back(const clause_t& c) {
-    clause_id key = mem.size();
-    mem.push_back(c);
-    key_to_mem.push_back(key);
-    return key;
+
+  clause_k add_clause(const clause_t& c) {
+    if (!free_keys.empty()) {
+      clause_id key = free_keys.top();
+      free_keys.pop();
+      mem[key] = c;
+      //std::cerr << "Re-using key: " << key << std::endl;
+      // maintain sorted order:
+      auto kt = std::lower_bound(std::begin(key_to_mem), std::end(key_to_mem), key);
+      // kt is the first element >= key.
+      // We want to put key right before that:
+      key_to_mem.insert(kt, key);
+      SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
+      return key;
+    } else {
+      clause_id key = mem.size();
+      mem.push_back(c);
+      key_to_mem.push_back(key);
+      SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
+      return key;
+    }
   }
 
   auto begin() const { return key_to_mem.begin(); }
@@ -51,28 +67,16 @@ struct cnf_t {
     key_to_mem.erase(a, e);
   }
 
-  template <typename C>
-  void remove_clauses(const C& cids_to_remove) {
-    SAT_ASSERT(
-        std::all_of(std::begin(cids_to_remove), std::end(cids_to_remove),
-                    [&](clause_id cid) { return contains(*this, cid); }));
-
-    auto et = std::remove_if(
-        std::begin(key_to_mem), std::end(key_to_mem),
-        [&](clause_id cid) { return contains(cids_to_remove, cid); });
-
-    key_to_mem.erase(et, std::end(key_to_mem));
-  }
-
   void remove_clause(clause_id cid) {
     // this is likely pretty expensive because we keep things in sorted order.
     // Is that best?
     SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 1);
+    //auto et =
     std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
-    //auto et = std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
-    //SAT_ASSERT(et == std::prev(std::end(key_to_mem)));
+    SAT_ASSERT(et == std::prev(std::end(key_to_mem)));
+    free_keys.push(cid);
     key_to_mem.pop_back();
-    //key_to_mem.erase(et, std::end(key_to_mem));
+    SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 0);
   }
 
   void restore_clause(clause_id cid) {

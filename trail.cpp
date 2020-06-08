@@ -140,3 +140,12 @@ literal_t trail_t::find_last_falsified(const clause_t& c) const {
   }
   return 0;
 }
+
+bool trail_t::uses_clause(const clause_id cid) const {
+  for (action_t& a : *this) {
+    if (a.has_clause() && a.get_clause() == cid) {
+      return true;
+    }
+  }
+  return false;
+}
