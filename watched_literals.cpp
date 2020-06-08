@@ -13,6 +13,18 @@ watched_literals_t::watched_literals_t(trace_t& t)
 bool watch_contains(const watcher_t& w, literal_t l) {
   return w.l1 == l || w.l2 == l;
 }
+void watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
+  SAT_ASSERT(watch_contains(w, o));
+  SAT_ASSERT(!watch_contains(w, n));
+  if (w.l1 == o) {
+    w.l1 = n;
+  } else {
+    w.l2 = n;
+  }
+  SAT_ASSERT(!watch_contains(w, o));
+  SAT_ASSERT(watch_contains(w, n));
+}
+
 
 // Add in a new clause to be watched
 void watched_literals_t::watch_clause(clause_id cid) {
@@ -48,99 +60,51 @@ void watched_literals_t::watch_clause(clause_id cid) {
 }
 
 void watched_literals_t::literal_falsed(literal_t l) {
-  ////std::cout << "About to falsify " << l << ", with state being: " <<
-  /// std::endl << *this << std::endl;
-  // Make a copy because we're about to transform this list.
-  clause_list_t clauses;
-  for (clause_id cid : literals_to_watcher[-l]) {
-    clauses.push_back(cid);
-  }
+  clause_list_t& clauses = literals_to_watcher[-l];
+  for (int i = 0; i < clauses.size(); i++) {
+    clause_id cid = clauses[i];
+    const clause_t& c = cnf[cid];
+    watcher_t& w = watched_literals[cid];
 
-  for (clause_id cid : clauses) {
-    literal_falsed(l, cid);
-    if (trace.halted()) {
-      break;
+    SAT_ASSERT(contains(c, -l));
+    SAT_ASSERT(watch_contains(w, -l));
+
+    if (trace.actions.literal_true(w.l1) || trace.actions.literal_true(w.l2)) {
+      continue;
+    }
+
+    literal_t n = find_next_watcher(c, w);
+
+    if (n) {
+      SAT_ASSERT(n != -l);
+      clause_list_t& new_list = literals_to_watcher[n];
+      SAT_ASSERT(!contains(new_list, cid));
+      new_list.push_back(cid);
+      std::swap(clauses[i], clauses[clauses.size()-1]);
+      i--; // don't skip the thing we just swapped.
+      clauses.pop_back();
+      watcher_literal_swap(w, -l, n);
+    }
+    else {
+      SAT_ASSERT(trace.actions.count_unassigned_literals(c) < 2);
+      literal_t u = trace.actions.literal_unassigned(w.l1) ? w.l1 : w.l2;
+      if (trace.actions.literal_false(u)) {
+        SAT_ASSERT(trace.actions.clause_unsat(cnf[cid]));
+        trace.push_conflict(cid);
+        break; // don't bother with anything else.
+      }
+      else {
+        SAT_ASSERT(trace.actions.literal_unassigned(u));
+        SAT_ASSERT(trace.actions.count_unassigned_literals(c) == 1);
+        SAT_ASSERT(trace.actions.find_unassigned_literal(c) == u);
+        trace.push_unit_queue(u, cid);
+      }
     }
   }
 
   if (!trace.halted()) SAT_ASSERT(validate_state());
 }
 
-void watched_literals_t::literal_falsed(literal_t l, clause_id cid) {
-  SAT_ASSERT(trace.actions.literal_true(l));
-  const clause_t& c = cnf[cid];
-
-  watcher_t& w = watched_literals[cid];
-  // watcher_t oldw = w;
-  SAT_ASSERT(contains(c, -l));
-  SAT_ASSERT(watch_contains(w, -l));
-
-  if (trace.actions.literal_true(w.l1) || trace.actions.literal_true(w.l2)) {
-   return;
-  }
-
-  // see if we can find a new watching value.
-  literal_t n = find_next_watcher(c, w);
-  //literal_t o = w.l1 == -l ? w.l2 : w.l1;
-  //literal_t n = find_next_watcher(c, o);
-
-  // If we can't, we're either a unit or a conflict.
-  if (n == 0) {
-    SAT_ASSERT(trace.actions.count_unassigned_literals(c) < 2);
-    literal_t u = trace.actions.literal_unassigned(w.l1) ? w.l1 : w.l2;
-    if (trace.actions.literal_false(u)) {
-      SAT_ASSERT(trace.actions.clause_unsat(cnf[cid]));
-      trace.push_conflict(cid);
-    }
-    else {
-      SAT_ASSERT(trace.actions.literal_unassigned(u));
-      SAT_ASSERT(trace.actions.count_unassigned_literals(c) == 1);
-      SAT_ASSERT(trace.actions.find_unassigned_literal(c) == u);
-      trace.push_unit_queue(u, cid);
-    }
-  }
-  // If we can, then we swap to that.
-  else {
-#ifdef SAT_DEBUG_MODE
-    if (trace.actions.count_unassigned_literals(c) +
-            trace.actions.count_true_literals(c) <=
-        1) {
-      std::cout << "Falsing " << l << " means {" << c << "} "
-                << "watched by " << w << " has "
-                << trace.count_unassigned_literals(c)
-                << " free literals, found candidate n = " << n << std::endl;
-      std::cout << trace << std::endl << cnf << std::endl;
-    }
-    SAT_ASSERT(
-        trace.count_unassigned_literals(c) + trace.count_true_literals(c) > 1);
-#endif
-    watcher_swap(cid, w, -l, n);
-    // std::cout << "Falsing " << l << " in clause #" << cid << " {" << c << "}
-    // has watcher go from: " << oldw << " to " << w << std::endl;
-  }
-}
-
-literal_t watched_literals_t::find_next_watcher(const clause_t& c, literal_t o) {
-  /* Somehow this is slower :(
-  literal_t m = 0;
-  for (literal_t l : c) {
-    if (l == o) continue;
-    if (trace.actions.literal_false(l)) continue;
-    if (trace.actions.literal_true(l)) return l;
-    m = l;
-  }
-  return m;
-  */
-  for (literal_t l : c) {
-    if (l == o) continue;
-    if (trace.actions.literal_true(l)) return l;
-  }
-  for (literal_t l : c) {
-    if (l == o) continue;
-    if (!trace.actions.literal_false(l)) return l;
-  }
-  return 0;
-}
 
 literal_t watched_literals_t::find_next_watcher(const clause_t& c,
                                                 const watcher_t& w) {
@@ -153,18 +117,6 @@ literal_t watched_literals_t::find_next_watcher(const clause_t& c,
     if (!trace.actions.literal_false(l)) return l;
   }
   return 0;
-}
-
-void watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
-  SAT_ASSERT(watch_contains(w, o));
-  SAT_ASSERT(!watch_contains(w, n));
-  if (w.l1 == o) {
-    w.l1 = n;
-  } else {
-    w.l2 = n;
-  }
-  SAT_ASSERT(!watch_contains(w, o));
-  SAT_ASSERT(watch_contains(w, n));
 }
 
 #if 0

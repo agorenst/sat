@@ -23,4 +23,7 @@ struct clause_list_t {
   void remove(clause_id cid);
   void clear();
   size_t size() const;
+  bool empty() const { return mem.empty(); }
+  void pop_back() { mem.pop_back(); }
+  clause_id back() const { return mem.back(); }
 };
