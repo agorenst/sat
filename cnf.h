@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <queue>
 
 #include "debug.h"
 
@@ -23,6 +24,9 @@ struct cnf_t {
   // We ONLY append to this.
   typedef size_t clause_k;
   std::vector<clause_t> mem;
+
+  // keep track of the old key vacancies.
+  std::priority_queue<clause_id, std::vector<clause_id>, std::greater<clause_id>> keys;
 
   // This extra layer of indirection supports
   // clause removal in an efficient way (hopefully).
@@ -61,8 +65,14 @@ struct cnf_t {
   }
 
   void remove_clause(clause_id cid) {
-    auto et = std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
-    key_to_mem.erase(et, std::end(key_to_mem));
+    // this is likely pretty expensive because we keep things in sorted order.
+    // Is that best?
+    SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 1);
+    std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
+    //auto et = std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
+    //SAT_ASSERT(et == std::prev(std::end(key_to_mem)));
+    key_to_mem.pop_back();
+    //key_to_mem.erase(et, std::end(key_to_mem));
   }
 
   void restore_clause(clause_id cid) {
