@@ -146,11 +146,7 @@ bool trace_t::cnf_sat() const {
 
 // Note we *don't* push to the action queue, yet.
 void trace_t::push_unit_queue(literal_t l, clause_id cid) {
-  action_t a;
-  a.action_kind = action_t::action_kind_t::unit_prop;
-  a.unit_prop.propped_literal = l;
-  a.unit_prop.reason = cid;
-  units.push(a);
+  units.push(make_unit_prop(l, cid));
 }
 void trace_t::clear_unit_queue() { units.clear(); }
 // void trace_t::clean_unit_queue() {
@@ -166,10 +162,7 @@ void trace_t::clear_unit_queue() { units.clear(); }
 //}
 
 void trace_t::push_conflict(clause_id cid) {
-  action_t action;
-  action.action_kind = action_t::action_kind_t::halt_conflict;
-  action.conflict_clause_id = cid;
-  actions.append(action);
+  actions.append(make_conflict(cid));
 }
 
 void trace_t::push_sat() {
@@ -186,20 +179,12 @@ void trace_t::push_unsat() {
 
 // This applies the action to make l true in our trail.
 void trace_t::apply_decision(literal_t l) {
-  // std::cout << "Deciding: " << l << std::endl;
-  action_t action;
-  action.action_kind = action_t::action_kind_t::decision;
-  action.decision_literal = l;
-  actions.append(action);
+  actions.append(make_decision(l));
 }
 
 // This applies the action to unit prop l in our trail.
 void trace_t::apply_unit(literal_t l, clause_id cid) {
-  action_t action;
-  action.action_kind = action_t::action_kind_t::unit_prop;
-  action.unit_prop.propped_literal = l;
-  action.unit_prop.reason = cid;
-  actions.append(action);
+  actions.append(make_unit_prop(l, cid));
 }
 
 // Find a new, unassigned literal, and assign it.

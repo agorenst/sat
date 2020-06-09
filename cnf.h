@@ -71,7 +71,9 @@ struct cnf_t {
     // this is likely pretty expensive because we keep things in sorted order.
     // Is that best?
     SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 1);
-    //auto et =
+#ifdef SAT_DEBUG_MODE
+    auto et =
+#endif
     std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
     SAT_ASSERT(et == std::prev(std::end(key_to_mem)));
     free_keys.push(cid);

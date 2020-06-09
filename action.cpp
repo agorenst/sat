@@ -8,12 +8,7 @@ bool action_t::has_literal() const {
 literal_t action_t::get_literal() const {
   SAT_ASSERT(action_kind == action_kind_t::decision ||
              action_kind == action_kind_t::unit_prop);
-  if (action_kind == action_kind_t::decision) {
-    return decision_literal;
-  } else if (action_kind == action_kind_t::unit_prop) {
-    return unit_prop.propped_literal;
-  }
-  return 0;  // error!
+  return l;
 }
 bool action_t::is_decision() const {
   return action_kind == action_kind_t::decision;
@@ -29,31 +24,26 @@ bool action_t::has_clause() const {
          action_kind == action_kind_t::unit_prop;
 }
 clause_id action_t::get_clause() const {
-  if (action_kind == action_kind_t::halt_conflict) {
-    return conflict_clause_id;
-  } else if (action_kind == action_kind_t::unit_prop) {
-    return unit_prop.reason;
-  }
-  assert(0);
+  return c;
 }
 
 action_t make_decision(literal_t l) {
   action_t a;
   a.action_kind = action_t::action_kind_t::decision;
-  a.decision_literal = l;
+  a.l = l;
   return a;
 }
 action_t make_unit_prop(literal_t l, clause_id cid) {
   action_t a;
   a.action_kind = action_t::action_kind_t::unit_prop;
-  a.unit_prop.propped_literal = l;
-  a.unit_prop.reason = cid;
+  a.l = l;
+  a.c = cid;
   return a;
 }
 action_t make_conflict(clause_id cid) {
   action_t a;
   a.action_kind = action_t::action_kind_t::halt_conflict;
-  a.conflict_clause_id = cid;
+  a.c = cid;
   return a;
 }
 
@@ -78,12 +68,12 @@ std::ostream& operator<<(std::ostream& o, const action_t a) {
   o << "{ " << a.action_kind;
   switch (a.action_kind) {
     case action_t::action_kind_t::decision:
-      return o << ", " << a.decision_literal << " }";
+      return o << ", " << a.l << " }";
     case action_t::action_kind_t::unit_prop:
-      return o << ", " << a.unit_prop.propped_literal << ", "
-               << a.unit_prop.reason << " }";
+      return o << ", " << a.l << ", "
+               << a.c << " }";
     case action_t::action_kind_t::halt_conflict:
-      return o << ", " << a.conflict_clause_id << " }";
+      return o << ", " << a.c << " }";
     default:
       return o << " }";
   }

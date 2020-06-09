@@ -6,30 +6,11 @@ bool lbm_t::should_clean(const cnf_t& cnf) {
 }
 
 size_t lbm_t::compute_value(const clause_t& c, const trail_t& trail) const {
-  bool seen_level = false;
-  size_t score = 0;
-  for (action_t a : trail) {
-    if (a.is_decision()) {
-      seen_level = false;
-    }
-    if (seen_level) continue;
-    if (a.has_literal() && contains(c, -a.get_literal())) {
-      score++;
-      seen_level = true;
-    }
-  }
-  return score;
-  /*
-  std::vector<size_t> levels;
+  std::vector<bool> level_present(trail.level()+1);
   for (literal_t l : c) {
-    levels.push_back(trail.level(l));
+    level_present[trail.level(l)] = true;
   }
-  std::sort(std::begin(levels), std::end(levels));
-  auto ut = std::unique(std::begin(levels), std::end(levels));
-  std::cerr << score << " " << std::distance(std::begin(levels), ut) << std::endl;
-  assert(score == std::distance(std::begin(levels), ut));
-  return std::distance(std::begin(levels), ut);
-  */
+  return std::count(std::begin(level_present), std::end(level_present), true);
 }
 
 void lbm_t::push_value(const clause_t& c, const trail_t& trail) {

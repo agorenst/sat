@@ -35,7 +35,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
   watcher_t w = {0, 0};
 
   // Find a non-false watcher; one should exist.
-  literal_t l1 = find_next_watcher(c, w);
+  literal_t l1 = find_first_watcher(c);
   SAT_ASSERT(l1);  // shouldn't be 0, at least
   w.l1 = l1;
 
@@ -61,18 +61,37 @@ void watched_literals_t::watch_clause(clause_id cid) {
 
 void watched_literals_t::literal_falsed(literal_t l) {
   clause_list_t& clauses = literals_to_watcher[-l];
+
   for (int i = 0; i < clauses.size(); i++) {
     clause_id cid = clauses[i];
-    const clause_t& c = cnf[cid];
     watcher_t& w = watched_literals[cid];
 
-    SAT_ASSERT(contains(c, -l));
-    SAT_ASSERT(watch_contains(w, -l));
+    SAT_ASSERT(contains(cnf[cid], -l));
+    SAT_ASSERT(watch_contains(watched_literals[cid], -l));
 
-    if (trace.actions.literal_true(w.l1) || trace.actions.literal_true(w.l2)) {
+    // If one of our clauses is SAT, we don't need to do
+    // anything. We "cache" the SAT literal so we check
+    // it first, if it comes up.
+    if (trace.actions.literal_true(w.l1)) {
+      continue;
+    }
+    if (trace.actions.literal_true(w.l2)) {
+      std::swap(w.l1, w.l2);
       continue;
     }
 
+    if (w.l2 == -l) {
+      std::swap(w.l1, w.l2);
+    }
+    SAT_ASSERT(w.l2 != -l);
+    SAT_ASSERT(w.l1 == -l);
+
+    if (!trace.actions.literal_unassigned(w.l2)) {
+      trace.push_conflict(cid);
+      break;
+    }
+
+    const clause_t& c = cnf[cid];
     literal_t n = find_next_watcher(c, w);
 
     if (n) {
@@ -80,29 +99,34 @@ void watched_literals_t::literal_falsed(literal_t l) {
       clause_list_t& new_list = literals_to_watcher[n];
       SAT_ASSERT(!contains(new_list, cid));
       new_list.push_back(cid);
+
+      // Remove from the old list
       std::swap(clauses[i], clauses[clauses.size()-1]);
-      i--; // don't skip the thing we just swapped.
       clauses.pop_back();
-      watcher_literal_swap(w, -l, n);
+
+      w.l1 = n;
+
+      i--; // don't skip the thing we just swapped.
     }
     else {
-      SAT_ASSERT(trace.actions.count_unassigned_literals(c) < 2);
-      literal_t u = trace.actions.literal_unassigned(w.l1) ? w.l1 : w.l2;
-      if (trace.actions.literal_false(u)) {
-        SAT_ASSERT(trace.actions.clause_unsat(cnf[cid]));
-        trace.push_conflict(cid);
-        break; // don't bother with anything else.
-      }
-      else {
-        SAT_ASSERT(trace.actions.literal_unassigned(u));
-        SAT_ASSERT(trace.actions.count_unassigned_literals(c) == 1);
-        SAT_ASSERT(trace.actions.find_unassigned_literal(c) == u);
-        trace.push_unit_queue(u, cid);
-      }
+      SAT_ASSERT(trace.actions.literal_unassigned(w.l2));
+      SAT_ASSERT(trace.actions.count_unassigned_literals(c) == 1);
+      SAT_ASSERT(trace.actions.find_unassigned_literal(c) == w.l2);
+      trace.push_unit_queue(w.l2, cid);
     }
   }
 
-  if (!trace.halted()) SAT_ASSERT(validate_state());
+  SAT_ASSERT(trace.halted() || validate_state());
+}
+
+literal_t watched_literals_t::find_first_watcher(const clause_t& c) {
+  for (literal_t l : c) {
+    if (trace.actions.literal_true(l)) return l;
+  }
+  for (literal_t l : c) {
+    if (!trace.actions.literal_false(l)) return l;
+  }
+  return 0;
 }
 
 

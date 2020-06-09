@@ -35,6 +35,7 @@ struct watched_literals_t {
 
   void remove_clause(clause_id cid);
 
+  literal_t find_first_watcher(const clause_t& c);
   literal_t find_next_watcher(const clause_t& c, const watcher_t& w);
   literal_t find_next_watcher(const clause_t& c, literal_t o);
   void literal_falsed(literal_t l, clause_id cid);

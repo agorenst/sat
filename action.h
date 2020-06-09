@@ -18,15 +18,8 @@ struct action_t {
   };
   action_kind_t action_kind;
 
-  // Absent any unit clauses, we choose a literal.
-  union {
-    literal_t decision_literal;
-    struct {
-      literal_t propped_literal;
-      clause_id reason;  // maybe multiple reasons?
-    } unit_prop;
-    clause_id conflict_clause_id;
-  };
+  literal_t l;
+  clause_id c;
 
   bool has_literal() const;
   literal_t get_literal() const;

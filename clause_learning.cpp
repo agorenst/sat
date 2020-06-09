@@ -21,14 +21,14 @@ bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
         std::cerr << *it << std::endl;
       }
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
-      if (contains(c, -it->unit_prop.propped_literal)) {
+      if (contains(c, -it->get_literal())) {
         counter++;
         new_implied = it->get_literal();
       }
     }
     if (it != std::rend(actions)) {
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::decision);
-      if (contains(c, -it->decision_literal)) {
+      if (contains(c, -it->get_literal())) {
         counter++;
         new_implied = -it->get_literal();
       }
@@ -58,7 +58,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
     clause_t new_clause;
     for (action_t a : actions) {
       if (a.action_kind == action_t::action_kind_t::decision) {
-        new_clause.push_back(-a.decision_literal);
+        new_clause.push_back(-a.get_literal());
       }
     }
     // std::cout << "Learned clause: " << new_clause << std::endl;
@@ -82,7 +82,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
          it++) {
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
       SAT_ASSERT(count_level_literals(c) >= 1);
-      clause_t d = cnf[it->unit_prop.reason];
+      clause_t d = cnf[it->get_clause()];
       if (literal_t r = resolve_candidate(c, d,0)) {
         //std::cout << "Resolving " << c << " against " << d << " over " << r;
         c = resolve(c, d, r);
@@ -104,7 +104,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
       auto it = actions.rbegin();
 
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
-      const clause_t& c = cnf[it->conflict_clause_id];
+      const clause_t& c = cnf[it->get_clause()];
       it++;
 
       // This is the amount of things we know we'll be resolving against.
@@ -132,7 +132,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
         // L *is* stamped, so we *can* resolve against it!
         counter--;  // track the number of resolutions we're doing.
 
-        const clause_t& d = cnf[it->unit_prop.reason];
+        const clause_t& d = cnf[it->get_clause()];
         for (literal_t a : d) {
           if (a == L) continue;
           // We care about future resolutions, so we negate a
