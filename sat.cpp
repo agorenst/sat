@@ -313,6 +313,7 @@ void install_lcm_subsumption(cnf_t& cnf) {
 }
 
 void install_naive_cleaning(trace_t& trace) {
+  /*
   before_decision.add_listener([&trace](cnf_t cnf) {
     if (trace.actions.level() == 0) {
       counters::restarts++;
@@ -344,6 +345,7 @@ void install_naive_cleaning(trace_t& trace) {
       }
     }
   });
+  */
 }
 
 // The real goal here is to find conflicts as fast as possible.
@@ -393,6 +395,7 @@ int main(int argc, char* argv[]) {
                             }) == std::end(trace.cnf));
   });
 
+  /*
   if (unit_prop_mode == unit_prop_mode_t::queue) {
     apply_literal.add_listener([&trace](literal_t l) {
       const auto& clause_ids = trace.literal_to_clause[-l];
@@ -414,7 +417,9 @@ int main(int argc, char* argv[]) {
         }
       }
     });
-  } else if (unit_prop_mode == unit_prop_mode_t::simplest) {
+  }
+  */
+if (unit_prop_mode == unit_prop_mode_t::simplest) {
     apply_literal.add_listener([&trace](literal_t l) {
       for (clause_id cid : trace.cnf) {
         const clause_t& c = trace.cnf[cid];
@@ -443,9 +448,9 @@ int main(int argc, char* argv[]) {
   remove_clause.add_listener([&trace](clause_id cid) {
     const clause_t& c = trace.cnf[cid];
     for (literal_t l : c) {
-      auto& incidence_list = trace.literal_to_clause[l];
-      SAT_ASSERT(contains(incidence_list, cid));
-      incidence_list.remove(cid);
+      //auto& incidence_list = trace.literal_to_clause[l];
+      //SAT_ASSERT(contains(incidence_list, cid));
+      //incidence_list.remove(cid);
       //auto et = std::remove(std::begin(incidence_list),
       //std::end(incidence_list), cid);
       //incidence_list.erase(et, std::end(incidence_list));

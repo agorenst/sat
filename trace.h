@@ -32,9 +32,6 @@ struct trace_t {
 
   cnf_t& cnf;
 
-  // this is hugely expensive data structure. We'll see.
-  literal_incidence_map_t literal_to_clause;
-
   // store the unit-props we're still getting through.
   // std::list<action_t> units;
   unit_queue_t units;

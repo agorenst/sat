@@ -15,8 +15,6 @@ variable_choice_mode_t variable_choice_mode =
 
 void trace_t::reset() {
   actions.clear();
-  std::for_each(std::begin(literal_to_clause), std::end(literal_to_clause),
-                [](auto& m) { m.clear(); });
   units.clear();
 
   variable_t max_var = 0;
@@ -26,7 +24,6 @@ void trace_t::reset() {
                1);  // for watched literals, TODO, make this more robust.
     for (auto& literal : clause) {
       max_var = std::max(max_var, std::abs(literal));
-      literal_to_clause[literal].push_back(i);
     }
   }
 
@@ -45,8 +42,7 @@ trace_t::trace_t(cnf_t& cnf)
       // Actions is invalid at this point, but we don't read it
       // until after it's constructed. We're really just taking a pointer
       // to it.
-      vsids(cnf, actions),
-      literal_to_clause(cnf) {
+      vsids(cnf, actions) {
   reset();
 }
 
@@ -258,9 +254,6 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
 cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
   clause_id id = cnf.add_clause(c);
 
-  for (literal_t l : c) {
-    literal_to_clause[l].push_back(id);
-  }
   return id;
 }
 

@@ -26,6 +26,6 @@ struct literal_map_t {
   literal_t iter_to_literal(typename mem_t::const_iterator it) const;
 };
 
-typedef literal_map_t<clause_list_t> literal_incidence_map_t;
+typedef literal_map_t<clause_set_t> literal_incidence_map_t;
 
 literal_incidence_map_t build_incidence_map(const cnf_t& cnf);

@@ -48,7 +48,7 @@ literal_incidence_map_t build_incidence_map(const cnf_t& cnf) {
 
 // We explicitly instantiate templates because we know how we're
 // going to be using this type.
-template struct literal_map_t<clause_list_t>;
+template struct literal_map_t<clause_set_t>;
 
 // for VSIDS
 template struct literal_map_t<float>;

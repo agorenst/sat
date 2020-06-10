@@ -91,15 +91,19 @@ struct cnf_t {
   void remove_clause(clause_id cid) {
     // this is likely pretty expensive because we keep things in sorted order.
     // Is that best?
-    SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 1);
-#ifdef SAT_DEBUG_MODE
-    auto et =
-#endif
-    std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
-    SAT_ASSERT(et == std::prev(std::end(key_to_mem)));
     free_keys.push(cid);
-    key_to_mem.pop_back();
+    SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 1);
+    SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
+#ifdef SAT_DEBUG_MODE
+    //auto et =
+      //std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
+    //SAT_ASSERT(et == std::prev(std::end(key_to_mem)));
+    //key_to_mem.pop_back();
+#endif
+    auto it = std::lower_bound(std::begin(key_to_mem), std::end(key_to_mem), cid);
+    key_to_mem.erase(it);
     SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 0);
+    SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
   }
 
   void restore_clause(clause_id cid) {

@@ -60,7 +60,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
 }
 
 void watched_literals_t::literal_falsed(literal_t l) {
-  clause_list_t& clauses = literals_to_watcher[-l];
+  auto& clauses = literals_to_watcher[-l];
 
   for (int i = 0; i < clauses.size(); i++) {
     clause_id cid = clauses[i];
@@ -96,11 +96,11 @@ void watched_literals_t::literal_falsed(literal_t l) {
 
     if (n) {
       SAT_ASSERT(n != -l);
-      clause_list_t& new_list = literals_to_watcher[n];
-      SAT_ASSERT(!contains(new_list, cid));
-      new_list.push_back(cid);
+      clause_set_t& new_set = literals_to_watcher[n];
+      SAT_ASSERT(!contains(new_set, cid));
+      new_set.push_back(cid);
 
-      // Remove from the old list
+      // Remove from the old set
       std::swap(clauses[i], clauses[clauses.size()-1]);
       clauses.pop_back();
 
@@ -143,25 +143,16 @@ literal_t watched_literals_t::find_next_watcher(const clause_t& c,
   return 0;
 }
 
-#if 0
-void watcher_list_remove_clause(clause_list_t& clause_list, clause_id cid) {
-  auto it = std::remove(std::begin(clause_list), std::end(clause_list), cid);
-  SAT_ASSERT(it != std::end(clause_list));
-  SAT_ASSERT(it == std::prev(std::end(clause_list)));
-  clause_list.erase(it, std::end(clause_list));
-}
-#endif
-
 void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o,
                                       literal_t n) {
-  clause_list_t& old_list = literals_to_watcher[o];
-  clause_list_t& new_list = literals_to_watcher[n];
-  SAT_ASSERT(contains(old_list, cid));
-  SAT_ASSERT(!contains(new_list, cid));
+  clause_set_t& old_set = literals_to_watcher[o];
+  clause_set_t& new_set = literals_to_watcher[n];
+  SAT_ASSERT(contains(old_set, cid));
+  SAT_ASSERT(!contains(new_set, cid));
   // Update our lists data:
-  old_list.remove(cid);
-  //watcher_list_remove_clause(old_list, cid);
-  new_list.push_back(cid);
+  old_set.remove(cid);
+  //watcher_set_remove_clause(old_set, cid);
+  new_set.push_back(cid);
   // Update our watcher data:
   watcher_literal_swap(w, o, n);
 }
