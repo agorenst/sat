@@ -11,7 +11,28 @@ typedef int32_t literal_t;
 // Really, we can be clever and use unsigned, but come on.
 typedef int32_t variable_t;
 
-typedef std::vector<literal_t> clause_t;
+struct clause_t {
+  literal_t* raw;
+  size_t len;
+  std::vector<literal_t> mem;
+  clause_t() {}
+  clause_t(std::vector<literal_t> m): mem(m) {}
+  template<typename IT>
+  void erase(IT it, IT et) {
+    mem.erase(it, et);
+  }
+  void clear() { mem.clear(); }
+  void push_back(literal_t l) { mem.push_back(l); }
+  auto begin() { return mem.begin(); }
+  auto begin() const { return mem.begin(); }
+  auto end() { return mem.end(); }
+  auto end() const { return mem.end(); }
+  auto size() const { return mem.size(); }
+  auto empty() const { return mem.empty(); }
+  auto& operator[](size_t i) { return mem[i]; }
+  auto& operator[](size_t i) const { return mem[i]; }
+};
+
 typedef size_t clause_id;
 
 template <typename C, typename V>
