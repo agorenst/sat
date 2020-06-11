@@ -3,7 +3,8 @@
 
 # https://developer.mantidproject.org/ProfilingWithValgrind.html
 #valgrind --tool=callgrind --dump-instr=yes --simulate-cache=yes --collect-jumps=yes ./sat < tests/uuf250-1065/uuf250-01.cnf
-valgrind --tool=callgrind --dump-instr=yes ./sat < tests/uuf250-1065/uuf250-01.cnf
+#valgrind --tool=callgrind --dump-instr=yes ./sat < tests/uuf250-1065/uuf250-01.cnf
+valgrind --tool=callgrind --dump-instr=yes ./sat < tests/uuf200-860/uuf200-01.cnf
 
 filename=$(ls callgrind*)
 extension=${filename##*.}

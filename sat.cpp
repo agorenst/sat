@@ -198,6 +198,8 @@ plugin<const cnf_t&, trail_t&> on_conflict;
 plugin<cnf_t&> before_decision;
 // this is before we commit the learned clause to the CNF.
 plugin<clause_t&, trail_t&> learned_clause;
+plugin<clause_id, literal_t> remove_literal;
+plugin<clause_id, literal_t> unit_detected;
 
 // Plug in all the listeners for watched literals:
 void install_watched_literals(trace_t& trace) {
@@ -211,9 +213,7 @@ void install_watched_literals(trace_t& trace) {
   // When a clause is removed, we want to (if our TWL is watching it at all)
   // remove it!
   remove_clause.add_listener([&trace](clause_id cid) {
-    if (trace.watch.clause_watched(cid)) {
-      trace.watch.remove_clause(cid);
-    }
+                               trace.watch.remove_clause(cid);
   });
 
   // When a clause is added, if it's big enough to watch, we should.
@@ -222,6 +222,13 @@ void install_watched_literals(trace_t& trace) {
     if (c.size() > 1) trace.watch.watch_clause(cid);
     SAT_ASSERT(trace.watch.validate_state());
   });
+
+  remove_literal.add_listener([&trace](clause_id cid, literal_t l) {
+                                trace.watch.remove_clause(cid);
+                                if (trace.cnf[cid].size() > 1) {
+                                  trace.watch.watch_clause(cid);
+                                }
+                              });
 }
 
 std::unique_ptr<lbm_t> lbm;
@@ -375,54 +382,11 @@ void install_naive_cleaning(trace_t& trace,
       // std::cerr << "Cleaned " << std::distance(std::begin(to_clean), et) << "
       // clauses containing " << -cand << std::endl;
       std::for_each(std::begin(to_clean), et, [&](clause_id cid) {
-        // TODO: There should be a "remove literal" listener.
-        // std::cerr << "Cleaning: " << cnf[cid] << std::endl;
-        std::remove(std::begin(cnf[cid]), std::end(cnf[cid]), -cand);
-        cnf[cid].pop_back();
-        trace.watch.remove_clause(cid);
-        if (cnf[cid].size() == 1) {
-          // std::cerr << "Adding unit!" << std::endl;
-          trace.push_unit_queue(cnf[cid][0], cid);
-        } else {
-          trace.watch.watch_clause(cid);
-        }
-      });
+                                                remove_literal(cid, -cand);
+                                              });
       naive_units.push_back(cand);
     }
   });
-  /*
-  before_decision.add_listener([&trace](cnf_t cnf) {
-    if (trace.actions.level() == 0) {
-      counters::restarts++;
-
-      std::vector<clause_id> satisfied;
-      for (action_t a : trace.actions) {
-        if (a.has_literal()) {
-          literal_t l = a.get_literal();
-          for (clause_id cid : trace.literal_to_clause[l]) {
-            satisfied.push_back(cid);
-          }
-        }
-      }
-      std::sort(std::begin(satisfied), std::end(satisfied));
-      auto it = std::unique(std::begin(satisfied), std::end(satisfied));
-      satisfied.erase(it, std::end(satisfied));
-
-      // Don't remove anything on the trail.
-      auto et = std::end(satisfied);
-      for (const action_t& a : trace.actions) {
-        if (a.has_clause()) {
-          et = std::remove(std::begin(satisfied), et, a.get_clause());
-        }
-      }
-      satisfied.erase(et, std::end(satisfied));
-
-      for (clause_id cid : satisfied) {
-        remove_clause(cid);
-      }
-    }
-  });
-  */
 }
 
 // The real goal here is to find conflicts as fast as possible.
@@ -448,6 +412,18 @@ int main(int argc, char* argv[]) {
   process_flags(argc, argv);
 
   trace_t trace(cnf);
+
+  // This is the actual literal-removal, needs to happen first.
+  remove_literal.add_listener([&trace](clause_id cid, literal_t l) {
+                                clause_t& c = trace.cnf[cid];
+                                auto et = std::remove(std::begin(c), std::end(c), l);
+                                c.erase(et, std::end(c));
+
+                                // And do the unit prop.
+                                if (c.size() == 1) {
+                                  trace.push_unit_queue(c[0], cid);
+                                }
+                              });
 
   enum class solver_state_t { quiescent, check_units, conflict, sat, unsat };
   solver_state_t state = solver_state_t::quiescent;
