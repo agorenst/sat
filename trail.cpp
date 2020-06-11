@@ -13,14 +13,22 @@ void trail_t::construct(size_t _max_var) {
   size = max_var + 1;
   next_index = 0;
   dlevel = 0;
+  /*
   mem = std::make_unique<action_t[]>(size);
   varset = std::make_unique<bool[]>(size);
   varlevel = std::make_unique<size_t[]>(size);
   varstate = std::make_unique<v_state_t[]>(size);
   litstate = std::make_unique<v_state_t[]>(size*2);
+  */
+  mem = new action_t[size];
+  varset = new bool[size];
+  varlevel = new size_t[size];
+  varstate = new v_state_t[size];
+  litstate = new v_state_t[size*2];
 
-  std::fill(&varstate[0], &varstate[size - 1], v_state_t::unassigned);
-  std::fill(&litstate[0], &litstate[size*2 - 1], v_state_t::unassigned);
+  std::fill(&varset[0], &varset[size], false);
+  std::fill(&varstate[0], &varstate[size], v_state_t::unassigned);
+  std::fill(&litstate[0], &litstate[size*2], v_state_t::unassigned);
 }
 
 bool trail_t::literal_true(const literal_t l) const {

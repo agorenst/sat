@@ -24,6 +24,7 @@ struct literal_map_t {
   literal_t end_index() const { return max_var + 1; }
 
   literal_t iter_to_literal(typename mem_t::const_iterator it) const;
+  size_t literal_to_index(literal_t l) const;
 };
 
 typedef literal_map_t<clause_set_t> literal_incidence_map_t;

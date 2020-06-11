@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <vector>
+#include <forward_list>
 
 #include "clause_key_map.h"
 #include "cnf.h"
@@ -21,6 +22,11 @@ struct watcher_t {
   literal_t l2 = 0;
 };
 
+// Experiment
+struct watched_web {
+  literal_map_t<std::forward_list<clause_id>> web;
+};
+
 struct watched_literals_t {
   cnf_t& cnf;
   trace_t& trace;
@@ -36,8 +42,7 @@ struct watched_literals_t {
   void remove_clause(clause_id cid);
 
   literal_t find_first_watcher(const clause_t& c);
-  literal_t find_next_watcher(const clause_t& c, const watcher_t& w);
-  literal_t find_next_watcher(const clause_t& c, literal_t o);
+  auto find_next_watcher(const clause_t& c, literal_t o);
   void watcher_swap(clause_id cid, watcher_t& w, literal_t o, literal_t n);
   void print_watch_state() const;
   bool validate_state();

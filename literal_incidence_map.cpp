@@ -1,11 +1,9 @@
+#include <forward_list>
 #include "literal_incidence_map.h"
 
-static size_t literal_to_index(literal_t l) {
-  if (l < 0) {
-    return std::abs(l) * 2 + 1;
-  } else {
-    return l * 2;
-  }
+template<typename T>
+size_t literal_map_t<T>::literal_to_index(literal_t l) const {
+  return l + max_var;
 }
 
 template <typename T>
@@ -30,11 +28,10 @@ template <typename T>
 literal_t literal_map_t<T>::iter_to_literal(
     typename mem_t::const_iterator it) const {
   size_t index = std::distance(std::begin(mem), it);
-  if (index % 2) {
-    return -(index / 2);
-  }
-  return index / 2;
+  return index - max_var;
 }
+
+
 literal_incidence_map_t build_incidence_map(const cnf_t& cnf) {
   literal_incidence_map_t literal_to_clause(cnf);
   for (clause_id cid : cnf) {
@@ -55,3 +52,6 @@ template struct literal_map_t<float>;
 
 // For lcm helper?
 template struct literal_map_t<int>;
+
+// For TWl
+template struct literal_map_t<std::forward_list<clause_id>>;

@@ -7,16 +7,26 @@
 struct trail_t {
   enum class v_state_t { unassigned, var_true, var_false };
 
+  /*
   std::unique_ptr<action_t[]> mem;
   std::unique_ptr<bool[]> varset;
   std::unique_ptr<size_t[]> varlevel;
   std::unique_ptr<v_state_t[]> varstate;
   std::unique_ptr<v_state_t[]> litstate;
+  */
+  action_t* mem = nullptr;
+  bool* varset = nullptr;
+  size_t* varlevel = nullptr;
+  v_state_t* varstate = nullptr;
+  v_state_t* litstate = nullptr;
+
   size_t next_index;
   size_t size;
   size_t dlevel;
   variable_t max_var;
 
+  trail_t(const trail_t& t) = delete;
+  trail_t() {}
   void construct(size_t _max_var);
 
   action_t* cbegin() const { return &(mem[0]); }
