@@ -23,7 +23,7 @@ void trace_t::reset() {
     SAT_ASSERT(clause.size() >
                1);  // for watched literals, TODO, make this more robust.
     for (auto& literal : clause) {
-      max_var = std::max(max_var, std::abs(literal));
+      max_var = std::max(max_var, var(literal));
     }
   }
 
@@ -271,8 +271,8 @@ literal_t trace_t::find_last_falsified(clause_id cid) {
   for (auto it = std::rbegin(actions); it != std::rend(actions); it++) {
     if (it->has_literal()) {
       literal_t l = it->get_literal();
-      if (contains(c, -l)) {
-        return -l;
+      if (contains(c, neg(l))) {
+        return neg(l);
       }
     }
   }

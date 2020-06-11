@@ -6,6 +6,17 @@
 #include "cnf.h"
 #include "debug.h"
 
+variable_t var(literal_t l) {
+  return std::abs(l);
+}
+literal_t neg(literal_t l) {
+  return -l;
+}
+bool ispos(literal_t l) {
+  return l > 0;
+}
+
+
 std::ostream& operator<<(std::ostream& o, const clause_t& c) {
   for (auto l : c) {
     o << l << " ";
@@ -15,15 +26,15 @@ std::ostream& operator<<(std::ostream& o, const clause_t& c) {
 
 clause_t resolve(clause_t c1, clause_t c2, literal_t l) {
   SAT_ASSERT(contains(c1, l));
-  SAT_ASSERT(contains(c2, -l));
+  SAT_ASSERT(contains(c2, neg(l)));
   clause_t c3;
   for (literal_t x : c1) {
-    if (std::abs(x) != std::abs(l)) {
+    if (var(x) != var(l)) {
       c3.push_back(x);
     }
   }
   for (literal_t x : c2) {
-    if (std::abs(x) != std::abs(l)) {
+    if (var(x) != var(l)) {
       c3.push_back(x);
     }
   }
@@ -47,7 +58,7 @@ literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after = 0) {
     }
 
     for (literal_t m : c2) {
-      if (l == -m) {
+      if (l == neg(m)) {
         return l;
       }
     }
@@ -62,7 +73,7 @@ void commit_literal(cnf_t& cnf, literal_t l) {
   cnf.erase(new_end, std::end(cnf));
   for (auto cid : cnf) {
     clause_t& c = cnf[cid];
-    auto new_end = std::remove(std::begin(c), std::end(c), -l);
+    auto new_end = std::remove(std::begin(c), std::end(c), neg(l));
     c.erase(new_end, std::end(c));
   }
 }
@@ -132,7 +143,7 @@ variable_t max_variable(const cnf_t& cnf) {
   literal_t m = 0;
   for (const clause_id cid : cnf) {
     for (const literal_t l : cnf[cid]) {
-      m = std::max(std::abs(l), m);
+      m = std::max(var(l), m);
     }
   }
   return m;

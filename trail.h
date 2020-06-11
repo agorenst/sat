@@ -11,11 +11,13 @@ struct trail_t {
   std::unique_ptr<bool[]> varset;
   std::unique_ptr<size_t[]> varlevel;
   std::unique_ptr<v_state_t[]> varstate;
+  std::unique_ptr<v_state_t[]> litstate;
   size_t next_index;
   size_t size;
   size_t dlevel;
+  variable_t max_var;
 
-  void construct(size_t max_var);
+  void construct(size_t _max_var);
 
   action_t* cbegin() const { return &(mem[0]); }
   action_t* cend() const { return &(mem[next_index]); }
@@ -40,31 +42,10 @@ struct trail_t {
   void append(action_t a);
   void pop();
 
-  void drop_from(action_t* it) {
-    // std::cout << it << " " << &(mem[next_index]) << std::endl;
-    SAT_ASSERT(it <= &(mem[next_index]));
-    while (end() > it) {
-      pop();
-    }
-    // std::cout << next_index << " ";
-    // next_index = std::distance(begin(), it);
-    // std::cout << next_index << std::endl;
-  }
+  void drop_from(action_t* it);
 
-  size_t level(literal_t l) const { return varlevel[std::abs(l)]; }
-
-  size_t level(action_t a) const {
-    size_t l = 0;
-    for (action_t b : *this) {
-      if (b.is_decision()) l++;
-      if (b == a) {
-        return l;
-      }
-    }
-    assert(0);
-    return 0;
-  }
-
+  size_t level(literal_t l) const;
+  size_t level(action_t a) const;
   size_t level() const { return dlevel; }
   bool literal_true(const literal_t l) const;
   bool literal_false(const literal_t l) const;

@@ -11,6 +11,10 @@ typedef int32_t literal_t;
 // Really, we can be clever and use unsigned, but come on.
 typedef int32_t variable_t;
 
+variable_t var(literal_t l);
+literal_t neg(literal_t l);
+bool ispos(literal_t l);
+
 struct clause_t {
   literal_t* raw;
   size_t len;

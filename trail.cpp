@@ -2,13 +2,14 @@
 #include <iostream>
 
 trail_t::v_state_t satisfy_literal(literal_t l) {
-  if (l > 0) {
+  if (ispos(l)) {
     return trail_t::v_state_t::var_true;
   }
   return trail_t::v_state_t::var_false;
 }
 
-void trail_t::construct(size_t max_var) {
+void trail_t::construct(size_t _max_var) {
+  max_var = _max_var;
   size = max_var + 1;
   next_index = 0;
   dlevel = 0;
@@ -16,24 +17,29 @@ void trail_t::construct(size_t max_var) {
   varset = std::make_unique<bool[]>(size);
   varlevel = std::make_unique<size_t[]>(size);
   varstate = std::make_unique<v_state_t[]>(size);
+  litstate = std::make_unique<v_state_t[]>(size*2);
 
   std::fill(&varstate[0], &varstate[size - 1], v_state_t::unassigned);
+  std::fill(&litstate[0], &litstate[size*2 - 1], v_state_t::unassigned);
 }
 
 bool trail_t::literal_true(const literal_t l) const {
-  variable_t v = l > 0 ? l : -l;
-  v_state_t is_true = l > 0 ? v_state_t::var_true : v_state_t::var_false;
-  return varstate[v] == is_true;
+  return litstate[l+max_var] == v_state_t::var_true;
+  //variable_t v = var(l);
+  //v_state_t is_true = ispos(l) ? v_state_t::var_true : v_state_t::var_false;
+  //return varstate[v] == is_true;
 }
 bool trail_t::literal_false(const literal_t l) const {
-  variable_t v = l > 0 ? l : -l;
-  v_state_t is_false = l < 0 ? v_state_t::var_true : v_state_t::var_false;
-  return varstate[v] == is_false;
+  return litstate[l+max_var] == v_state_t::var_false;
+  //variable_t v = var(l);
+  //v_state_t is_false = ispos(l) ? v_state_t::var_false : v_state_t::var_true;
+  //return varstate[v] == is_false;
 }
 
 bool trail_t::literal_unassigned(const literal_t l) const {
-  variable_t v = l > 0 ? l : -l;
-  return varstate[v] == v_state_t::unassigned;
+  return litstate[l+max_var] == v_state_t::unassigned;
+  //variable_t v = var(l);
+  //return varstate[v] == v_state_t::unassigned;
 }
 
 void trail_t::append(action_t a) {
@@ -43,14 +49,17 @@ void trail_t::append(action_t a) {
     dlevel++;
   }
   if (a.has_literal()) {
-    variable_t v = std::abs(a.get_literal());
+    literal_t l = a.get_literal();
+    variable_t v = var(l);
     if (varset[v]) {
       // Don't add!
       return;
     }
     varset[v] = true;
     varlevel[v] = dlevel;
-    varstate[v] = satisfy_literal(a.get_literal());
+    varstate[v] = satisfy_literal(l);
+    litstate[l+max_var] = v_state_t::var_true;
+    litstate[neg(l)+max_var] = v_state_t::var_false;
   }
   // if (next_index == size) {
   // std::cout << "[DBG][ERR] No room for " << a << " in trail" << std::endl;
@@ -68,9 +77,12 @@ void trail_t::pop() {
   next_index--;
   action_t a = mem[next_index];
   if (a.has_literal()) {
-    variable_t v = std::abs(a.get_literal());
+    literal_t l = a.get_literal();
+    variable_t v = var(l);
     varset[v] = false;
     varstate[v] = v_state_t::unassigned;
+    litstate[l+max_var] = v_state_t::unassigned;
+    litstate[neg(l)+max_var] = v_state_t::unassigned;
   }
   if (a.is_decision()) {
     dlevel--;
@@ -133,10 +145,10 @@ std::ostream& operator<<(std::ostream& o, const trail_t& t) {
 
 literal_t trail_t::find_last_falsified(const clause_t& c) const {
   auto it = std::find_if(rbegin(), rend(), [&c](action_t a) {
-    return a.has_literal() && contains(c, -a.get_literal());
+                                             return a.has_literal() && contains(c, neg(a.get_literal()));
   });
   if (it != rend()) {
-    return -it->get_literal();
+    return neg(it->get_literal());
   }
   return 0;
 }
@@ -148,4 +160,30 @@ bool trail_t::uses_clause(const clause_id cid) const {
     }
   }
   return false;
+}
+
+size_t trail_t::level(action_t a) const {
+  size_t l = 0;
+  for (action_t b : *this) {
+    if (b.is_decision()) l++;
+    if (b == a) {
+      return l;
+    }
+  }
+  assert(0);
+  return 0;
+}
+size_t trail_t::level(literal_t l) const {
+  return varlevel[var(l)];
+}
+
+void trail_t::drop_from(action_t* it) {
+    // std::cout << it << " " << &(mem[next_index]) << std::endl;
+    SAT_ASSERT(it <= &(mem[next_index]));
+    while (end() > it) {
+      pop();
+    }
+    // std::cout << next_index << " ";
+    // next_index = std::distance(begin(), it);
+    // std::cout << next_index << std::endl;
 }
