@@ -292,7 +292,7 @@ void install_lcm_subsumption(cnf_t& cnf) {
       std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
     });
 
-    literal_incidence_map_t literal_to_clause(cnf);
+    literal_map_t<clause_set_t> literal_to_clause(cnf);
     for (clause_id cid : cnf) {
       const clause_t& c = cnf[cid];
       for (literal_t l : c) {
@@ -478,8 +478,9 @@ int main(int argc, char* argv[]) {
   int counter = 0;
 
   for (;;) {
-    // std::cout << "State: " << static_cast<int>(state) << std::endl;
-    // std::cout << "Trace: " << trace << std::endl;
+    //std::cerr << "State: " << static_cast<int>(state) << std::endl;
+     //std::cerr << "Trace: " << trace << std::endl;
+     //trace.watch.print_watch_state();
     switch (state) {
       case solver_state_t::quiescent: {
         // this is way too slow

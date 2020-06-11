@@ -6,7 +6,7 @@
 #include "cnf.h"
 #include "trace.h"
 
-std::unique_ptr<literal_incidence_map_t> literal_to_clause;
+std::unique_ptr<literal_map_t<clause_set_t>> literal_to_clause;
 
 bool subsumes(const clause_t& c, const clause_t& d) {
   // Basic early-out. Also needed for correctness (otherwise c always subsumes
@@ -67,7 +67,7 @@ size_t naive_self_subsume(cnf_t& cnf) {
     std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
   });
 
-  literal_to_clause = std::make_unique<literal_incidence_map_t>(cnf);
+  literal_to_clause = std::make_unique<literal_map_t<clause_set_t>>(cnf);
   for (clause_id cid : cnf) {
     const clause_t& c = cnf[cid];
     for (literal_t l : c) {

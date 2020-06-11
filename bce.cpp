@@ -58,8 +58,7 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
 #if 0
   std::cout << cnf << std::endl;
 #endif
-
-  literal_incidence_map_t literal_to_clauses(cnf);
+  literal_map_t<clause_set_t> literal_to_clauses(cnf);
   for (clause_id cid : cnf) {
     const clause_t& c = cnf[cid];
     for (literal_t l : c) {

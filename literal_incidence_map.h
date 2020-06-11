@@ -24,6 +24,4 @@ struct literal_map_t {
   size_t literal_to_index(literal_t l) const;
 };
 
-typedef literal_map_t<clause_set_t> literal_incidence_map_t;
-
-literal_incidence_map_t build_incidence_map(const cnf_t& cnf);
+literal_map_t<clause_set_t> build_incidence_map(const cnf_t& cnf);

@@ -32,8 +32,8 @@ literal_t literal_map_t<T>::iter_to_literal(
 }
 
 
-literal_incidence_map_t build_incidence_map(const cnf_t& cnf) {
-  literal_incidence_map_t literal_to_clause(cnf);
+literal_map_t<clause_set_t> build_incidence_map(const cnf_t& cnf) {
+  literal_map_t<clause_set_t> literal_to_clause(cnf);
   for (clause_id cid : cnf) {
     const clause_t& c = cnf[cid];
     for (literal_t l : c) {
@@ -55,3 +55,4 @@ template struct literal_map_t<int>;
 
 // For TWl
 template struct literal_map_t<std::forward_list<clause_id>>;
+template struct literal_map_t<std::vector<std::pair<clause_id, literal_t>>>;

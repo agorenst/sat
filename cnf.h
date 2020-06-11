@@ -78,6 +78,18 @@ bool contains(const C& c, const V& v) {
   return std::find(std::begin(c), std::end(c), v) != std::end(c);
 }
 
+template <typename C, typename V>
+void unsorted_remove(C& c, const V& v) {
+  auto it = std::find(std::begin(c), std::end(c), v);
+  // it exists
+  SAT_ASSERT(it != std::end(c));
+  // it's unique
+  SAT_ASSERT(std::find(std::next(it), std::end(c), v) == std::end(c));
+  std::iter_swap(std::prev(std::end(c)), it);
+  c.pop_back(); // remove.
+  SAT_ASSERT(std::find(std::begin(c), std::end(c), v) == std::end(c));
+}
+
 std::ostream& operator<<(std::ostream& o, const clause_t& c);
 struct cnf_t {
   // The raw memory containing the actual clauses
