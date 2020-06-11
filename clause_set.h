@@ -2,11 +2,12 @@
 #include <vector>
 #include "cnf.h"
 // Really a "clause set", we don't promise anything about order.
-// Using a vector is faster (?!) than just the array. Presumably I'm doing something silly.
+// Using a vector is faster (?!) than just the array. Presumably I'm doing
+// something silly.
 struct clause_set_t {
-  //clause_id* mem;
-  //size_t c;
-  //size_t s;
+  // clause_id* mem;
+  // size_t c;
+  // size_t s;
   std::vector<clause_id> mem;
 
   clause_set_t();

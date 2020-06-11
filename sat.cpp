@@ -233,10 +233,9 @@ void install_lbm(trace_t& trace) {
   before_decision.add_listener([&trace](cnf_t& cnf) {
     if (lbm->should_clean(cnf)) {
       auto to_remove = lbm->clean(remove_clause);
-      auto et = std::remove_if(std::begin(to_remove), std::end(to_remove),
-                            [&](clause_id cid) {
-                              return trace.actions.uses_clause(cid);
-                            });
+      auto et = std::remove_if(
+          std::begin(to_remove), std::end(to_remove),
+          [&](clause_id cid) { return trace.actions.uses_clause(cid); });
       to_remove.erase(et, std::end(to_remove));
       for (clause_id cid : to_remove) {
         remove_clause(cid);
@@ -248,14 +247,13 @@ void install_lbm(trace_t& trace) {
   // Is needed to keep LBM consistent with other clause-removal strategies
   // (Or we can have remove_clause be more robust to repeated elements.)
   remove_clause.add_listener([](clause_id cid) {
-                               auto it = std::find_if(std::begin(lbm->worklist),
-                                                      std::end(lbm->worklist),
-                                                      [cid](const lbm_entry& e) { return e.id == cid; });
-                               if (it != std::end(lbm->worklist)) {
-                                 std::iter_swap(it, std::prev(std::end(lbm->worklist)));
-                                 lbm->worklist.pop_back();
-                               }
-                             });
+    auto it = std::find_if(std::begin(lbm->worklist), std::end(lbm->worklist),
+                           [cid](const lbm_entry& e) { return e.id == cid; });
+    if (it != std::end(lbm->worklist)) {
+      std::iter_swap(it, std::prev(std::end(lbm->worklist)));
+      lbm->worklist.pop_back();
+    }
+  });
 
   // Actually caching the LBM value is a bit janky: we key things in by
   // their clause-id, but that's only computed *after* we backtrack.
@@ -325,74 +323,73 @@ void install_lcm_subsumption(cnf_t& cnf) {
   });
 }
 
-void install_naive_cleaning(trace_t& trace, std::vector<literal_t>& naive_units) {
-  before_decision.add_listener([&trace,&naive_units](cnf_t& cnf) {
-                                 literal_t cand = 0;
-                                 for (action_t a : trace.actions) {
-                                   if (a.is_unit_prop()) {
-                                     literal_t l = a.get_literal();
-                                     if (contains(naive_units, l)) continue;
-                                     clause_id cid = a.get_clause();
-                                     if (cnf[cid].size() == 1) {
-                                       cand = l;
-                                       break;
-                                     }
-                                   }
-                                 }
-                                 if (!cand) return;
-                                 literal_t l = cand;
-                                 clause_set_t to_remove;
-                                 clause_set_t to_clean;
-                                 for (clause_id cid : cnf) {
-                                   if (contains(cnf[cid], l)) {
-                                     to_remove.push_back(cid);
-                                   }
-                                   if (contains(cnf[cid], -l)) {
-                                     to_clean.push_back(cid);
-                                   }
-                                 }
+void install_naive_cleaning(trace_t& trace,
+                            std::vector<literal_t>& naive_units) {
+  before_decision.add_listener([&trace, &naive_units](cnf_t& cnf) {
+    literal_t cand = 0;
+    for (action_t a : trace.actions) {
+      if (a.is_unit_prop()) {
+        literal_t l = a.get_literal();
+        if (contains(naive_units, l)) continue;
+        clause_id cid = a.get_clause();
+        if (cnf[cid].size() == 1) {
+          cand = l;
+          break;
+        }
+      }
+    }
+    if (!cand) return;
+    literal_t l = cand;
+    clause_set_t to_remove;
+    clause_set_t to_clean;
+    for (clause_id cid : cnf) {
+      if (contains(cnf[cid], l)) {
+        to_remove.push_back(cid);
+      }
+      if (contains(cnf[cid], -l)) {
+        to_clean.push_back(cid);
+      }
+    }
 
-                                 // Remove the satisfied clauses;
-                                 {
-                                 auto et = std::end(to_remove);
-                                 for (const action_t& a : trace.actions) {
-                                   if (a.has_clause()) {
-                                     et = std::remove(std::begin(to_remove), et, a.get_clause());
-                                   }
-                                 }
-                                 //std::cerr << "Removing " << std::distance(std::begin(to_remove), et) << " clauses containing " << cand << std::endl;
-                                 std::for_each(std::begin(to_remove), et, [](clause_id cid) {
-                                                                            remove_clause(cid);
-                                                                          });
-                                 }
+    // Remove the satisfied clauses;
+    {
+      auto et = std::end(to_remove);
+      for (const action_t& a : trace.actions) {
+        if (a.has_clause()) {
+          et = std::remove(std::begin(to_remove), et, a.get_clause());
+        }
+      }
+      // std::cerr << "Removing " << std::distance(std::begin(to_remove), et) <<
+      // " clauses containing " << cand << std::endl;
+      std::for_each(std::begin(to_remove), et,
+                    [](clause_id cid) { remove_clause(cid); });
+    }
 
-                                 {
-                                   auto et = std::end(to_clean);
-                                   for (const action_t& a : trace.actions) {
-                                     if (a.has_clause()) {
-                                       et = std::remove(std::begin(to_clean), et, a.get_clause());
-                                     }
-                                   }
-                                   //std::cerr << "Cleaned " << std::distance(std::begin(to_clean), et) << " clauses containing " << -cand << std::endl;
-                                   std::for_each(std::begin(to_clean),
-                                                 et,
-                                                 [&](clause_id cid) {
-                                                   // TODO: There should be a "remove literal" listener.
-                                                   //std::cerr << "Cleaning: " << cnf[cid] << std::endl;
-                                                   std::remove(std::begin(cnf[cid]), std::end(cnf[cid]), -cand);
-                                                   cnf[cid].pop_back();
-                                                   trace.watch.remove_clause(cid);
-                                                   if (cnf[cid].size() == 1) {
-                                                     //std::cerr << "Adding unit!" << std::endl;
-                                                     trace.push_unit_queue(cnf[cid][0], cid);
-                                                   }
-                                                   else {
-                                                     trace.watch.watch_clause(cid);
-                                                   }
-                                                 });
-                                 naive_units.push_back(cand);
-                                 }
-                               });
+    {
+      auto et = std::end(to_clean);
+      for (const action_t& a : trace.actions) {
+        if (a.has_clause()) {
+          et = std::remove(std::begin(to_clean), et, a.get_clause());
+        }
+      }
+      // std::cerr << "Cleaned " << std::distance(std::begin(to_clean), et) << "
+      // clauses containing " << -cand << std::endl;
+      std::for_each(std::begin(to_clean), et, [&](clause_id cid) {
+        // TODO: There should be a "remove literal" listener.
+        // std::cerr << "Cleaning: " << cnf[cid] << std::endl;
+        std::remove(std::begin(cnf[cid]), std::end(cnf[cid]), -cand);
+        cnf[cid].pop_back();
+        trace.watch.remove_clause(cid);
+        if (cnf[cid].size() == 1) {
+          // std::cerr << "Adding unit!" << std::endl;
+          trace.push_unit_queue(cnf[cid][0], cid);
+        } else {
+          trace.watch.watch_clause(cid);
+        }
+      });
+      naive_units.push_back(cand);
+    }
+  });
   /*
   before_decision.add_listener([&trace](cnf_t cnf) {
     if (trace.actions.level() == 0) {
@@ -478,28 +475,28 @@ int main(int argc, char* argv[]) {
 
   if (unit_prop_mode == unit_prop_mode_t::simplest) {
     apply_literal.add_listener([&trace](literal_t l) {
-                                 for (clause_id cid : trace.cnf) {
-                                   const clause_t& c = trace.cnf[cid];
-                                   if (contains(c, -l)) {
-                                     if (trace.clause_unsat(c)) {
-                                       // std::cout << "Found conflict: " << c << std::endl;
-                                       trace.push_conflict(cid);
-                                       return;
-                                     }
-                                   } else {
-                                     SAT_ASSERT(!trace.clause_unsat(c));
-                                   }
-                                 }
-                               });
+      for (clause_id cid : trace.cnf) {
+        const clause_t& c = trace.cnf[cid];
+        if (contains(c, -l)) {
+          if (trace.clause_unsat(c)) {
+            // std::cout << "Found conflict: " << c << std::endl;
+            trace.push_conflict(cid);
+            return;
+          }
+        } else {
+          SAT_ASSERT(!trace.clause_unsat(c));
+        }
+      }
+    });
   }
 
   remove_clause.precondition([&trace](clause_id cid) {
-                               for (action_t a : trace.actions) {
-                                 if (a.has_clause()) {
-                                       SAT_ASSERT(a.get_clause() != cid);
-                                     }
-                                   }
-                                 });
+    for (action_t a : trace.actions) {
+      if (a.has_clause()) {
+        SAT_ASSERT(a.get_clause() != cid);
+      }
+    }
+  });
   remove_clause.add_listener([&cnf](clause_id cid) { cnf.remove_clause(cid); });
 
   int counter = 0;

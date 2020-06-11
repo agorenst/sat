@@ -6,7 +6,7 @@ bool lbm_t::should_clean(const cnf_t& cnf) {
 }
 
 size_t lbm_t::compute_value(const clause_t& c, const trail_t& trail) const {
-  std::vector<bool> level_present(trail.level()+1);
+  std::vector<bool> level_present(trail.level() + 1);
   for (literal_t l : c) {
     level_present[trail.level(l)] = true;
   }
@@ -19,7 +19,7 @@ void lbm_t::push_value(const clause_t& c, const trail_t& trail) {
 }
 void lbm_t::flush_value(clause_id cid) {
   SAT_ASSERT(value_cache != 0);
-  //worklist.push({value_cache, cid});
+  // worklist.push({value_cache, cid});
   worklist.push_back({value_cache, cid});
   value_cache = 0;
 }

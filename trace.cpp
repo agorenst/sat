@@ -174,9 +174,7 @@ void trace_t::push_unsat() {
 }
 
 // This applies the action to make l true in our trail.
-void trace_t::apply_decision(literal_t l) {
-  actions.append(make_decision(l));
-}
+void trace_t::apply_decision(literal_t l) { actions.append(make_decision(l)); }
 
 // This applies the action to unit prop l in our trail.
 void trace_t::apply_unit(literal_t l, clause_id cid) {

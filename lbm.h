@@ -1,9 +1,9 @@
 #pragma once
-#include "trail.h"
-#include "cnf.h"
 #include <algorithm>
-#include "clause_key_map.h"
 #include <queue>
+#include "clause_key_map.h"
+#include "cnf.h"
+#include "trail.h"
 // Literal block distance, for glue clauses
 // Keeps track of the metrics, too.
 
@@ -17,7 +17,7 @@ static inline bool entry_cmp(const lbm_entry& e1, const lbm_entry& e2) {
 
 struct lbm_t {
   // Don't erase anything here!
-  //std::priority_queue<lbm_entry> worklist;
+  // std::priority_queue<lbm_entry> worklist;
   std::vector<lbm_entry> worklist;
   size_t last_original_key = 0;
 
@@ -32,18 +32,19 @@ struct lbm_t {
   bool should_clean(const cnf_t& cnf);
 
   // Given a remove method...
-  template<typename R>
+  template <typename R>
   std::vector<clause_id> clean(R remove_clause) {
     size_t target_size = worklist.size() / 2;
 
     std::sort(std::begin(worklist), std::end(worklist), entry_cmp);
     std::vector<clause_id> to_remove;
-    std::for_each(std::begin(worklist)+target_size, std::end(worklist), [&](auto& e) {
-                                                                          //remove_clause(e.id);
-                                                                          to_remove.push_back(e.id);
-    });
+    std::for_each(std::begin(worklist) + target_size, std::end(worklist),
+                  [&](auto& e) {
+                    // remove_clause(e.id);
+                    to_remove.push_back(e.id);
+                  });
 
-    worklist.erase(std::begin(worklist)+target_size, std::end(worklist));
+    worklist.erase(std::begin(worklist) + target_size, std::end(worklist));
     max_size *= growth;
     return to_remove;
   }

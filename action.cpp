@@ -23,9 +23,7 @@ bool action_t::has_clause() const {
   return action_kind == action_kind_t::halt_conflict ||
          action_kind == action_kind_t::unit_prop;
 }
-clause_id action_t::get_clause() const {
-  return c;
-}
+clause_id action_t::get_clause() const { return c; }
 
 action_t make_decision(literal_t l) {
   action_t a;
@@ -70,8 +68,7 @@ std::ostream& operator<<(std::ostream& o, const action_t a) {
     case action_t::action_kind_t::decision:
       return o << ", " << a.l << " }";
     case action_t::action_kind_t::unit_prop:
-      return o << ", " << a.l << ", "
-               << a.c << " }";
+      return o << ", " << a.l << ", " << a.c << " }";
     case action_t::action_kind_t::halt_conflict:
       return o << ", " << a.c << " }";
     default:

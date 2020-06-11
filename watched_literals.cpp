@@ -25,7 +25,6 @@ void watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
   SAT_ASSERT(watch_contains(w, n));
 }
 
-
 // Add in a new clause to be watched
 void watched_literals_t::watch_clause(clause_id cid) {
   SAT_ASSERT(!clause_watched(cid));
@@ -101,14 +100,13 @@ void watched_literals_t::literal_falsed(literal_t l) {
       new_set.push_back(cid);
 
       // Remove from the old set
-      std::swap(clauses[i], clauses[clauses.size()-1]);
+      std::swap(clauses[i], clauses[clauses.size() - 1]);
       clauses.pop_back();
 
       w.l1 = n;
 
-      i--; // don't skip the thing we just swapped.
-    }
-    else {
+      i--;  // don't skip the thing we just swapped.
+    } else {
       SAT_ASSERT(trace.actions.literal_unassigned(w.l2));
       SAT_ASSERT(trace.actions.count_unassigned_literals(c) == 1);
       SAT_ASSERT(trace.actions.find_unassigned_literal(c) == w.l2);
@@ -128,7 +126,6 @@ literal_t watched_literals_t::find_first_watcher(const clause_t& c) {
   }
   return 0;
 }
-
 
 literal_t watched_literals_t::find_next_watcher(const clause_t& c,
                                                 const watcher_t& w) {
@@ -151,7 +148,7 @@ void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o,
   SAT_ASSERT(!contains(new_set, cid));
   // Update our lists data:
   old_set.remove(cid);
-  //watcher_set_remove_clause(old_set, cid);
+  // watcher_set_remove_clause(old_set, cid);
   new_set.push_back(cid);
   // Update our watcher data:
   watcher_literal_swap(w, o, n);

@@ -2,8 +2,8 @@
 // This isn't "cnf" so much as it is all our types
 #include <algorithm>
 #include <iostream>
-#include <vector>
 #include <queue>
+#include <vector>
 
 #include "debug.h"
 
@@ -16,8 +16,8 @@ struct clause_t {
   size_t len;
   std::vector<literal_t> mem;
   clause_t() {}
-  clause_t(std::vector<literal_t> m): mem(m) {}
-  template<typename IT>
+  clause_t(std::vector<literal_t> m) : mem(m) {}
+  template <typename IT>
   void erase(IT it, IT et) {
     mem.erase(it, et);
   }
@@ -49,7 +49,9 @@ struct cnf_t {
   std::vector<clause_t> mem;
 
   // keep track of the old key vacancies.
-  std::priority_queue<clause_id, std::vector<clause_id>, std::greater<clause_id>> free_keys;
+  std::priority_queue<clause_id, std::vector<clause_id>,
+                      std::greater<clause_id>>
+      free_keys;
 
   // This extra layer of indirection supports
   // clause removal in an efficient way (hopefully).
@@ -64,9 +66,10 @@ struct cnf_t {
       clause_id key = free_keys.top();
       free_keys.pop();
       mem[key] = c;
-      //std::cerr << "Re-using key: " << key << std::endl;
+      // std::cerr << "Re-using key: " << key << std::endl;
       // maintain sorted order:
-      auto kt = std::lower_bound(std::begin(key_to_mem), std::end(key_to_mem), key);
+      auto kt =
+          std::lower_bound(std::begin(key_to_mem), std::end(key_to_mem), key);
       // kt is the first element >= key.
       // We want to put key right before that:
       key_to_mem.insert(kt, key);
@@ -94,17 +97,20 @@ struct cnf_t {
     // this is likely pretty expensive because we keep things in sorted order.
     // Is that best?
     free_keys.push(cid);
-    SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 1);
+    SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) ==
+               1);
     SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
 #ifdef SAT_DEBUG_MODE
-    //auto et =
-      //std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
-    //SAT_ASSERT(et == std::prev(std::end(key_to_mem)));
-    //key_to_mem.pop_back();
+    // auto et =
+    // std::remove(std::begin(key_to_mem), std::end(key_to_mem), cid);
+    // SAT_ASSERT(et == std::prev(std::end(key_to_mem)));
+    // key_to_mem.pop_back();
 #endif
-    auto it = std::lower_bound(std::begin(key_to_mem), std::end(key_to_mem), cid);
+    auto it =
+        std::lower_bound(std::begin(key_to_mem), std::end(key_to_mem), cid);
     key_to_mem.erase(it);
-    SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) == 0);
+    SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) ==
+               0);
     SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
   }
 

@@ -123,8 +123,8 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
       for (literal_t l : cnf[cid]) {
         auto& cl = literal_to_clauses[l];
         cl.remove(cid);
-        //auto dit = std::remove(std::begin(cl), std::end(cl), cid);
-        //cl.erase(dit, std::end(cl));
+        // auto dit = std::remove(std::begin(cl), std::end(cl), cid);
+        // cl.erase(dit, std::end(cl));
       }
     });
   }
