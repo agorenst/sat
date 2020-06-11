@@ -31,6 +31,7 @@ struct clause_t {
   auto empty() const { return mem.empty(); }
   auto& operator[](size_t i) { return mem[i]; }
   auto& operator[](size_t i) const { return mem[i]; }
+  void pop_back() { mem.pop_back(); }
 };
 
 typedef size_t clause_id;
@@ -40,6 +41,7 @@ bool contains(const C& c, const V& v) {
   return std::find(std::begin(c), std::end(c), v) != std::end(c);
 }
 
+std::ostream& operator<<(std::ostream& o, const clause_t& c);
 struct cnf_t {
   // The raw memory containing the actual clauses
   // We ONLY append to this.
@@ -126,7 +128,6 @@ literal_t find_unit(const cnf_t& cnf);
 bool immediately_unsat(const cnf_t& cnf);
 bool immediately_sat(const cnf_t& cnf);
 
-std::ostream& operator<<(std::ostream& o, const clause_t& c);
 std::ostream& operator<<(std::ostream& o, const cnf_t& cnf);
 void print_cnf(const cnf_t& cnf);
 

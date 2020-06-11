@@ -121,7 +121,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
       // for (; it != std::rend(actions) && it->is_unit_prop(); it++) {
       // for (; it != std::rend(actions) && it->is_unit_prop(); it++) {
       for (; counter > 1; it++) {
-        assert(it->is_unit_prop());
+        SAT_ASSERT(it->is_unit_prop());
         literal_t L = it->get_literal();
 
         // We don't expect to be able to resolve against this.
@@ -147,11 +147,11 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
         }
       }
       while (!contains(stamped, it->get_literal())) it++;
-      assert(it->has_literal());
+      SAT_ASSERT(it->has_literal());
       C.push_back(-it->get_literal());
 
-      assert(count_level_literals(C) == 1);
-      assert(counter == 1);
+      SAT_ASSERT(count_level_literals(C) == 1);
+      SAT_ASSERT(counter == 1);
 
       // std::cout << "Counter: " << counter << std::endl;
       // std::cout << "Learned: " << C << std::endl;

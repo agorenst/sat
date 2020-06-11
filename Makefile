@@ -88,6 +88,7 @@ clean:
 
 fix: sat
 	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
+#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0757.cnf
 #	./sat -u w -l r -b n < tests/uuf150-645/uuf150-01.cnf
 #	cat tests/uuf150-645/uuf150-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre -verb=2 -rinc=1000000 -ccmin-mode=0
 

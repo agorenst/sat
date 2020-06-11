@@ -44,12 +44,6 @@ struct lbm_t {
     });
 
     worklist.erase(std::begin(worklist)+target_size, std::end(worklist));
-    /*
-    while (worklist.size() > target_size) {
-      lbm_entry e = worklist.top(); worklist.pop();
-      remove_clause(e.id);
-    }
-    */
     max_size *= growth;
     return to_remove;
   }

@@ -38,7 +38,6 @@ struct watched_literals_t {
   literal_t find_first_watcher(const clause_t& c);
   literal_t find_next_watcher(const clause_t& c, const watcher_t& w);
   literal_t find_next_watcher(const clause_t& c, literal_t o);
-  void literal_falsed(literal_t l, clause_id cid);
   void watcher_swap(clause_id cid, watcher_t& w, literal_t o, literal_t n);
   void print_watch_state() const;
   bool validate_state();
