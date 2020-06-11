@@ -20,7 +20,7 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
         literal_t l = a.get_literal();
         const clause_t& r = cnf[a.get_clause()];
         for (auto m : r) {
-          if (depends_on_decision[-m]) {
+          if (depends_on_decision[neg(m)]) {
             depends_on_decision[l] = 1;
           }
         }
@@ -36,7 +36,7 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
     };
 
     auto et = std::remove_if(std::begin(c), std::end(c), [&](literal_t l) {
-      return !is_decision(-l) && !depends_on_decision[-l];
+                                                           return !is_decision(neg(l)) && !depends_on_decision[neg(l)];
     });
     if (et != std::end(c)) {
       didWork = true;
@@ -54,8 +54,6 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
   // lcm(cnf, c, actions);
   // return;
 
-  std::vector<literal_t> decisions;
-  std::vector<literal_t> marked;
   std::vector<literal_t> candidates;
   std::vector<literal_t> to_remove;
   candidates.reserve(c.size());
@@ -65,12 +63,11 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     // Find the action for this
     auto at = std::find_if(
         std::begin(actions), std::end(actions),
-        [l](action_t a) { return a.has_literal() && a.get_literal() == -l; });
+        [l](action_t a) { return a.has_literal() && a.get_literal() == neg(l); });
     SAT_ASSERT(at != std::end(actions));
     action_t a = *at;
 
     if (a.is_decision()) {
-      decisions.push_back(l);
       continue;
     }
 
@@ -83,11 +80,11 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     literal_t l = candidates.back();
     candidates.pop_back();
 
-    // Get the unit prop. This will be the thing that demands -l be satisfied,
+    // Get the unit prop. This will be the thing that demands neg(l) be satisfied,
     // hence falsifying l.
     auto at = std::find_if(
         std::begin(actions), std::end(actions),
-        [l](action_t a) { return a.has_literal() && a.get_literal() == -l; });
+        [l](action_t a) { return a.has_literal() && a.get_literal() == neg(l); });
     SAT_ASSERT(at != std::end(actions));
     action_t a = *at;
     SAT_ASSERT(a.is_unit_prop());
@@ -101,9 +98,9 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     const clause_t& r = cnf[a.get_clause()];
 
     std::vector<literal_t> work_list;
-    SAT_ASSERT(contains(r, -l));
+    SAT_ASSERT(contains(r, neg(l)));
     for (literal_t p : r) {
-      if (p == -l) continue;  // this is the resolvent, so skip it.
+      if (p == neg(l)) continue;  // this is the resolvent, so skip it.
       work_list.push_back(p);
     }
 
@@ -133,7 +130,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
       // really finding -p.
       auto at = std::find_if(
           std::begin(actions), std::end(actions),
-          [p](action_t a) { return a.has_literal() && a.get_literal() == -p; });
+          [p](action_t a) { return a.has_literal() && a.get_literal() == neg(p); });
       SAT_ASSERT(at != std::end(actions));
       action_t a = *at;
 
@@ -147,9 +144,9 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
       // I don't think order matters for correctness.;
       SAT_ASSERT(a.is_unit_prop());
       const clause_t& pr = cnf[a.get_clause()];
-      SAT_ASSERT(contains(pr, -p));
+      SAT_ASSERT(contains(pr, neg(p)));
       for (literal_t q : pr) {
-        if (q == -p) continue;
+        if (q == neg(p)) continue;
         work_list.push_back(q);
       }
     }

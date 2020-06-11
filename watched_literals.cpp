@@ -147,20 +147,6 @@ literal_t watched_literals_t::find_first_watcher(const clause_t& c) {
   return 0;
 }
 
-void watched_literals_t::watcher_swap(clause_id cid, watcher_t& w, literal_t o,
-                                      literal_t n) {
-  clause_set_t& old_set = literals_to_watcher[o];
-  clause_set_t& new_set = literals_to_watcher[n];
-  SAT_ASSERT(contains(old_set, cid));
-  SAT_ASSERT(!contains(new_set, cid));
-  // Update our lists data:
-  old_set.remove(cid);
-  // watcher_set_remove_clause(old_set, cid);
-  new_set.push_back(cid);
-  // Update our watcher data:
-  watcher_literal_swap(w, o, n);
-}
-
 void watched_literals_t::remove_clause(clause_id id) {
   if (!clause_watched(id)) return;
   watcher_t& w = watched_literals[id];
@@ -178,9 +164,9 @@ void watched_literals_t::print_watch_state() const {
   // std::cout << cnf[cid] << " watched by " << w << std::endl;
   //}
   // for (auto&& [literal, clause_list] : literals_to_watcher) {
-  for (literal_t l = literals_to_watcher.first_index();
-       l < literals_to_watcher.end_index(); l++) {
-    if (l == 0) continue;
+
+  auto lits = cnf.lit_range();
+  for (literal_t l : lits) {
     std::cout << "Literal " << l << " watching: ";
     for (const auto& cid : literals_to_watcher[l]) {
       const clause_t& c = cnf[cid];
@@ -266,9 +252,8 @@ bool watched_literals_t::validate_state() {
   // For every clause that a literal says it watches, that clause should say
   // it's watched by that literal.
 #ifdef SAT_DEBUG_MODE
-  for (literal_t l = literals_to_watcher.first_index();
-       l < literals_to_watcher.end_index(); l++) {
-    if (l == 0) continue;
+  auto lits = cnf.lit_range();
+  for (literal_t l : lits) {
     const auto& cl = literals_to_watcher[l];
     for (auto cid : cl) {
       auto w = watched_literals[cid];

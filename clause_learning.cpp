@@ -21,16 +21,16 @@ bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
         std::cerr << *it << std::endl;
       }
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
-      if (contains(c, -it->get_literal())) {
+      if (contains(c, neg(it->get_literal()))) {
         counter++;
         new_implied = it->get_literal();
       }
     }
     if (it != std::rend(actions)) {
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::decision);
-      if (contains(c, -it->get_literal())) {
+      if (contains(c, neg(it->get_literal()))) {
         counter++;
-        new_implied = -it->get_literal();
+        new_implied = neg(it->get_literal());
       }
     }
 
@@ -58,7 +58,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
     clause_t new_clause;
     for (action_t a : actions) {
       if (a.action_kind == action_t::action_kind_t::decision) {
-        new_clause.push_back(-a.get_literal());
+        new_clause.push_back(neg(a.get_literal()));
       }
     }
     // std::cout << "Learned clause: " << new_clause << std::endl;
@@ -112,8 +112,8 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
 
       std::vector<literal_t> stamped;
       for (literal_t l : c) {
-        stamped.push_back(-l);
-        if (actions.level(-l) < D) {
+        stamped.push_back(neg(l));
+        if (actions.level(neg(l)) < D) {
           C.push_back(l);
         }
       }
@@ -136,9 +136,9 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
         for (literal_t a : d) {
           if (a == L) continue;
           // We care about future resolutions, so we negate a
-          if (!contains(stamped, -a)) {
-            stamped.push_back(-a);
-            if (actions.level(-a) < D) {
+          if (!contains(stamped, neg(a))) {
+            stamped.push_back(neg(a));
+            if (actions.level(neg(a)) < D) {
               C.push_back(a);
             } else {
               counter++;
@@ -148,7 +148,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
       }
       while (!contains(stamped, it->get_literal())) it++;
       SAT_ASSERT(it->has_literal());
-      C.push_back(-it->get_literal());
+      C.push_back(neg(it->get_literal()));
 
       SAT_ASSERT(count_level_literals(C) == 1);
       SAT_ASSERT(counter == 1);

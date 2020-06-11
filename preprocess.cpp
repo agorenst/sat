@@ -19,8 +19,8 @@ literal_t find_pure_literal(const cnf_t& cnf) {
     const clause_t& c = cnf[cid];
     for (const literal_t l : c) {
       if (l < 0) {
-        if (!contains(negatives, -l)) {
-          negatives.push_back(-l);
+        if (!contains(negatives, neg(l))) {
+          negatives.push_back(neg(l));
         }
       }
       if (l > 0) {
@@ -40,7 +40,7 @@ literal_t find_pure_literal(const cnf_t& cnf) {
       return *pt;
     }
     if (*nt < *pt) {
-      return -*nt;
+      return neg(*nt);
     }
     pt++;
     nt++;
@@ -57,7 +57,7 @@ bool clauses_self_subsume(variable_t v, const clause_t& pclause,
       pit++;
       continue;
     }
-    if (*nit == -v) {
+    if (*nit == neg(v)) {
       nit++;
       continue;
     }
@@ -80,7 +80,7 @@ void naive_self_subsumption(cnf_t& cnf) {
   }
   for (variable_t v = 1; v < max_var + 1; v++) {
     const auto& pos_clause_list = literal_to_clauses[v];
-    const auto& neg_clause_list = literal_to_clauses[-v];
+    const auto& neg_clause_list = literal_to_clauses[neg(v)];
     for (auto pcid : pos_clause_list) {
       for (auto ncid : neg_clause_list) {
         const auto& pclause = cnf[pcid];
@@ -143,7 +143,7 @@ void preprocess(cnf_t& cnf) {
     std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
                                                     std::sort(std::begin(cnf[cid]),
     std::end(cnf[cid])); }); for (auto cid : cnf) { clause_t& c = cnf[cid]; for
-    (size_t i = 0; i < c.size(); i++) { c[i] = -c[i]; auto subsumes =
+    (size_t i = 0; i < c.size(); i++) { c[i] = neg(c[i]); auto subsumes =
     find_subsumed(cnf, c); for (auto did: subsumes) { clause_t d = cnf[did];
           std::cerr << "Strengthening " << d << " into ";
           assert(contains(d, c[i]));
@@ -152,7 +152,7 @@ void preprocess(cnf_t& cnf) {
           std::cerr << d << " thanks to " << c << "(with the " << i << "th
     element negated)" << std::endl;
         }
-        c[i] = -c[i];
+        c[i] = neg(c[i]);
       }
     }
     */

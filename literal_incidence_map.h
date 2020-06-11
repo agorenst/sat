@@ -20,9 +20,6 @@ struct literal_map_t {
   auto begin() const { return mem.begin(); }
   auto end() const { return mem.end(); }
 
-  literal_t first_index() const { return -max_var; }
-  literal_t end_index() const { return max_var + 1; }
-
   literal_t iter_to_literal(typename mem_t::const_iterator it) const;
   size_t literal_to_index(literal_t l) const;
 };

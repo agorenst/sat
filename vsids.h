@@ -14,5 +14,6 @@ struct vsids_t {
   // (Right now we're obliged to do a lot of linear scans, not great.)
   literal_map_t<float> activity;
   // literal_map_t<bool> polarity;
+  literal_range lits;
   const trail_t& trail;
 };

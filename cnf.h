@@ -15,6 +15,39 @@ variable_t var(literal_t l);
 literal_t neg(literal_t l);
 bool ispos(literal_t l);
 
+struct literal_range {
+  const variable_t max_var;
+  literal_range(const variable_t max_var): max_var(max_var) {}
+  struct iterator {
+    const variable_t max_var;
+    literal_t l;
+
+    iterator& operator++() {
+      l++;
+      if (!l) l++;
+      return *this;
+    }
+
+    literal_t operator*() {
+      return l;
+    }
+
+    bool operator==(const iterator& that) {
+      return this->l == that.l;
+    }
+    bool operator!=(const iterator& that) {
+      return this->l != that.l;
+    }
+
+  };
+  iterator begin() const {
+    return iterator{max_var, -max_var};
+  }
+  iterator end() const {
+    return iterator{max_var, max_var+1};
+  }
+};
+
 struct clause_t {
   literal_t* raw;
   size_t len;
@@ -124,6 +157,13 @@ struct cnf_t {
     key_to_mem.push_back(cid);
     std::sort(std::begin(key_to_mem), std::end(key_to_mem));
   }
+
+  literal_range lit_range() const {
+    variable_t max_variable(const cnf_t& cnf);
+    variable_t max_var = max_variable(*this);
+    literal_range lits(max_var);
+    return lits;
+  }
 };
 
 // These are some helper functions for clauses that
@@ -142,5 +182,7 @@ std::ostream& operator<<(std::ostream& o, const cnf_t& cnf);
 void print_cnf(const cnf_t& cnf);
 
 cnf_t load_cnf(std::istream& in);
+
+
 
 variable_t max_variable(const cnf_t& cnf);

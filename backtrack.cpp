@@ -29,7 +29,7 @@ void backtrack(const clause_t& c, trail_t& actions) {
     // /That's/ the actual thing we can't pop.
     auto needed_for_implication = std::find_if(
         bit + 1, std::rend(actions),
-        [&](const action_t& a) { return contains(c, -a.get_literal()); });
+        [&](const action_t& a) { return contains(c, neg(a.get_literal())); });
     // Look forwards again, starting at the trail entry after that necessary
     // one.
     auto del_it = needed_for_implication.base() - 1;

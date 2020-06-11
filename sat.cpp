@@ -304,11 +304,11 @@ void install_lcm_subsumption(cnf_t& cnf) {
     for (int i = 0; i < c.size(); i++) {
       literal_t l = c[i];
       // all possible resolvents
-      auto cids = literal_to_clause[-l];
+      auto cids = literal_to_clause[neg(l)];
       for (clause_id cid : cids) {
         auto d = cnf[cid];
-        auto it = std::find(std::begin(d), std::end(d), -l);
-        *it = -*it;
+        auto it = std::find(std::begin(d), std::end(d), neg(l));
+        *it = neg(*it);
         std::sort(std::begin(d), std::end(d));
         // this means we can resolve the original d against c,
         // and we'd end up with a clause just like c, but missing
@@ -320,7 +320,7 @@ void install_lcm_subsumption(cnf_t& cnf) {
           i--;  // go back one.
         }
 
-        *it = -*it;
+        *it = neg(*it);
         std::sort(std::begin(d), std::end(d));
       }
     }
@@ -353,7 +353,7 @@ void install_naive_cleaning(trace_t& trace,
       if (contains(cnf[cid], l)) {
         to_remove.push_back(cid);
       }
-      if (contains(cnf[cid], -l)) {
+      if (contains(cnf[cid], neg(l))) {
         to_clean.push_back(cid);
       }
     }
@@ -382,7 +382,7 @@ void install_naive_cleaning(trace_t& trace,
       // std::cerr << "Cleaned " << std::distance(std::begin(to_clean), et) << "
       // clauses containing " << -cand << std::endl;
       std::for_each(std::begin(to_clean), et, [&](clause_id cid) {
-                                                remove_literal(cid, -cand);
+                                                remove_literal(cid, neg(cand));
                                               });
       naive_units.push_back(cand);
     }
@@ -445,7 +445,7 @@ int main(int argc, char* argv[]) {
     SAT_ASSERT(std::find_if(std::begin(trace.cnf), std::end(trace.cnf),
                             [&](const clause_id cid) {
                               const clause_t& c = trace.cnf[cid];
-                              return c.size() == 1 && contains(c, -l);
+                              return c.size() == 1 && contains(c, neg(l));
                             }) == std::end(trace.cnf));
   });
 
@@ -453,7 +453,7 @@ int main(int argc, char* argv[]) {
     apply_literal.add_listener([&trace](literal_t l) {
       for (clause_id cid : trace.cnf) {
         const clause_t& c = trace.cnf[cid];
-        if (contains(c, -l)) {
+        if (contains(c, neg(l))) {
           if (trace.clause_unsat(c)) {
             // std::cout << "Found conflict: " << c << std::endl;
             trace.push_conflict(cid);

@@ -44,7 +44,7 @@ std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
   std::vector<clause_id> strengthened;
   clause_t c = cnf[cid];
   for (size_t i = 0; i < c.size(); i++) {
-    c[i] = -c[i];
+    c[i] = neg(c[i]);
     std::sort(std::begin(c), std::end(c));
     auto subsumes = find_subsumed(cnf, c);
     for (auto did : subsumes) {
@@ -56,7 +56,7 @@ std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
       // std::cerr << d << std::endl;
       strengthened.push_back(did);
     }
-    c[i] = -c[i];
+    c[i] = neg(c[i]);
     std::sort(std::begin(c), std::end(c));
   }
   return strengthened;
