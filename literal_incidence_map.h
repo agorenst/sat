@@ -75,7 +75,7 @@ struct var_bitset_t {
   void clear(variable_t v) {
     mem[variable_to_index(v)] = false;
   }
-  bool get(variable_t v) {
+  bool get(variable_t v) const {
     return mem[variable_to_index(v)];
   }
 

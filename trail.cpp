@@ -17,6 +17,7 @@ void trail_t::construct(size_t m) {
   litstate.construct(m);
   varset.construct(m);
   varlevel.construct(m);
+  lit_to_action.construct(m);
 
   mem = new action_t[size];
 
@@ -33,6 +34,12 @@ bool trail_t::literal_false(const literal_t l) const {
 
 bool trail_t::literal_unassigned(const literal_t l) const {
   return litstate[l] == v_state_t::unassigned;
+}
+
+action_t trail_t::cause(literal_t l) const {
+  SAT_ASSERT(literal_true(l));
+  SAT_ASSERT(varset.get(var(l)));
+  return mem[lit_to_action[l]];
 }
 
 void trail_t::append(action_t a) {
@@ -52,6 +59,9 @@ void trail_t::append(action_t a) {
     varlevel[v] = dlevel;
     litstate[l] = v_state_t::var_true;
     litstate[neg(l)] = v_state_t::var_false;
+
+    // We never bother cleaning this. Mistake?
+    lit_to_action[l] = next_index;
   }
   // if (next_index == size) {
   // std::cout << "[DBG][ERR] No room for " << a << " in trail" << std::endl;

@@ -61,12 +61,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
 
   for (literal_t l : c) {
     // Find the action for this
-    auto at =
-        std::find_if(std::begin(actions), std::end(actions), [l](action_t a) {
-          return a.has_literal() && a.get_literal() == neg(l);
-        });
-    SAT_ASSERT(at != std::end(actions));
-    action_t a = *at;
+    action_t a = actions.cause(neg(l));
 
     if (a.is_decision()) {
       continue;
@@ -83,12 +78,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
 
     // Get the unit prop. This will be the thing that demands neg(l) be
     // satisfied, hence falsifying l.
-    auto at =
-        std::find_if(std::begin(actions), std::end(actions), [l](action_t a) {
-          return a.has_literal() && a.get_literal() == neg(l);
-        });
-    SAT_ASSERT(at != std::end(actions));
-    action_t a = *at;
+    action_t a = actions.cause(neg(l));
     SAT_ASSERT(a.is_unit_prop());
 
     // This is the reason that we have to include l in our learned clause.
@@ -130,12 +120,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
 
       // Otherwise, find its reason. Recall that p is falsified, so we're
       // really finding -p.
-      auto at =
-          std::find_if(std::begin(actions), std::end(actions), [p](action_t a) {
-            return a.has_literal() && a.get_literal() == neg(p);
-          });
-      SAT_ASSERT(at != std::end(actions));
-      action_t a = *at;
+      action_t a = actions.cause(neg(p));
 
       // Our dominating set has a decision, we fail, quit.
       if (a.is_decision()) {

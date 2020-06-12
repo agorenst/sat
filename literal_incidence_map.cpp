@@ -89,3 +89,4 @@ template struct literal_map_t<int>;
 template struct literal_map_t<std::forward_list<clause_id>>;
 template struct literal_map_t<std::vector<std::pair<clause_id, literal_t>>>;
 template struct literal_map_t<trail_t::v_state_t>;
+template struct literal_map_t<size_t>;

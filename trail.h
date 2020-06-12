@@ -8,12 +8,7 @@
 struct trail_t {
   enum class v_state_t { unassigned, var_true, var_false };
   literal_map_t<v_state_t> litstate;
-  /*
-  std::unique_ptr<action_t[]> mem;
-  std::unique_ptr<bool[]> varset;
-  std::unique_ptr<size_t[]> varlevel;
-  std::unique_ptr<v_state_t[]> varstate;
-  */
+  literal_map_t<size_t> lit_to_action;
   action_t* mem = nullptr;
   var_map_t<size_t> varlevel;
   var_bitset_t varset;
@@ -24,7 +19,7 @@ struct trail_t {
   variable_t max_var;
 
   trail_t(const trail_t& t) = delete;
-  trail_t(): litstate(0) {}
+  trail_t(): litstate(0), lit_to_action(0) {}
   void construct(size_t _max_var);
 
   action_t* cbegin() const { return &(mem[0]); }
@@ -66,6 +61,8 @@ struct trail_t {
   literal_t find_unassigned_literal(const clause_t& c) const;
   literal_t find_last_falsified(const clause_t& c) const;
   bool uses_clause(const clause_id cid) const;
+
+  action_t cause(literal_t l) const;
 };
 
 std::ostream& operator<<(std::ostream& o, const trail_t::v_state_t s);
