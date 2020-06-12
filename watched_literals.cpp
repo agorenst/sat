@@ -25,8 +25,7 @@ void watcher_literal_swap(watcher_t& w, literal_t o, literal_t n) {
   SAT_ASSERT(watch_contains(w, n));
 }
 
-auto watched_literals_t::find_next_watcher(const clause_t& c,
-                                           literal_t o) {
+auto watched_literals_t::find_next_watcher(const clause_t& c, literal_t o) {
   auto it = std::begin(c);
   for (; it != std::end(c); it++) {
     literal_t l = *it;
@@ -40,7 +39,6 @@ auto watched_literals_t::find_next_watcher(const clause_t& c,
   }
   return it;
 }
-
 
 // Add in a new clause to be watched
 void watched_literals_t::watch_clause(clause_id cid) {

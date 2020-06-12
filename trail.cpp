@@ -8,46 +8,31 @@ trail_t::v_state_t satisfy_literal(literal_t l) {
   return trail_t::v_state_t::var_false;
 }
 
-void trail_t::construct(size_t _max_var) {
-  max_var = _max_var;
+void trail_t::construct(size_t m) {
+  max_var = m;
   size = max_var + 1;
   next_index = 0;
   dlevel = 0;
-  /*
-  mem = std::make_unique<action_t[]>(size);
-  varset = std::make_unique<bool[]>(size);
-  varlevel = std::make_unique<size_t[]>(size);
-  varstate = std::make_unique<v_state_t[]>(size);
-  litstate = std::make_unique<v_state_t[]>(size*2);
-  */
-  mem = new action_t[size];
-  varset = new bool[size];
-  varlevel = new size_t[size];
-  varstate = new v_state_t[size];
-  litstate = new v_state_t[size*2];
 
-  std::fill(&varset[0], &varset[size], false);
-  std::fill(&varstate[0], &varstate[size], v_state_t::unassigned);
-  std::fill(&litstate[0], &litstate[size*2], v_state_t::unassigned);
+  litstate.construct(m);
+  varset.construct(m);
+  varlevel.construct(m);
+
+  mem = new action_t[size];
+
+  std::fill(std::begin(varset), std::end(varset), false);
+  std::fill(std::begin(litstate), std::end(litstate), v_state_t::unassigned);
 }
 
 bool trail_t::literal_true(const literal_t l) const {
-  return litstate[l+max_var] == v_state_t::var_true;
-  //variable_t v = var(l);
-  //v_state_t is_true = ispos(l) ? v_state_t::var_true : v_state_t::var_false;
-  //return varstate[v] == is_true;
+  return litstate[l] == v_state_t::var_true;
 }
 bool trail_t::literal_false(const literal_t l) const {
-  return litstate[l+max_var] == v_state_t::var_false;
-  //variable_t v = var(l);
-  //v_state_t is_false = ispos(l) ? v_state_t::var_false : v_state_t::var_true;
-  //return varstate[v] == is_false;
+  return litstate[l] == v_state_t::var_false;
 }
 
 bool trail_t::literal_unassigned(const literal_t l) const {
-  return litstate[l+max_var] == v_state_t::unassigned;
-  //variable_t v = var(l);
-  //return varstate[v] == v_state_t::unassigned;
+  return litstate[l] == v_state_t::unassigned;
 }
 
 void trail_t::append(action_t a) {
@@ -59,15 +44,14 @@ void trail_t::append(action_t a) {
   if (a.has_literal()) {
     literal_t l = a.get_literal();
     variable_t v = var(l);
-    if (varset[v]) {
+    if (varset.get(v)) {
       // Don't add!
       return;
     }
-    varset[v] = true;
+    varset.set(v);
     varlevel[v] = dlevel;
-    varstate[v] = satisfy_literal(l);
-    litstate[l+max_var] = v_state_t::var_true;
-    litstate[neg(l)+max_var] = v_state_t::var_false;
+    litstate[l] = v_state_t::var_true;
+    litstate[neg(l)] = v_state_t::var_false;
   }
   // if (next_index == size) {
   // std::cout << "[DBG][ERR] No room for " << a << " in trail" << std::endl;
@@ -87,10 +71,9 @@ void trail_t::pop() {
   if (a.has_literal()) {
     literal_t l = a.get_literal();
     variable_t v = var(l);
-    varset[v] = false;
-    varstate[v] = v_state_t::unassigned;
-    litstate[l+max_var] = v_state_t::unassigned;
-    litstate[neg(l)+max_var] = v_state_t::unassigned;
+    varset.clear(v);
+    litstate[l] = v_state_t::unassigned;
+    litstate[neg(l)] = v_state_t::unassigned;
   }
   if (a.is_decision()) {
     dlevel--;
@@ -153,7 +136,7 @@ std::ostream& operator<<(std::ostream& o, const trail_t& t) {
 
 literal_t trail_t::find_last_falsified(const clause_t& c) const {
   auto it = std::find_if(rbegin(), rend(), [&c](action_t a) {
-                                             return a.has_literal() && contains(c, neg(a.get_literal()));
+    return a.has_literal() && contains(c, neg(a.get_literal()));
   });
   if (it != rend()) {
     return neg(it->get_literal());
@@ -181,17 +164,15 @@ size_t trail_t::level(action_t a) const {
   assert(0);
   return 0;
 }
-size_t trail_t::level(literal_t l) const {
-  return varlevel[var(l)];
-}
+size_t trail_t::level(literal_t l) const { return varlevel[var(l)]; }
 
 void trail_t::drop_from(action_t* it) {
-    // std::cout << it << " " << &(mem[next_index]) << std::endl;
-    SAT_ASSERT(it <= &(mem[next_index]));
-    while (end() > it) {
-      pop();
-    }
-    // std::cout << next_index << " ";
-    // next_index = std::distance(begin(), it);
-    // std::cout << next_index << std::endl;
+  // std::cout << it << " " << &(mem[next_index]) << std::endl;
+  SAT_ASSERT(it <= &(mem[next_index]));
+  while (end() > it) {
+    pop();
+  }
+  // std::cout << next_index << " ";
+  // next_index = std::distance(begin(), it);
+  // std::cout << next_index << std::endl;
 }

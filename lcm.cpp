@@ -36,7 +36,7 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
     };
 
     auto et = std::remove_if(std::begin(c), std::end(c), [&](literal_t l) {
-                                                           return !is_decision(neg(l)) && !depends_on_decision[neg(l)];
+      return !is_decision(neg(l)) && !depends_on_decision[neg(l)];
     });
     if (et != std::end(c)) {
       didWork = true;
@@ -61,9 +61,10 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
 
   for (literal_t l : c) {
     // Find the action for this
-    auto at = std::find_if(
-        std::begin(actions), std::end(actions),
-        [l](action_t a) { return a.has_literal() && a.get_literal() == neg(l); });
+    auto at =
+        std::find_if(std::begin(actions), std::end(actions), [l](action_t a) {
+          return a.has_literal() && a.get_literal() == neg(l);
+        });
     SAT_ASSERT(at != std::end(actions));
     action_t a = *at;
 
@@ -80,11 +81,12 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     literal_t l = candidates.back();
     candidates.pop_back();
 
-    // Get the unit prop. This will be the thing that demands neg(l) be satisfied,
-    // hence falsifying l.
-    auto at = std::find_if(
-        std::begin(actions), std::end(actions),
-        [l](action_t a) { return a.has_literal() && a.get_literal() == neg(l); });
+    // Get the unit prop. This will be the thing that demands neg(l) be
+    // satisfied, hence falsifying l.
+    auto at =
+        std::find_if(std::begin(actions), std::end(actions), [l](action_t a) {
+          return a.has_literal() && a.get_literal() == neg(l);
+        });
     SAT_ASSERT(at != std::end(actions));
     action_t a = *at;
     SAT_ASSERT(a.is_unit_prop());
@@ -128,9 +130,10 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
 
       // Otherwise, find its reason. Recall that p is falsified, so we're
       // really finding -p.
-      auto at = std::find_if(
-          std::begin(actions), std::end(actions),
-          [p](action_t a) { return a.has_literal() && a.get_literal() == neg(p); });
+      auto at =
+          std::find_if(std::begin(actions), std::end(actions), [p](action_t a) {
+            return a.has_literal() && a.get_literal() == neg(p);
+          });
       SAT_ASSERT(at != std::end(actions));
       action_t a = *at;
 

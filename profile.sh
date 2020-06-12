@@ -6,31 +6,31 @@
 #valgrind --tool=callgrind --dump-instr=yes ./sat < tests/uuf250-1065/uuf250-01.cnf
 
 
-valgrind --tool=massif ./sat < tests/uuf200-860/uuf200-01.cnf
+#valgrind --tool=massif ./sat < tests/uuf200-860/uuf200-01.cnf
 
-filename=$(ls massif*)
+#filename=$(ls massif*)
+#extension=${filename##*.}
+#echo $filename
+#echo $extension
+
+#ms_print $filename
+
+
+
+
+
+
+
+valgrind --tool=callgrind --dump-instr=yes ./sat < tests/uuf200-860/uuf200-01.cnf
+filename=$(ls callgrind*)
 extension=${filename##*.}
 echo $filename
 echo $extension
 
-ms_print $filename
 
-
-
-
-
-
-
-#valgrind --tool=callgrind --dump-instr=yes ./sat < tests/uuf200-860/uuf200-01.cnf
-### filename=$(ls callgrind*)
-### extension=${filename##*.}
-### echo $filename
-### echo $extension
-### 
-### 
-### gprof2dot --format=callgrind --output=uuf250-01.$extension.dot $filename
-### dot < uuf250-01.$extension.dot -Tpdf > uuf250-01.$extension.pdf
-### cp uuf250-01.$extension.pdf /mnt/c/Users/agore/Desktop/
+gprof2dot --format=callgrind --output=uuf250-01.$extension.dot $filename
+dot < uuf250-01.$extension.dot -Tpdf > uuf250-01.$extension.pdf
+cp uuf250-01.$extension.pdf /mnt/c/Users/agore/Desktop/
 
 
 

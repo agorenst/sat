@@ -66,26 +66,25 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
   it++;
 
   // now go backwards until the decision, resolving things against it
-  //std::cout << "STARTING " << c << std::endl;
+  // std::cout << "STARTING " << c << std::endl;
   for (;
        // this is the IUP THING!
-       count_level_literals(c) > 1;
-       it++) {
+       count_level_literals(c) > 1; it++) {
     SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
     SAT_ASSERT(count_level_literals(c) >= 1);
     clause_t d = cnf[it->get_clause()];
-    if (literal_t r = resolve_candidate(c, d,0)) {
-      //std::cout << "Resolving " << c << " against " << d << " over " << r;
+    if (literal_t r = resolve_candidate(c, d, 0)) {
+      // std::cout << "Resolving " << c << " against " << d << " over " << r;
       c = resolve(c, d, r);
-      //std::cout << " to get " << c << std::endl;
+      // std::cout << " to get " << c << std::endl;
     }
   }
   SAT_ASSERT(count_level_literals(c) >= 1);
-  //std::cout << "DONE" << std::endl;
+  // std::cout << "DONE" << std::endl;
 
-  //std::cout << "Counter: " << count_level_literals(C) << std::endl;
-  //std::cout << "Learned: " << C << std::endl;
-  //assert(counter == 1);
+  // std::cout << "Counter: " << count_level_literals(C) << std::endl;
+  // std::cout << "Learned: " << C << std::endl;
+  // assert(counter == 1);
   std::sort(std::begin(c), std::end(c));
   return c;
 }
@@ -166,11 +165,9 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
 
   if (learn_mode == learn_mode_t::simplest) {
     return simplest_learning(actions);
-  }
-  else if (false) {
+  } else if (false) {
     return explicit_resolution(cnf, actions);
-  }
-  else if (learn_mode == learn_mode_t::explicit_resolution) {
+  } else if (learn_mode == learn_mode_t::explicit_resolution) {
     return stamp_resolution(cnf, actions);
   }
   assert(0);

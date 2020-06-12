@@ -1,24 +1,22 @@
 #pragma once
 #include <memory>
 #include "action.h"
+#include "literal_incidence_map.h"
 
 // This data structure captures the actual state our partial assignment.
 
 struct trail_t {
   enum class v_state_t { unassigned, var_true, var_false };
-
+  literal_map_t<v_state_t> litstate;
   /*
   std::unique_ptr<action_t[]> mem;
   std::unique_ptr<bool[]> varset;
   std::unique_ptr<size_t[]> varlevel;
   std::unique_ptr<v_state_t[]> varstate;
-  std::unique_ptr<v_state_t[]> litstate;
   */
   action_t* mem = nullptr;
-  bool* varset = nullptr;
-  size_t* varlevel = nullptr;
-  v_state_t* varstate = nullptr;
-  v_state_t* litstate = nullptr;
+  var_map_t<size_t> varlevel;
+  var_bitset_t varset;
 
   size_t next_index;
   size_t size;
@@ -26,7 +24,7 @@ struct trail_t {
   variable_t max_var;
 
   trail_t(const trail_t& t) = delete;
-  trail_t() {}
+  trail_t(): litstate(0) {}
   void construct(size_t _max_var);
 
   action_t* cbegin() const { return &(mem[0]); }
@@ -44,7 +42,6 @@ struct trail_t {
   auto crend() const { return std::make_reverse_iterator(cbegin()); }
 
   void clear() {
-    varstate = nullptr;
     next_index = 0;
   }
   bool empty() const { return next_index == 0; }

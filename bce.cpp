@@ -50,9 +50,8 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
   // This does not invalidate our indexing, though it is risky...
   for (clause_id cid : cnf) {
     clause_t& c = cnf[cid];
-    std::sort(std::begin(c), std::end(c), [](literal_t l1, literal_t l2) {
-      return var(l1) < var(l2);
-    });
+    std::sort(std::begin(c), std::end(c),
+              [](literal_t l1, literal_t l2) { return var(l1) < var(l2); });
   }
 
 #if 0
@@ -70,7 +69,8 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
 
   // Create our initial worklist:
   std::vector<literal_t> worklist;
-  std::for_each(std::begin(lits), std::end(lits), [&worklist](literal_t l) { worklist.push_back(l); });
+  std::for_each(std::begin(lits), std::end(lits),
+                [&worklist](literal_t l) { worklist.push_back(l); });
   std::sort(std::begin(worklist), std::end(worklist),
             [&literal_to_clauses](literal_t l1, literal_t l2) {
               return literal_to_clauses[l1].size() >

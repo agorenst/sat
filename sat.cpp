@@ -169,9 +169,8 @@ void install_watched_literals(trace_t& trace) {
 
   // When a clause is removed, we want to (if our TWL is watching it at all)
   // remove it!
-  remove_clause.add_listener([&trace](clause_id cid) {
-                               trace.watch.remove_clause(cid);
-  });
+  remove_clause.add_listener(
+      [&trace](clause_id cid) { trace.watch.remove_clause(cid); });
 
   // When a clause is added, if it's big enough to watch, we should.
   clause_added.add_listener([&trace](clause_id cid) {
@@ -181,11 +180,11 @@ void install_watched_literals(trace_t& trace) {
   });
 
   remove_literal.add_listener([&trace](clause_id cid, literal_t l) {
-                                trace.watch.remove_clause(cid);
-                                if (trace.cnf[cid].size() > 1) {
-                                  trace.watch.watch_clause(cid);
-                                }
-                              });
+    trace.watch.remove_clause(cid);
+    if (trace.cnf[cid].size() > 1) {
+      trace.watch.watch_clause(cid);
+    }
+  });
 }
 
 std::unique_ptr<lbm_t> lbm;
@@ -194,7 +193,7 @@ void install_lbm(trace_t& trace) {
 
   // Every time before we make a new decision, LBM should
   // have a chance to go.
-  before_decision.add_listener([&trace](cnf_t& cnf) {
+  auto enact_lbm_cleaning = [&trace](cnf_t& cnf) {
     if (lbm->should_clean(cnf)) {
       auto to_remove = lbm->clean(remove_clause);
       auto et = std::remove_if(
@@ -205,7 +204,9 @@ void install_lbm(trace_t& trace) {
         remove_clause(cid);
       }
     }
-  });
+  };
+
+  before_decision.add_listener(enact_lbm_cleaning);
 
   // This is a pretty roundabout way...
   // Is needed to keep LBM consistent with other clause-removal strategies
@@ -292,21 +293,21 @@ struct naive_cleaner {
   const trail_t& trail;
   std::vector<literal_t> seen;
   literal_map_t<clause_set_t> m;
-  naive_cleaner(const trace_t& trace): cnf(trace.cnf), trail(trace.actions), m(build_incidence_map(cnf)) {}
+  naive_cleaner(const trace_t& trace)
+      : cnf(trace.cnf), trail(trace.actions), m(build_incidence_map(cnf)) {}
   bool clean(literal_t l) {
     if (contains(seen, l)) return false;
     seen.push_back(l);
     auto cl = m[l];
-    auto et = std::remove_if(std::begin(cl), std::end(cl),
-                             [&](clause_id cid) {
-                               return std::any_of(std::begin(trail), std::end(trail),
-                                                  [&](action_t a) {
-                                                    return a.has_clause() && a.get_clause() == cid;
-                                                  });
-                             });
+    auto et = std::remove_if(std::begin(cl), std::end(cl), [&](clause_id cid) {
+      return std::any_of(std::begin(trail), std::end(trail), [&](action_t a) {
+        return a.has_clause() && a.get_clause() == cid;
+      });
+    });
     std::for_each(std::begin(cl), et, remove_clause);
     const auto dl = m[neg(l)];
-    std::for_each(std::begin(dl), std::end(dl), [&](clause_id cid) {remove_literal(cid, neg(l));});
+    std::for_each(std::begin(dl), std::end(dl),
+                  [&](clause_id cid) { remove_literal(cid, neg(l)); });
     return true;
   }
   void clause_added_listener(clause_id cid) {
@@ -321,14 +322,11 @@ struct naive_cleaner {
       m[l].remove(cid);
     }
   }
-  void remove_literal_listener(clause_id cid, literal_t l) {
-    m[l].remove(cid);
-  }
+  void remove_literal_listener(clause_id cid, literal_t l) { m[l].remove(cid); }
 };
 
 void install_naive_cleaning(trace_t& trace, naive_cleaner& c) {
-
-  before_decision.add_listener([&trace,&c](cnf_t& cnf) {
+  before_decision.add_listener([&trace, &c](cnf_t& cnf) {
     literal_t cand = 0;
     for (action_t a : trace.actions) {
       if (a.is_unit_prop()) {
@@ -342,15 +340,16 @@ void install_naive_cleaning(trace_t& trace, naive_cleaner& c) {
       }
     }
   });
-  before_decision.precondition([&c](const cnf_t& cnf) {
-                                 SAT_ASSERT(check_incidence_map(c.m, cnf));
-                                });
-  before_decision.postcondition([&c](const cnf_t& cnf) {
-                                  SAT_ASSERT(check_incidence_map(c.m, cnf));
-                                });
-  clause_added.add_listener([&c](clause_id cid) { c.clause_added_listener(cid); });
-  remove_clause.add_listener([&c](clause_id cid) { c.clause_removed_listener(cid); });
-  remove_literal.add_listener([&c](clause_id cid, literal_t l) { c.remove_literal_listener(cid, l); });
+  before_decision.precondition(
+      [&c](const cnf_t& cnf) { SAT_ASSERT(check_incidence_map(c.m, cnf)); });
+  before_decision.postcondition(
+      [&c](const cnf_t& cnf) { SAT_ASSERT(check_incidence_map(c.m, cnf)); });
+  clause_added.add_listener(
+      [&c](clause_id cid) { c.clause_added_listener(cid); });
+  remove_clause.add_listener(
+      [&c](clause_id cid) { c.clause_removed_listener(cid); });
+  remove_literal.add_listener(
+      [&c](clause_id cid, literal_t l) { c.remove_literal_listener(cid, l); });
 }
 
 // The real goal here is to find conflicts as fast as possible.
@@ -379,15 +378,15 @@ int main(int argc, char* argv[]) {
 
   // This is the actual literal-removal, needs to happen first.
   remove_literal.add_listener([&trace](clause_id cid, literal_t l) {
-                                clause_t& c = trace.cnf[cid];
-                                auto et = std::remove(std::begin(c), std::end(c), l);
-                                c.erase(et, std::end(c));
+    clause_t& c = trace.cnf[cid];
+    auto et = std::remove(std::begin(c), std::end(c), l);
+    c.erase(et, std::end(c));
 
-                                // And do the unit prop.
-                                if (c.size() == 1) {
-                                  trace.push_unit_queue(c[0], cid);
-                                }
-                              });
+    // And do the unit prop.
+    if (c.size() == 1) {
+      trace.push_unit_queue(c[0], cid);
+    }
+  });
 
   enum class solver_state_t { quiescent, check_units, conflict, sat, unsat };
   solver_state_t state = solver_state_t::quiescent;
@@ -401,8 +400,8 @@ int main(int argc, char* argv[]) {
 
   // We will see if we have new units, and if so,
   // apply them to clean up the CNF
-  //naive_cleaner naive_clean(trace);
-  //install_naive_cleaning(trace, naive_clean);
+  // naive_cleaner naive_clean(trace);
+  // install_naive_cleaning(trace, naive_clean);
 
   // Adding some invariants for correctness.
   apply_literal.precondition([&trace](literal_t l) {
@@ -425,15 +424,15 @@ int main(int argc, char* argv[]) {
   int counter = 0;
 
   clause_added.postcondition([&cnf](clause_id cid) {
-                               //if (cnf[cid].size() == 2) {
-                                 //std::cerr << "SIZE 2!" << std::endl;
-                               //}
-                             });
+    // if (cnf[cid].size() == 2) {
+    // std::cerr << "SIZE 2!" << std::endl;
+    //}
+  });
 
   for (;;) {
-    //std::cerr << "State: " << static_cast<int>(state) << std::endl;
-     //std::cerr << "Trace: " << trace << std::endl;
-     //trace.watch.print_watch_state();
+    // std::cerr << "State: " << static_cast<int>(state) << std::endl;
+    // std::cerr << "Trace: " << trace << std::endl;
+    // trace.watch.print_watch_state();
     switch (state) {
       case solver_state_t::quiescent: {
         // this is way too slow

@@ -6,16 +6,9 @@
 #include "cnf.h"
 #include "debug.h"
 
-variable_t var(literal_t l) {
-  return std::abs(l);
-}
-literal_t neg(literal_t l) {
-  return -l;
-}
-bool ispos(literal_t l) {
-  return l > 0;
-}
-
+variable_t var(literal_t l) { return std::abs(l); }
+literal_t neg(literal_t l) { return -l; }
+bool ispos(literal_t l) { return l > 0; }
 
 std::ostream& operator<<(std::ostream& o, const clause_t& c) {
   for (auto l : c) {
