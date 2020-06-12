@@ -54,12 +54,9 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
   // lcm(cnf, c, actions);
   // return;
 
-  std::vector<literal_t> candidates;
-  std::vector<literal_t> to_remove;
-  candidates.reserve(c.size());
-  to_remove.reserve(c.size());
 
-  for (literal_t l : c) {
+  for (size_t i = 0; i < c.size(); i++) {
+    literal_t l = c[i];
     // Find the action for this
     action_t a = actions.cause(neg(l));
 
@@ -67,18 +64,6 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
       continue;
     }
 
-    SAT_ASSERT(a.is_unit_prop());
-    // The literals in our learned clause are exactly in our trail.
-    candidates.push_back(l);
-  }
-
-  while (!candidates.empty()) {
-    literal_t l = candidates.back();
-    candidates.pop_back();
-
-    // Get the unit prop. This will be the thing that demands neg(l) be
-    // satisfied, hence falsifying l.
-    action_t a = actions.cause(neg(l));
     SAT_ASSERT(a.is_unit_prop());
 
     // This is the reason that we have to include l in our learned clause.
@@ -89,14 +74,16 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     // same, more advanced version of this.
     const clause_t& r = cnf[a.get_clause()];
 
-    std::vector<literal_t> work_list;
+    static std::vector<literal_t> work_list;
+    work_list.clear();
     SAT_ASSERT(contains(r, neg(l)));
     for (literal_t p : r) {
       if (p == neg(l)) continue;  // this is the resolvent, so skip it.
       work_list.push_back(p);
     }
 
-    std::vector<literal_t> seen;
+    static std::vector<literal_t> seen;
+    seen.clear();
 
     bool is_removable = true;
     while (!work_list.empty()) {
@@ -140,13 +127,10 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     }
 
     if (is_removable) {
-      to_remove.push_back(l);
+      std::swap(c[i], c[c.size()-1]);
+      c.pop_back();
+      i--;
     }
   }
-
-  // Now we have all the things we want to remove.
-  auto et = std::remove_if(std::begin(c), std::end(c), [&to_remove](auto l) {
-    return contains(to_remove, l);
-  });
-  c.erase(et, std::end(c));
+  std::sort(std::begin(c), std::end(c));
 }
