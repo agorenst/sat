@@ -98,9 +98,9 @@ struct cnf_t {
   std::vector<clause_t> mem;
 
   // keep track of the old key vacancies.
-  std::priority_queue<clause_id, std::vector<clause_id>,
-                      std::greater<clause_id>>
-      free_keys;
+  //std::priority_queue<clause_id, std::vector<clause_id>,
+  //std::greater<clause_id>>
+  std::vector<clause_id> free_keys;
 
   // This extra layer of indirection supports
   // clause removal in an efficient way (hopefully).
@@ -112,8 +112,8 @@ struct cnf_t {
 
   clause_k add_clause(const clause_t& c) {
     if (!free_keys.empty()) {
-      clause_id key = free_keys.top();
-      free_keys.pop();
+      clause_id key = free_keys.back();
+      free_keys.pop_back();
       mem[key] = c;
       // std::cerr << "Re-using key: " << key << std::endl;
       // maintain sorted order:
@@ -145,7 +145,7 @@ struct cnf_t {
   void remove_clause(clause_id cid) {
     // this is likely pretty expensive because we keep things in sorted order.
     // Is that best?
-    free_keys.push(cid);
+    free_keys.push_back(cid);
     SAT_ASSERT(std::count(std::begin(key_to_mem), std::end(key_to_mem), cid) ==
                1);
     SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
