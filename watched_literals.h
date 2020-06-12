@@ -7,6 +7,7 @@
 #include "cnf.h"
 #include "debug.h"
 #include "literal_incidence_map.h"
+#include "trail.h"
 
 // This is ONLY for binary+ clauses, not unary or empty.
 // The main entry points:
@@ -30,11 +31,21 @@ struct watched_web {
 struct watched_literals_t {
   cnf_t& cnf;
   trace_t& trace;
-  literal_map_t<std::vector<clause_id>> literals_to_watcher;
+  trail_t& trail;
+  const literal_map_t<trail_t::v_state_t>& litstate;
+  literal_map_t<std::vector<std::pair<clause_id, literal_t>>> literals_to_watcher;
   clause_map_t<watcher_t> watched_literals;
+
+  bool literal_true(literal_t l) {
+    return litstate[l] == trail_t::v_state_t::var_true;
+  }
+  bool literal_false(literal_t l) {
+    return litstate[l] == trail_t::v_state_t::var_false;
+  }
 
   watched_literals_t(trace_t& t);
   void watch_clause(clause_id cid);
+__attribute__((noinline))
   void literal_falsed(literal_t l);
 
   bool clause_watched(clause_id cid);
@@ -42,8 +53,8 @@ struct watched_literals_t {
   void remove_clause(clause_id cid);
 
   literal_t find_first_watcher(const clause_t& c);
-  auto find_next_watcher(const clause_t& c, literal_t o);
-  void print_watch_state() const;
+  auto find_next_watcher(clause_t& c, literal_t o);
+  void print_watch_state();
   bool validate_state();
 };
 
