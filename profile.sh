@@ -33,7 +33,7 @@ gprof2dot --format=callgrind --output=uuf250-01.$extension.dot $filename
 dot < uuf250-01.$extension.dot -Tpdf > uuf250-01.$extension.pdf
 cp uuf250-01.$extension.pdf /mnt/c/Users/agore/Desktop/
 callgrind_annotate --auto=yes callgrind.out.$extension > annotate.$extension.txt
-
+objdump -d -S -M intel sat > asm.txt
 
 
 

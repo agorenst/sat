@@ -2,6 +2,7 @@
 #include "debug.h"
 #define OLD_UNITS
 
+__attribute__((noinline))
 void unit_queue_t::push(action_t a) {
 #ifdef OLD_UNITS
   queue.push_back(a);

@@ -14,17 +14,18 @@ typedef int32_t variable_t;
 variable_t var(literal_t l);
 literal_t neg(literal_t l);
 bool ispos(literal_t l);
+literal_t dimacs_to_lit(int x);
 
 struct literal_range {
   const variable_t max_var;
   literal_range(const variable_t max_var): max_var(max_var) {}
   struct iterator {
-    const variable_t max_var;
+    const literal_t after_last_literal;
     literal_t l;
 
     iterator& operator++() {
       l++;
-      if (!l) l++;
+      SAT_ASSERT(l >= 2);
       return *this;
     }
 
@@ -41,10 +42,11 @@ struct literal_range {
 
   };
   iterator begin() const {
-    return iterator{max_var, -max_var};
+    //return iterator{max_var, -max_var};
+    return iterator{(2*max_var)+2, 2};
   }
   iterator end() const {
-    return iterator{max_var, max_var+1};
+    return iterator{(2*max_var)+2, (2*max_var)+2};
   }
 };
 

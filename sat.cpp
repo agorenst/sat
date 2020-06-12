@@ -573,7 +573,7 @@ int main(int argc, char* argv[]) {
         if (unit_prop_mode == unit_prop_mode_t::queue ||
             unit_prop_mode == unit_prop_mode_t::watched) {
           if (backtrack_mode == backtrack_mode_t::nonchron) {
-            assert(trace.count_unassigned_literals(c) == 1);
+            SAT_ASSERT(trace.count_unassigned_literals(c) == 1);
           }
           if (trace.count_unassigned_literals(c) == 1) {
             literal_t l = trace.find_unassigned_literal(c);

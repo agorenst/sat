@@ -28,7 +28,7 @@ literal_t vsids_t::choose() const {
   for (literal_t l : lits) {
     if (!trail.literal_unassigned(l)) continue;
     // std::cout << "[VSIDS][TRACE][VERBOSE] Trying " << l << std::endl;
-    if (activity[l] > v) {
+    if (activity[l] >= v) {
       v = activity[l];
       c = l;
     }

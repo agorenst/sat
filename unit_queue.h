@@ -5,6 +5,7 @@ struct unit_queue_t {
   std::vector<action_t> queue;
   size_t b = 0;
   size_t e = 0;
+__attribute__((noinline))
   void push(action_t a);
   action_t pop();
   bool empty();

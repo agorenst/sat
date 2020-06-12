@@ -6,9 +6,17 @@
 #include "cnf.h"
 #include "debug.h"
 
-variable_t var(literal_t l) { return std::abs(l); }
-literal_t neg(literal_t l) { return -l; }
-bool ispos(literal_t l) { return l > 0; }
+variable_t var(literal_t l) { return l >> 1; }
+literal_t neg(literal_t l) { return l ^ 1; }
+bool ispos(literal_t l) { return neg(l) & 0; }
+literal_t dimacs_to_lit(int x) {
+  bool is_neg = x < 0;
+  literal_t l = std::abs(x);
+  l <<= 1;
+  if (is_neg) l++;
+  assert(l > 1);
+  return l;
+}
 
 std::ostream& operator<<(std::ostream& o, const clause_t& c) {
   for (auto l : c) {
@@ -127,7 +135,7 @@ cnf_t load_cnf(std::istream& in) {
       next_clause.clear();
       continue;
     }
-    next_clause.push_back(next_literal);
+    next_clause.push_back(dimacs_to_lit(next_literal));
   }
   return cnf;
 }
