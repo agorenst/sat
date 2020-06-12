@@ -33,6 +33,7 @@ struct lbm_t {
 
   // Given a remove method...
   template <typename R>
+  __attribute__((noinline))
   std::vector<clause_id> clean(R remove_clause) {
     size_t target_size = worklist.size() / 2;
 

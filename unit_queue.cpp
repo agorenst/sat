@@ -1,5 +1,6 @@
 #include "unit_queue.h"
 #include "debug.h"
+#define OLD_UNITS
 
 void unit_queue_t::push(action_t a) {
 #ifdef OLD_UNITS
@@ -18,8 +19,9 @@ void unit_queue_t::push(action_t a) {
 
 action_t unit_queue_t::pop() {
 #ifdef OLD_UNITS
-  action_t a = queue.back();
-  queue.pop_back();
+  action_t a = queue[b++];
+  //action_t a = queue.back();
+  //queue.pop_back();
   return a;
 #else
   SAT_ASSERT(b < e);
@@ -31,7 +33,7 @@ action_t unit_queue_t::pop() {
 
 bool unit_queue_t::empty() {
 #ifdef OLD_UNITS
-  return queue.empty();
+  return b == queue.size();
 #else
   if (b == e) {
     clear();
@@ -43,6 +45,7 @@ bool unit_queue_t::empty() {
 
 void unit_queue_t::clear() {
 #ifdef OLD_UNITS
+  b = 0;
   queue.clear();
 #else
   b = 0;

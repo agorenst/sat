@@ -30,7 +30,7 @@ struct watched_web {
 struct watched_literals_t {
   cnf_t& cnf;
   trace_t& trace;
-  literal_map_t<clause_set_t> literals_to_watcher;
+  literal_map_t<std::vector<clause_id>> literals_to_watcher;
   clause_map_t<watcher_t> watched_literals;
 
   watched_literals_t(trace_t& t);

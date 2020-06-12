@@ -21,6 +21,7 @@
 
 
 
+rm callgrind*
 valgrind --tool=callgrind --dump-instr=yes ./sat < tests/uuf200-860/uuf200-01.cnf
 filename=$(ls callgrind*)
 extension=${filename##*.}
@@ -31,6 +32,7 @@ echo $extension
 gprof2dot --format=callgrind --output=uuf250-01.$extension.dot $filename
 dot < uuf250-01.$extension.dot -Tpdf > uuf250-01.$extension.pdf
 cp uuf250-01.$extension.pdf /mnt/c/Users/agore/Desktop/
+callgrind_annotate --auto=yes callgrind.out.$extension > annotate.$extension.txt
 
 
 

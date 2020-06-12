@@ -73,12 +73,14 @@ void watched_literals_t::watch_clause(clause_id cid) {
   watched_literals[cid] = w;
 }
 
+__attribute__((noinline))
 void watched_literals_t::literal_falsed(literal_t l) {
   // ul is the literal that is now unsat.
   literal_t ul = neg(l);
   auto& clauses = literals_to_watcher[ul];
 
-  for (int i = 0; i < clauses.size(); i++) {
+  auto s = clauses.size();
+  for (int i = 0; i < s; i++) {
     clause_id cid = clauses[i];
     watcher_t& w = watched_literals[cid];
 
@@ -111,9 +113,10 @@ void watched_literals_t::literal_falsed(literal_t l) {
     auto it = find_next_watcher(c, w.l2);
 
     if (it != std::end(c)) {
+      s--;
       literal_t n = *it;
       SAT_ASSERT(n != ul);
-      clause_set_t& new_set = literals_to_watcher[n];
+      auto& new_set = literals_to_watcher[n];
       SAT_ASSERT(!contains(new_set, cid));
       new_set.push_back(cid);
 
@@ -149,8 +152,8 @@ void watched_literals_t::remove_clause(clause_id id) {
   if (!clause_watched(id)) return;
   watcher_t& w = watched_literals[id];
   // std::cerr << "w to remove: " << w << std::endl;
-  literals_to_watcher[w.l1].remove(id);
-  literals_to_watcher[w.l2].remove(id);
+  unsorted_remove(literals_to_watcher[w.l1], id);
+  unsorted_remove(literals_to_watcher[w.l2], id);
   w.l1 = 0;
   w.l2 = 0;
   SAT_ASSERT(!clause_watched(id));
