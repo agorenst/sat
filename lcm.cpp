@@ -82,7 +82,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
       work_list.push_back(p);
     }
 
-    static std::vector<literal_t> seen;
+    static lit_bitset_t seen(cnf);
     seen.clear();
 
     bool is_removable = true;
@@ -93,10 +93,11 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
       // std::cout << "Considering candidate: " << p << std::endl;
       work_list.pop_back();
 
-      if (contains(seen, p)) {
+      //if (contains(seen, p)) {
+      if (seen.get(p)) {
         continue;
       }
-      seen.push_back(p);
+      seen.set(p);
 
       // Yay, at least some paths up are dominated by a marked literal.
       // At least *this* antecedent literal, p, is already in c. So if we

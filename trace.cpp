@@ -220,8 +220,6 @@ literal_t trace_t::decide_literal() {
 // Get an implication that comes from our trail.
 std::pair<literal_t, clause_id> trace_t::prop_unit() {
   // Are we in a mode where we keep a queue of units?
-  if (unit_prop_mode == unit_prop_mode_t::queue ||
-      unit_prop_mode == unit_prop_mode_t::watched) {
     if (units.empty()) {
       return std::make_pair(0, 0);
     }
@@ -230,7 +228,7 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
     action_t a = units.pop();
     SAT_ASSERT(a.action_kind == action_t::action_kind_t::unit_prop);
     return std::make_pair(a.get_literal(), a.get_clause());
-  }
+    #if 0
   // Otherwise, just look manually for a unit
   else if (unit_prop_mode == unit_prop_mode_t::simplest) {
     for (clause_id i : cnf) {
@@ -247,6 +245,7 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
     return std::make_pair(0, 0);
   }
   return std::make_pair(0, 0);
+  #endif
 }
 
 cnf_t::clause_k trace_t::add_clause(const clause_t& c) {

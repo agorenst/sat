@@ -96,7 +96,11 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions) {
     });
   };
 
-  std::vector<literal_t> C;
+  static lit_bitset_t stamped(actions.max_var);
+  std::fill(std::begin(stamped), std::end(stamped), false);
+
+  static std::vector<literal_t> C;
+  C.clear();
   const size_t D = actions.level();
   auto it = actions.rbegin();
 
@@ -107,9 +111,8 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions) {
   // This is the amount of things we know we'll be resolving against.
   int counter = count_level_literals(c);
 
-  std::vector<literal_t> stamped;
   for (literal_t l : c) {
-    stamped.push_back(neg(l));
+    stamped.set(neg(l));
     if (actions.level(neg(l)) < D) {
       C.push_back(l);
     }
@@ -120,7 +123,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions) {
     literal_t L = it->get_literal();
 
     // We don't expect to be able to resolve against this.
-    if (!contains(stamped, L)) {
+    if (!stamped.get(L)) {
       continue;
     }
 
@@ -131,8 +134,8 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions) {
     for (literal_t a : d) {
       if (a == L) continue;
       // We care about future resolutions, so we negate a
-      if (!contains(stamped, neg(a))) {
-        stamped.push_back(neg(a));
+      if (!stamped.get(neg(a))) {
+        stamped.set(neg(a));
         if (actions.level(neg(a)) < D) {
           C.push_back(a);
         } else {
@@ -141,7 +144,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions) {
       }
     }
   }
-  while (!contains(stamped, it->get_literal())) it++;
+  while (!stamped.get(it->get_literal())) it++;
   SAT_ASSERT(it->has_literal());
   C.push_back(neg(it->get_literal()));
 

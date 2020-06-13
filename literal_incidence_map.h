@@ -57,6 +57,45 @@ struct var_map_t {
   auto end() const { return mem.end(); }
 };
 
+struct lit_bitset_t {
+  typedef std::vector<bool> mem_t;
+  mem_t mem;
+  variable_t max_var;
+
+  // Initialize the size based on the max var.
+  void construct(variable_t m) {
+    max_var = m;
+    mem.resize(max_var*2 + 2);
+  }
+  lit_bitset_t(variable_t m) {
+    construct(m);
+  }
+  lit_bitset_t(const cnf_t& cnf) {
+    construct(max_variable(cnf));
+  }
+
+  void set(literal_t v) {
+    mem[literal_to_index(v)] = true;
+  }
+  void clear(literal_t v) {
+    mem[literal_to_index(v)] = false;
+  }
+  bool get(literal_t v) const {
+    return mem[literal_to_index(v)];
+  }
+
+  auto begin() { return mem.begin(); }
+  auto end() { return mem.end(); }
+  auto begin() const { return mem.begin(); }
+  auto end() const { return mem.end(); }
+
+  void clear() {
+    std::fill(begin(), end(), false);
+  }
+
+  size_t literal_to_index(literal_t l) const { return l; }
+};
+
 struct var_bitset_t {
   typedef std::vector<bool> mem_t;
   mem_t mem;

@@ -401,8 +401,8 @@ int main(int argc, char* argv[]) {
 
   // We will see if we have new units, and if so,
   // apply them to clean up the CNF
-  // naive_cleaner naive_clean(trace);
-  // install_naive_cleaning(trace, naive_clean);
+  //naive_cleaner naive_clean(trace);
+  //install_naive_cleaning(trace, naive_clean);
 
   // Adding some invariants for correctness.
   apply_literal.precondition([&trace](literal_t l) {
