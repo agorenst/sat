@@ -185,6 +185,14 @@ void install_watched_literals(trace_t& trace) {
       trace.watch.watch_clause(cid);
     }
   });
+
+  clause_added.postcondition([&trace](clause_id cid) {
+                               SAT_ASSERT(trace.watch.validate_state());
+
+                               // only in nonchron case...
+                               SAT_ASSERT(trace.count_unassigned_literals(trace.cnf[cid]) == 1);
+                               SAT_ASSERT(trace.actions.literal_unassigned(trace.cnf[cid][0]));
+                             });
 }
 
 std::unique_ptr<lbm_t> lbm;
@@ -352,6 +360,7 @@ void install_naive_cleaning(trace_t& trace, naive_cleaner& c) {
       [&c](clause_id cid, literal_t l) { c.remove_literal_listener(cid, l); });
 }
 
+
 // The real goal here is to find conflicts as fast as possible.
 int main(int argc, char* argv[]) {
   // Instantiate our CNF object
@@ -459,45 +468,6 @@ int main(int argc, char* argv[]) {
         // Transform the state before making a decision
         before_decision(cnf);
 
-        /* RESTART, DON"T.
-    counter++;
-    if (counter > 1000) {
-      while (trace.actions.level()) {
-        trace.actions.pop();
-      }
-      counter = 0;
-      //size_t total_strengthened = naive_self_subsume(cnf);
-      //if (total_strengthened) std::cerr << "[NSS] " << total_strengthened
-    << std::endl;
-    }
-    */
-
-#if 0
-        std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid)
-                                                      {
-                                                        std::sort(std::begin(cnf[cid]),
-                                                                  std::end(cnf[cid]));
-                                                      });
-        for (auto cid : cnf) {
-          clause_t& c = cnf[cid];
-          for (size_t i = 0; i < c.size(); i++) {
-            c[i] = neg(c[i]);
-            std::sort(std::begin(c), std::end(c));
-            auto subsumes = find_subsumed(cnf, c);
-            for (auto did: subsumes) {
-              clause_t d = cnf[did];
-              std::cerr << "Strengthening " << d << " into ";
-              assert(contains(d, c[i]));
-              auto dt = std::remove(std::begin(d), std::end(d), c[i]);
-              d.erase(dt, std::end(d));
-              std::cerr << d << " thanks to " << c << "(with the " << i <<
-                "th element negated)" << std::endl;
-            }
-            c[i] = neg(c[i]);
-            std::sort(std::begin(c), std::end(c));
-          }
-        }
-#endif
         counters::decisions++;
 
         // naive constant folding may add units.
@@ -567,19 +537,7 @@ int main(int argc, char* argv[]) {
 
         // Commit the clause, the LBM score of that clause, and so on.
         clause_added(key);
-        if (unit_prop_mode == unit_prop_mode_t::watched)
-          SAT_ASSERT(trace.watch.validate_state());
-
-        if (unit_prop_mode == unit_prop_mode_t::queue ||
-            unit_prop_mode == unit_prop_mode_t::watched) {
-          if (backtrack_mode == backtrack_mode_t::nonchron) {
-            SAT_ASSERT(trace.count_unassigned_literals(c) == 1);
-          }
-          if (trace.count_unassigned_literals(c) == 1) {
-            literal_t l = trace.find_unassigned_literal(c);
-            trace.push_unit_queue(l, key);
-          }
-        }
+        trace.push_unit_queue(cnf[key][0], key);
 
         if (trace.final_state()) {
           state = solver_state_t::unsat;

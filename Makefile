@@ -1,7 +1,7 @@
 CXX=clang++
 CC=clang++
 CXXFLAGS=-Wall -std=c++1z -g -O2 -flto
-#-D SAT_DEBUG_MODE -O2 -flto
+# -D SAT_DEBUG_MODE
 
 uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cnf)))
 
