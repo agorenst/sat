@@ -1,7 +1,7 @@
 CXX=clang++
 CC=clang++
 CXXFLAGS=-Wall -std=c++1z -g -O2 -flto
-# -D SAT_DEBUG_MODE
+#-D SAT_DEBUG_MODE -O2 -flto
 
 uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cnf)))
 
@@ -88,7 +88,9 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
+	gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0615.cnf
+#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0830.cnf
+#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0757.cnf
 #	./sat -u w -l r -b n < tests/uuf150-645/uuf150-01.cnf
 #	cat tests/uuf150-645/uuf150-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre -verb=2 -rinc=1000000 -ccmin-mode=0

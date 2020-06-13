@@ -41,7 +41,6 @@ struct variable_range {
 
   };
   iterator begin() const {
-    //return iterator{max_var, -max_var};
     return iterator{max_var+1, 1};
   }
   iterator end() const {

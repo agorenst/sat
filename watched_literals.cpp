@@ -15,6 +15,23 @@ watched_literals_t::watched_literals_t(trace_t& t)
 bool watch_contains(const watcher_t& w, literal_t l) {
   return w.l1 == l || w.l2 == l;
 }
+auto watched_literals_t::find_second_watcher(clause_t& c,
+                                           literal_t o) {
+  auto it = std::begin(c);
+  for (; it != std::end(c); it++) {
+    literal_t l = *it;
+    if (l == o) continue;
+    if (!literal_false(l)) return it;
+  }
+  /*
+  for (auto jt = it; jt != std::end(c); jt++) {
+    literal_t l = *jt;
+    if (l == o) continue;
+    if (literal_true(l)) return jt;
+  }
+  */
+  return it;
+}
 auto watched_literals_t::find_next_watcher(clause_t& c,
                                            literal_t o) {
   auto it = std::begin(c) + 2;
@@ -47,7 +64,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
   SAT_ASSERT(l1);  // shouldn't be 0, at least
   w.l1 = l1;
 
-  auto it2 = find_next_watcher(c, l1);
+  auto it2 = find_second_watcher(c, l1);
 
   // We may already be a unit. If so, to maintain backtracking
   // we want to have our other watcher be the last-falsified thing

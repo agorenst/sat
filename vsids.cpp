@@ -33,5 +33,6 @@ literal_t vsids_t::choose() const {
       c = v;
     }
   }
+  if (!c) return 0;
   return (c << 1) + 1;
 }
