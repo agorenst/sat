@@ -32,6 +32,8 @@
 // Help with control flow and such...
 #include "plugins.h"
 
+#include "solver.h"
+
 // Debugging and experiments.
 #include "visualizations.h"
 
@@ -360,7 +362,6 @@ void install_naive_cleaning(trace_t& trace, naive_cleaner& c) {
       [&c](clause_id cid, literal_t l) { c.remove_literal_listener(cid, l); });
 }
 
-
 // The real goal here is to find conflicts as fast as possible.
 int main(int argc, char* argv[]) {
   // Instantiate our CNF object
@@ -379,9 +380,21 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
+
   SAT_ASSERT(!find_unit(cnf));
 
   process_flags(argc, argv);
+
+  #if 1
+  solver_t solver(cnf);
+  if (solver.solve()) {
+    std::cout << "SATISFIABLE" << std::endl;
+    return 0;
+  } else {
+    std::cout << "UNSATISFIABLE" << std::endl;
+    return 0;
+  }
+  #endif
 
   trace_t trace(cnf);
 
@@ -512,6 +525,10 @@ int main(int argc, char* argv[]) {
         break;
 
       case solver_state_t::conflict: {
+        if (!std::any_of(std::begin(trace.actions), std::end(trace.actions), [](action_t a){ return a.is_decision(); })) {
+          std::cerr << trace.actions << std::endl;
+          assert(0);
+        }
         counters::conflicts++;
 
         // print_conflict_graph(cnf, trace.actions);

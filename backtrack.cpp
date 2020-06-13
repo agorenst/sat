@@ -2,7 +2,7 @@
 #include "trace.h"  // for flag modes
 
 void backtrack(const clause_t& c, trail_t& actions) {
-  if (backtrack_mode == backtrack_mode_t::simplest) {
+  if (false && backtrack_mode == backtrack_mode_t::simplest) {
     SAT_ASSERT(std::prev(actions.end())->action_kind ==
                action_t::action_kind_t::halt_conflict);
     actions.pop();
@@ -12,7 +12,8 @@ void backtrack(const clause_t& c, trail_t& actions) {
     auto to_erase = std::find_if(std::begin(actions), std::end(actions),
                                  [](action_t& a) { return a.is_decision(); });
     actions.drop_from(to_erase);
-  } else if (backtrack_mode == backtrack_mode_t::nonchron) {
+  } else {//if (backtrack_mode == backtrack_mode_t::nonchron) {
+    //std::cerr << "Backtracking with " << c << std::endl;
     SAT_ASSERT(std::prev(actions.end())->action_kind ==
                action_t::action_kind_t::halt_conflict);
     actions.pop();
@@ -41,6 +42,7 @@ void backtrack(const clause_t& c, trail_t& actions) {
     auto to_erase =
         std::find_if(del_it + 1, std::end(actions),
                      [](const action_t& a) { return a.is_decision(); });
+    //if (c.size() == 1) std::cerr << c << std::endl << actions << std::endl;
     SAT_ASSERT(to_erase != std::end(actions));
 
     // diagnostistic: how many levels can be pop back?

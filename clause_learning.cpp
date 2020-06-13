@@ -96,10 +96,10 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions) {
     });
   };
 
-  static lit_bitset_t stamped(actions.max_var);
+  lit_bitset_t stamped(actions.max_var);
   std::fill(std::begin(stamped), std::end(stamped), false);
 
-  static std::vector<literal_t> C;
+  std::vector<literal_t> C;
   C.clear();
   const size_t D = actions.level();
   auto it = actions.rbegin();
