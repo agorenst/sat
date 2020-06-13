@@ -20,8 +20,8 @@ void unit_queue_t::push(action_t a) {
 action_t unit_queue_t::pop() {
 #ifdef OLD_UNITS
   action_t a = queue[b++];
-  //action_t a = queue.back();
-  //queue.pop_back();
+  // action_t a = queue.back();
+  // queue.pop_back();
   return a;
 #else
   SAT_ASSERT(b < e);

@@ -5,7 +5,7 @@
 template <typename T>
 size_t literal_map_t<T>::literal_to_index(literal_t l) const {
   return l;
-  //return l + max_var;
+  // return l + max_var;
 }
 
 template <typename T>
@@ -41,7 +41,7 @@ literal_t literal_map_t<T>::iter_to_literal(
     typename mem_t::const_iterator it) const {
   size_t index = std::distance(std::begin(mem), it);
   return index;
-  //return index - max_var;
+  // return index - max_var;
 }
 
 literal_map_t<clause_set_t> build_incidence_map(const cnf_t& cnf) {

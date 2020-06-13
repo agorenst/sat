@@ -4,7 +4,8 @@
 
 std::ostream& operator<<(std::ostream& o, const watcher_t& w);
 
-watched_literals_t::watched_literals_t(cnf_t& cnf, trail_t& trail, unit_queue_t& units)
+watched_literals_t::watched_literals_t(cnf_t& cnf, trail_t& trail,
+                                       unit_queue_t& units)
     : cnf(cnf),
       trail(trail),
       litstate(trail.litstate),
@@ -15,8 +16,7 @@ watched_literals_t::watched_literals_t(cnf_t& cnf, trail_t& trail, unit_queue_t&
 bool watch_contains(const watcher_t& w, literal_t l) {
   return w.l1 == l || w.l2 == l;
 }
-auto watched_literals_t::find_second_watcher(clause_t& c,
-                                           literal_t o) {
+auto watched_literals_t::find_second_watcher(clause_t& c, literal_t o) {
   auto it = std::begin(c);
   for (; it != std::end(c); it++) {
     literal_t l = *it;
@@ -32,8 +32,7 @@ auto watched_literals_t::find_second_watcher(clause_t& c,
   */
   return it;
 }
-auto watched_literals_t::find_next_watcher(clause_t& c,
-                                           literal_t o) {
+auto watched_literals_t::find_next_watcher(clause_t& c, literal_t o) {
   auto it = std::begin(c) + 2;
   for (; it != std::end(c); it++) {
     literal_t l = *it;
@@ -50,10 +49,9 @@ auto watched_literals_t::find_next_watcher(clause_t& c,
   return it;
 }
 
-
 // Add in a new clause to be watched
 void watched_literals_t::watch_clause(clause_id cid) {
-  //SAT_ASSERT(!clause_watched(cid));
+  // SAT_ASSERT(!clause_watched(cid));
   clause_t& c = cnf[cid];
   SAT_ASSERT(c.size() > 1);
 
@@ -89,21 +87,22 @@ void watched_literals_t::watch_clause(clause_id cid) {
     auto jt = std::find(std::begin(c), std::end(c), w.l2);
     std::iter_swap(std::next(std::begin(c)), jt);
   }
-  //watched_literals[cid] = w;
+  // watched_literals[cid] = w;
 }
 
 void watched_literals_t::literal_falsed(literal_t l) {
   // ul is the literal that is now unsat.
   literal_t ul = neg(l);
-  SAT_ASSERT(trail.literal_false(ul)); // that's the whole point of this function
-  //std::cerr << "literal_falsed: " << ul << std::endl;
+  SAT_ASSERT(
+      trail.literal_false(ul));  // that's the whole point of this function
+  // std::cerr << "literal_falsed: " << ul << std::endl;
   auto& watchers = literals_to_watcher[ul];
 
   int s = watchers.size();
   for (int i = 0; i < s; i++) {
     clause_id cid = watchers[i].first;
     // other literal
-    //std::cerr << "Reviewing clause: " << cnf[cid] << std::endl;
+    // std::cerr << "Reviewing clause: " << cnf[cid] << std::endl;
     literal_t ol = watchers[i].second;
 
     // Can we immediately conclude things?
@@ -124,10 +123,9 @@ void watched_literals_t::literal_falsed(literal_t l) {
     SAT_ASSERT(c[0] == ol);
     SAT_ASSERT(c[1] == ul);
 
-
     SAT_ASSERT(contains(cnf[cid], ul));
     SAT_ASSERT(contains(cnf[cid], ol));
-    
+
     auto it = find_next_watcher(c, ol);
 
     if (it != std::end(c)) {
@@ -157,8 +155,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
         SAT_ASSERT(trail.clause_unsat(cnf[cid]));
         trail.append(make_conflict(cid));
         break;
-      }
-      else {
+      } else {
         SAT_ASSERT(trail.literal_unassigned(ol));
         SAT_ASSERT(trail.count_unassigned_literals(c) == 1);
         SAT_ASSERT(trail.find_unassigned_literal(c) == ol);
@@ -167,7 +164,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
     }
   }
 
-  //SAT_ASSERT(trace.halted() || validate_state());
+  // SAT_ASSERT(trace.halted() || validate_state());
 }
 
 literal_t watched_literals_t::find_first_watcher(const clause_t& c) {
@@ -186,22 +183,27 @@ void watched_literals_t::remove_clause(clause_id cid) {
 
   {
     auto& l1 = literals_to_watcher[c[0]];
-    auto it = std::find_if(std::begin(l1), std::end(l1), [cid](auto& p) { return p.first == cid; });
+    auto it = std::find_if(std::begin(l1), std::end(l1),
+                           [cid](auto& p) { return p.first == cid; });
     SAT_ASSERT(it != std::end(l1));
     std::iter_swap(it, std::prev(std::end(l1)));
     l1.pop_back();
-    SAT_ASSERT(std::find_if(std::begin(l1), std::end(l1), [cid](auto& p) { return p.first == cid; }) == std::end(l1));
+    SAT_ASSERT(std::find_if(std::begin(l1), std::end(l1), [cid](auto& p) {
+                 return p.first == cid;
+               }) == std::end(l1));
   }
 
   {
     auto& l2 = literals_to_watcher[c[1]];
-    auto it = std::find_if(std::begin(l2), std::end(l2), [cid](auto& p) { return p.first == cid; });
+    auto it = std::find_if(std::begin(l2), std::end(l2),
+                           [cid](auto& p) { return p.first == cid; });
     SAT_ASSERT(it != std::end(l2));
     std::iter_swap(it, std::prev(std::end(l2)));
     l2.pop_back();
-    SAT_ASSERT(std::find_if(std::begin(l2), std::end(l2), [cid](auto& p) { return p.first == cid; }) == std::end(l2));
+    SAT_ASSERT(std::find_if(std::begin(l2), std::end(l2), [cid](auto& p) {
+                 return p.first == cid;
+               }) == std::end(l2));
   }
-
 }
 
 #ifdef SAT_DEBUG_MODE
@@ -209,7 +211,8 @@ void watched_literals_t::print_watch_state() {
   for (auto cid : cnf) {
     if (!clause_watched(cid)) continue;
     const watcher_t& w = watched_literals[cid];
-    std::cout << "#" << cid << ": " << cnf[cid] << " watched by " << w << std::endl;
+    std::cout << "#" << cid << ": " << cnf[cid] << " watched by " << w
+              << std::endl;
   }
 
   auto lits = cnf.lit_range();
@@ -226,7 +229,7 @@ void watched_literals_t::print_watch_state() {
 
 bool watched_literals_t::clause_watched(clause_id cid) {
   return cnf[cid].size() > 1;
-  //return watched_literals[cid].l1 != 0;
+  // return watched_literals[cid].l1 != 0;
 }
 bool watched_literals_t::validate_state() {
   for (clause_id cid : cnf) {
@@ -237,7 +240,6 @@ bool watched_literals_t::validate_state() {
     }
     SAT_ASSERT(clause_watched(cid));
 
-
     // TODO: Something to enforce about expected effect of backtracking
     // (the relative order of watched literals, etc. etc.)
 
@@ -246,17 +248,14 @@ bool watched_literals_t::validate_state() {
     // but I'm not sure.
 
     // If both watches are false, the clause should be entirely unsat.
-    if (trail.literal_false(c[0]) &&
-        trail.literal_false(c[1])) {
+    if (trail.literal_false(c[0]) && trail.literal_false(c[1])) {
       SAT_ASSERT(trail.clause_unsat(cnf[cid]));
     }
 
     // If exactly one watch is false, then the clause should be unit.
     else if (trail.clause_sat(c)) {
       //???
-    }
-    else if (trail.literal_false(c[0]) ||
-             trail.literal_false(c[1])) {
+    } else if (trail.literal_false(c[0]) || trail.literal_false(c[1])) {
       if (trail.count_unassigned_literals(cnf[cid]) != 1) {
         std::cout << "Failing with unit inconsistencies in: " << std::endl
                   << c << "; " << std::endl

@@ -18,6 +18,9 @@ struct solver_t {
   // more expensive than watched literals.
   literal_map_t<clause_set_t> literal_to_clauses_complete;
 
+  // 
+  lit_bitset_t stamped;
+
   // This is the history of committed actions we have.
   // This is the thing to ask if you need to know if a literal
   // is true, false, or unassigned (or its level, etc. etc.)

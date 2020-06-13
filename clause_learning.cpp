@@ -89,14 +89,13 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
   return c;
 }
 
-clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions) {
+clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t& stamped) {
   auto count_level_literals = [&actions](const clause_t& c) {
     return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {
       return actions.level(l) == actions.level();
     });
   };
 
-  lit_bitset_t stamped(actions.max_var);
   std::fill(std::begin(stamped), std::end(stamped), false);
 
   std::vector<literal_t> C;
@@ -161,7 +160,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions) {
   // in our current decision level compromises the actual learned clause
 }
 
-clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
+clause_t learn_clause(const cnf_t& cnf, const trail_t& actions, lit_bitset_t& stamped) {
   SAT_ASSERT(actions.rbegin()->action_kind ==
              action_t::action_kind_t::halt_conflict);
   // std::cout << "About to learn clause from: " << *this << std::endl;
@@ -171,7 +170,7 @@ clause_t learn_clause(const cnf_t& cnf, const trail_t& actions) {
   } else if (false) {
     return explicit_resolution(cnf, actions);
   } else if (learn_mode == learn_mode_t::explicit_resolution) {
-    return stamp_resolution(cnf, actions);
+    return stamp_resolution(cnf, actions, stamped);
   }
   assert(0);
   return {};

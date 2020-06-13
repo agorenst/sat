@@ -46,14 +46,13 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
 }
 
 void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
-                                 const trail_t& actions) {
+                                 const trail_t& actions, lit_bitset_t& seen) {
   // Explicit search implementation
   // std::cout << "Minimizing " << c <<  " with trail " << std::endl << actions
   // << std::endl;
 
   // lcm(cnf, c, actions);
   // return;
-
 
   for (size_t i = 0; i < c.size(); i++) {
     literal_t l = c[i];
@@ -82,7 +81,6 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
       work_list.push_back(p);
     }
 
-    static lit_bitset_t seen(cnf);
     seen.clear();
 
     bool is_removable = true;
@@ -93,7 +91,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
       // std::cout << "Considering candidate: " << p << std::endl;
       work_list.pop_back();
 
-      //if (contains(seen, p)) {
+      // if (contains(seen, p)) {
       if (seen.get(p)) {
         continue;
       }
@@ -128,7 +126,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     }
 
     if (is_removable) {
-      std::swap(c[i], c[c.size()-1]);
+      std::swap(c[i], c[c.size() - 1]);
       c.pop_back();
       i--;
     }

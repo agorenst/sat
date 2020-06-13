@@ -189,12 +189,12 @@ void install_watched_literals(trace_t& trace) {
   });
 
   clause_added.postcondition([&trace](clause_id cid) {
-                               SAT_ASSERT(trace.watch.validate_state());
+    SAT_ASSERT(trace.watch.validate_state());
 
-                               // only in nonchron case...
-                               SAT_ASSERT(trace.count_unassigned_literals(trace.cnf[cid]) == 1);
-                               SAT_ASSERT(trace.actions.literal_unassigned(trace.cnf[cid][0]));
-                             });
+    // only in nonchron case...
+    SAT_ASSERT(trace.count_unassigned_literals(trace.cnf[cid]) == 1);
+    SAT_ASSERT(trace.actions.literal_unassigned(trace.cnf[cid][0]));
+  });
 }
 
 std::unique_ptr<lbm_t> lbm;
@@ -249,8 +249,9 @@ void install_lbm(trace_t& trace) {
 }
 
 void install_lcm(const cnf_t& cnf) {
+  static lit_bitset_t seen(cnf);
   learned_clause.add_listener([&cnf](clause_t& c, trail_t& trail) {
-    learned_clause_minimization(cnf, c, trail);
+                                learned_clause_minimization(cnf, c, trail, seen);
   });
 }
 void install_lcm_subsumption(cnf_t& cnf) {
@@ -380,12 +381,10 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
-
   SAT_ASSERT(!find_unit(cnf));
 
   process_flags(argc, argv);
 
-  #if 1
   solver_t solver(cnf);
   if (solver.solve()) {
     std::cout << "SATISFIABLE" << std::endl;
@@ -393,186 +392,5 @@ int main(int argc, char* argv[]) {
   } else {
     std::cout << "UNSATISFIABLE" << std::endl;
     return 0;
-  }
-  #endif
-
-  trace_t trace(cnf);
-
-  // This is the actual literal-removal, needs to happen first.
-  remove_literal.add_listener([&trace](clause_id cid, literal_t l) {
-    clause_t& c = trace.cnf[cid];
-    auto et = std::remove(std::begin(c), std::end(c), l);
-    c.erase(et, std::end(c));
-
-    // And do the unit prop.
-    if (c.size() == 1) {
-      trace.push_unit_queue(c[0], cid);
-    }
-  });
-
-  enum class solver_state_t { quiescent, check_units, conflict, sat, unsat };
-  solver_state_t state = solver_state_t::quiescent;
-
-  if (unit_prop_mode == unit_prop_mode_t::watched) {
-    install_watched_literals(trace);
-  }
-
-  install_lcm(cnf);
-  install_lbm(trace);
-
-  // We will see if we have new units, and if so,
-  // apply them to clean up the CNF
-  //naive_cleaner naive_clean(trace);
-  //install_naive_cleaning(trace, naive_clean);
-
-  // Adding some invariants for correctness.
-  apply_literal.precondition([&trace](literal_t l) {
-    SAT_ASSERT(std::find_if(std::begin(trace.cnf), std::end(trace.cnf),
-                            [&](const clause_id cid) {
-                              const clause_t& c = trace.cnf[cid];
-                              return c.size() == 1 && contains(c, neg(l));
-                            }) == std::end(trace.cnf));
-  });
-
-  remove_clause.precondition([&trace](clause_id cid) {
-    for (action_t a : trace.actions) {
-      if (a.has_clause()) {
-        SAT_ASSERT(a.get_clause() != cid);
-      }
-    }
-  });
-  remove_clause.add_listener([&cnf](clause_id cid) { cnf.remove_clause(cid); });
-
-  int counter = 0;
-
-  clause_added.postcondition([&cnf](clause_id cid) {
-    // if (cnf[cid].size() == 2) {
-    // std::cerr << "SIZE 2!" << std::endl;
-    //}
-  });
-
-  for (;;) {
-    // std::cerr << "State: " << static_cast<int>(state) << std::endl;
-    // std::cerr << "Trace: " << trace << std::endl;
-    // trace.watch.print_watch_state();
-    switch (state) {
-      case solver_state_t::quiescent: {
-        // this is way too slow
-        if (false) {
-          auto blocked_clauses = BCE(cnf);
-          if (!blocked_clauses.empty()) {
-            auto et = std::end(blocked_clauses);
-            for (const action_t& a : trace.actions) {
-              if (a.has_clause()) {
-                et = std::remove(std::begin(blocked_clauses), et,
-                                 a.get_clause());
-              }
-            }
-            blocked_clauses.erase(et, std::end(blocked_clauses));
-
-            std::cerr << "[BCE] Blocked clauses found after learning: "
-                      << blocked_clauses.size() << std::endl;
-            for (auto cid : blocked_clauses) {
-              remove_clause(cid);
-            }
-          }
-        }
-
-        // Transform the state before making a decision
-        before_decision(cnf);
-
-        counters::decisions++;
-
-        // naive constant folding may add units.
-        if (trace.units.empty()) {
-          literal_t l = trace.decide_literal();
-          if (l != 0) {
-            trace.apply_decision(l);
-            apply_literal(l);
-          }
-        }
-
-        if (trace.final_state()) {
-          state = solver_state_t::sat;
-        } else {
-          state = solver_state_t::check_units;
-        }
-        break;
-      }
-
-      case solver_state_t::check_units:
-
-        for (;;) {
-          auto [l, cid] = trace.prop_unit();
-          counters::propagations++;
-          // std::cout << "Found unit prop: " << l << " " << cid << std::endl;
-          if (l == 0) {
-            break;
-          }
-          trace.apply_unit(l, cid);
-          apply_literal(l);
-          if (trace.halted()) {
-            break;
-          }
-        }
-
-        if (trace.halted()) {
-          state = solver_state_t::conflict;
-        } else {
-          state = solver_state_t::quiescent;
-        }
-
-        break;
-
-      case solver_state_t::conflict: {
-        if (!std::any_of(std::begin(trace.actions), std::end(trace.actions), [](action_t a){ return a.is_decision(); })) {
-          std::cerr << trace.actions << std::endl;
-          assert(0);
-        }
-        counters::conflicts++;
-
-        // print_conflict_graph(cnf, trace.actions);
-        clause_t c = learn_clause(cnf, trace.actions);
-
-        // Minimize, cache lbm score, etc.
-        learned_clause(c, trace.actions);
-
-        counters::lcsh[c.size()]++;
-
-        // early out in the unsat case.
-        if (c.empty()) {
-          state = solver_state_t::unsat;
-          break;
-        }
-
-        backtrack(c, trace.actions);
-
-        trace.clear_unit_queue();  // ???
-        trace.vsids.clause_learned(c);
-
-        cnf_t::clause_k key = trace.add_clause(c);
-
-        // Commit the clause, the LBM score of that clause, and so on.
-        clause_added(key);
-        trace.push_unit_queue(cnf[key][0], key);
-
-        if (trace.final_state()) {
-          state = solver_state_t::unsat;
-        } else {
-          state = solver_state_t::check_units;
-        }
-
-        break;
-      }
-
-      case solver_state_t::sat:
-        counters::print();
-        std::cout << "SATISFIABLE" << std::endl;
-        return 0;  // quit entirely
-      case solver_state_t::unsat:
-        counters::print();
-        std::cout << "UNSATISFIABLE" << std::endl;
-        return 0;  // quit entirely
-    }
   }
 }

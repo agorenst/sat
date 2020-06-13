@@ -1,7 +1,6 @@
 CXX=clang++
 CC=clang++
 CXXFLAGS=-Wall -std=c++1z -g -O2 -flto
-# -D SAT_DEBUG_MODE
 
 uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cnf)))
 
@@ -34,6 +33,7 @@ benchmark3: $(uuf100-430-tests-medium)
 benchmark4: $(uuf100-430-tests)
 benchmark5: $(uf100-430-tests-medium)
 benchmark6: $(uuf150-645-tests-brief)
+benchmark7: $(uuf150-645-tests)
 
 unit: sat
 	./sat < tests/units1.cnf | diff - SAT

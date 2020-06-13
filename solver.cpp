@@ -7,6 +7,7 @@
 solver_t::solver_t(const cnf_t& CNF)
     : cnf(CNF),
       literal_to_clauses_complete(cnf),
+      stamped(cnf),
       watch(cnf, trail, unit_queue),
       vsids(cnf, trail),
       lbm(cnf) {
@@ -22,10 +23,10 @@ solver_t::solver_t(const cnf_t& CNF)
   install_lbm();
 }
 auto find_unit_clause(const cnf_t& cnf, const trail_t& trail) {
-  return std::find_if(std::begin(cnf), std::end(cnf),
-                     [&](clause_id cid) {
-                       return !trail.clause_sat(cnf[cid]) && trail.count_unassigned_literals(cnf[cid]) == 1;
-                     });
+  return std::find_if(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
+    return !trail.clause_sat(cnf[cid]) &&
+           trail.count_unassigned_literals(cnf[cid]) == 1;
+  });
 }
 
 bool has_unit_clause(const cnf_t& cnf, const trail_t& trail) {
@@ -45,9 +46,8 @@ void solver_t::install_core_plugins() {
   remove_clause.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
 
   // Invariatns:
-  before_decision.precondition([&](const cnf_t& avoid) {
-                                 SAT_ASSERT(!has_unit_clause(cnf, trail));
-                               });
+  before_decision.precondition(
+      [&](const cnf_t& avoid) { SAT_ASSERT(!has_unit_clause(cnf, trail)); });
 }
 
 // These install various counters to track interesting things.
@@ -69,38 +69,38 @@ void solver_t::install_watched_literals() {
     if (c.size() > 1) watch.watch_clause(cid);
     SAT_ASSERT(watch.validate_state());
   });
-  //remove_literal.add_listener([&trace](clause_id cid, literal_t l) {
+  // remove_literal.add_listener([&trace](clause_id cid, literal_t l) {
   //}
 }
 
 void solver_t::install_lcm() {
   // NEEDED TO HELP OUR LOOP. THAT'S BAD.
   learned_clause.add_listener([&](clause_t& c, trail_t& trail) {
-                                learned_clause_minimization(cnf, c, trail);
-                              });
+                                learned_clause_minimization(cnf, c, trail, stamped);
+  });
 }
 
 void solver_t::install_lbm() {
   before_decision.add_listener([&](cnf_t& cnf) {
-                                 if (lbm.should_clean(cnf)) {
-                                   auto to_remove = lbm.clean(remove_clause);
-                                   auto et = std::remove_if(
-                                                            std::begin(to_remove), std::end(to_remove),
-                                                            [&](clause_id cid) { return trail.uses_clause(cid); });
-                                   to_remove.erase(et, std::end(to_remove));
-                                   for (clause_id cid : to_remove) {
-                                     remove_clause(cid);
-                                   }
-                                 }
-                               });
+    if (lbm.should_clean(cnf)) {
+      auto to_remove = lbm.clean(remove_clause);
+      auto et =
+          std::remove_if(std::begin(to_remove), std::end(to_remove),
+                         [&](clause_id cid) { return trail.uses_clause(cid); });
+      to_remove.erase(et, std::end(to_remove));
+      for (clause_id cid : to_remove) {
+        remove_clause(cid);
+      }
+    }
+  });
   remove_clause.add_listener([&](clause_id cid) {
-                               auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
-                                                      [cid](const lbm_entry& e) { return e.id == cid; });
-                               if (it != std::end(lbm.worklist)) {
-                                 std::iter_swap(it, std::prev(std::end(lbm.worklist)));
-                                 lbm.worklist.pop_back();
-                               }
-                             });
+    auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
+                           [cid](const lbm_entry& e) { return e.id == cid; });
+    if (it != std::end(lbm.worklist)) {
+      std::iter_swap(it, std::prev(std::end(lbm.worklist)));
+      lbm.worklist.pop_back();
+    }
+  });
   learned_clause.add_listener(
       [&](clause_t& c, trail_t& trail) { lbm.push_value(c, trail); });
 
@@ -111,8 +111,8 @@ void solver_t::install_lbm() {
 bool solver_t::solve() {
   SAT_ASSERT(state == state_t::quiescent);
   for (;;) {
-    //std::cerr << "State: " << static_cast<int>(state) << std::endl;
-    //std::cerr << "Trail: " << trail << std::endl;
+    // std::cerr << "State: " << static_cast<int>(state) << std::endl;
+    // std::cerr << "Trail: " << trail << std::endl;
     switch (state) {
       case state_t::quiescent: {
         before_decision(cnf);
@@ -147,11 +147,12 @@ bool solver_t::solve() {
 
       case state_t::conflict: {
         // This is a core action where a plugin doesn't seem to make sense.
-        //SAT_ASSERT(std::any_of(std::begin(trail), std::end(trail), [](action_t a){ return a.is_decision(); }));
-        //if (!std::any_of(std::begin(trail), std::end(trail), [](action_t a){ return a.is_decision(); })) {
-        //std::cerr << trail << std::endl;
-          //}
-        clause_t c = learn_clause(cnf, trail);
+        // SAT_ASSERT(std::any_of(std::begin(trail), std::end(trail),
+        // [](action_t a){ return a.is_decision(); })); if
+        // (!std::any_of(std::begin(trail), std::end(trail), [](action_t a){
+        // return a.is_decision(); })) { std::cerr << trail << std::endl;
+        //}
+        clause_t c = learn_clause(cnf, trail, stamped);
 
         // Minimize, cache lbm score, etc.
         // Order matters (we want to minimize before LBM'ing)
