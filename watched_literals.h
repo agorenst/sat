@@ -45,7 +45,6 @@ struct watched_literals_t {
 
   watched_literals_t(trace_t& t);
   void watch_clause(clause_id cid);
-__attribute__((noinline))
   void literal_falsed(literal_t l);
 
   bool clause_watched(clause_id cid);

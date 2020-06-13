@@ -353,7 +353,6 @@ void install_naive_cleaning(trace_t& trace, naive_cleaner& c) {
 }
 
 // The real goal here is to find conflicts as fast as possible.
-[[clang::optnone]]
 int main(int argc, char* argv[]) {
   // Instantiate our CNF object
   cnf_t cnf = load_cnf(std::cin);

@@ -7,13 +7,14 @@ struct vsids_t {
   literal_t choose() const;
   void clause_learned(const clause_t& c);
 
+  //const float alpha = 0.95;
   const float alpha = 0.95;
   const float bump = 1.0;
 
   // This is the activity. One day we'll have a better heap.
   // (Right now we're obliged to do a lot of linear scans, not great.)
-  literal_map_t<float> activity;
+  var_map_t<float> activity;
   // literal_map_t<bool> polarity;
-  literal_range lits;
+  variable_range vars;
   const trail_t& trail;
 };

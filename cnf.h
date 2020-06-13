@@ -16,6 +16,38 @@ literal_t neg(literal_t l);
 bool ispos(literal_t l);
 literal_t dimacs_to_lit(int x);
 
+struct variable_range {
+  const variable_t max_var;
+  variable_range(const variable_t max_var): max_var(max_var) {}
+  struct iterator {
+    const variable_t after_last_var;
+    variable_t v;
+
+    iterator& operator++() {
+      v++;
+      return *this;
+    }
+
+    literal_t operator*() {
+      return v;
+    }
+
+    bool operator==(const iterator& that) {
+      return this->v == that.v;
+    }
+    bool operator!=(const iterator& that) {
+      return this->v != that.v;
+    }
+
+  };
+  iterator begin() const {
+    //return iterator{max_var, -max_var};
+    return iterator{max_var+1, 1};
+  }
+  iterator end() const {
+    return iterator{max_var+1, max_var+1};
+  }
+};
 struct literal_range {
   const variable_t max_var;
   literal_range(const variable_t max_var): max_var(max_var) {}
@@ -177,6 +209,12 @@ struct cnf_t {
     variable_t max_var = max_variable(*this);
     literal_range lits(max_var);
     return lits;
+  }
+  variable_range var_range() const {
+    variable_t max_variable(const cnf_t& cnf);
+    variable_t max_var = max_variable(*this);
+    variable_range vars(max_var);
+    return vars;
   }
 };
 

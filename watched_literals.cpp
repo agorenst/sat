@@ -75,7 +75,6 @@ void watched_literals_t::watch_clause(clause_id cid) {
   //watched_literals[cid] = w;
 }
 
-__attribute__((noinline))
 void watched_literals_t::literal_falsed(literal_t l) {
   // ul is the literal that is now unsat.
   literal_t ul = neg(l);
