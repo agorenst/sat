@@ -33,3 +33,18 @@ lbm_t::lbm_t(const cnf_t& cnf) : lbm(cnf.live_clause_count()) {
   max_size = cnf.live_clause_count() * start_growth;
   last_original_key = *std::prev(std::end(cnf));
 }
+
+std::vector<clause_id> lbm_t::clean() {
+  size_t target_size = worklist.size() / 2;
+
+  std::sort(std::begin(worklist), std::end(worklist), entry_cmp);
+  std::vector<clause_id> to_remove;
+  std::for_each(std::begin(worklist) + target_size, std::end(worklist),
+                [&](auto& e) {
+                  to_remove.push_back(e.id);
+                });
+
+  worklist.erase(std::begin(worklist) + target_size, std::end(worklist));
+  max_size *= growth;
+  return to_remove;
+}

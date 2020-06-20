@@ -31,24 +31,10 @@ struct lbm_t {
   // We clean whenever we've since doubled in size.
   bool should_clean(const cnf_t& cnf);
 
-  // Given a remove method...
-  template <typename R>
-  std::vector<clause_id> clean(R remove_clause) {
-    size_t target_size = worklist.size() / 2;
+  __attribute__((noinline))
+  std::vector<clause_id> clean();
 
-    std::sort(std::begin(worklist), std::end(worklist), entry_cmp);
-    std::vector<clause_id> to_remove;
-    std::for_each(std::begin(worklist) + target_size, std::end(worklist),
-                  [&](auto& e) {
-                    // remove_clause(e.id);
-                    to_remove.push_back(e.id);
-                  });
-
-    worklist.erase(std::begin(worklist) + target_size, std::end(worklist));
-    max_size *= growth;
-    return to_remove;
-  }
-
+  __attribute__((noinline))
   size_t compute_value(const clause_t& c, const trail_t& trail) const;
 
   void push_value(const clause_t& c, const trail_t& trail);

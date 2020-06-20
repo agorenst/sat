@@ -89,6 +89,7 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
   return c;
 }
 
+__attribute__((noinline))
 clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t& stamped) {
   auto count_level_literals = [&actions](const clause_t& c) {
     return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {
@@ -96,7 +97,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t
     });
   };
 
-  std::fill(std::begin(stamped), std::end(stamped), false);
+  stamped.clear();
 
   std::vector<literal_t> C;
   C.clear();
@@ -155,9 +156,6 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t
   std::sort(std::begin(C), std::end(C));
 
   return C;
-
-  // Now we have a lot of things stamped. Everything that's not
-  // in our current decision level compromises the actual learned clause
 }
 
 clause_t learn_clause(const cnf_t& cnf, const trail_t& actions, lit_bitset_t& stamped) {

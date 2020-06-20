@@ -205,7 +205,7 @@ void install_lbm(trace_t& trace) {
   // have a chance to go.
   auto enact_lbm_cleaning = [&trace](cnf_t& cnf) {
     if (lbm->should_clean(cnf)) {
-      auto to_remove = lbm->clean(remove_clause);
+      auto to_remove = lbm->clean();
       auto et = std::remove_if(
           std::begin(to_remove), std::end(to_remove),
           [&](clause_id cid) { return trace.actions.uses_clause(cid); });
@@ -385,12 +385,17 @@ int main(int argc, char* argv[]) {
 
   process_flags(argc, argv);
 
+  auto start = std::chrono::steady_clock::now();
   solver_t solver(cnf);
-  if (solver.solve()) {
+
+  bool result = solver.solve();
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end-start;
+  std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+  if (result) {
     std::cout << "SATISFIABLE" << std::endl;
-    return 0;
   } else {
     std::cout << "UNSATISFIABLE" << std::endl;
-    return 0;
   }
+  return 0;
 }

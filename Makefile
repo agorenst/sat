@@ -35,6 +35,11 @@ benchmark5: $(uf100-430-tests-medium)
 benchmark6: $(uuf150-645-tests-brief)
 benchmark7: $(uuf150-645-tests)
 
+timing1: sat
+	cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | ./sat
+	cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | ./sat
+	cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | ./sat
+
 unit: sat
 	./sat < tests/units1.cnf | diff - SAT
 

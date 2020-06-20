@@ -21,7 +21,7 @@ void trail_t::construct(size_t m) {
 
   mem = new action_t[size];
 
-  std::fill(std::begin(varset), std::end(varset), false);
+  varset.clear();
   std::fill(std::begin(litstate), std::end(litstate), v_state_t::unassigned);
 }
 

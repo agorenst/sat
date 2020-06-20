@@ -83,7 +83,7 @@ void solver_t::install_lcm() {
 void solver_t::install_lbm() {
   before_decision.add_listener([&](cnf_t& cnf) {
     if (lbm.should_clean(cnf)) {
-      auto to_remove = lbm.clean(remove_clause);
+      auto to_remove = lbm.clean();
       auto et =
           std::remove_if(std::begin(to_remove), std::end(to_remove),
                          [&](clause_id cid) { return trail.uses_clause(cid); });
