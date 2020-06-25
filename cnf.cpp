@@ -68,10 +68,11 @@ literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after = 0) {
 }
 
 void commit_literal(cnf_t& cnf, literal_t l) {
-  auto new_end = std::remove_if(
-      std::begin(cnf), std::end(cnf),
-      [&](const clause_id cid) { return contains(cnf[cid], l); });
-  cnf.erase(new_end, std::end(cnf));
+  std::vector<clause_id> containing_clauses;
+  std::copy_if(std::begin(cnf), std::end(cnf), std::back_inserter(containing_clauses),
+               [&](const clause_id cid) { return contains(cnf[cid], l); });
+  std::for_each(std::begin(containing_clauses), std::end(containing_clauses),
+                [&](const clause_id cid) { cnf.remove_clause(cid); });
   for (auto cid : cnf) {
     clause_t& c = cnf[cid];
     auto new_end = std::remove(std::begin(c), std::end(c), neg(l));

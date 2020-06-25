@@ -36,9 +36,6 @@ struct trail_t {
   auto crbegin() const { return std::make_reverse_iterator(cend()); }
   auto crend() const { return std::make_reverse_iterator(cbegin()); }
 
-  void clear() {
-    next_index = 0;
-  }
   bool empty() const { return next_index == 0; }
 
   void append(action_t a);

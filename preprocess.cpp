@@ -126,19 +126,25 @@ void preprocess(cnf_t& cnf) {
     std::cout << "Removing: " << bc.size() << " from " << cnf.size() << std::endl;
     std::cout << cnf << std::endl;
 #endif
-    auto to_erase =
-        std::remove_if(std::begin(cnf), std::end(cnf),
-                       [&bc](clause_id cid) { return contains(bc, cid); });
-    // std::cout << "About to remove: " << cnf.live_clause_count() << std::endl;
-    cnf.erase(to_erase, std::end(cnf));
-    // std::cout << "Removed: " << cnf.live_clause_count() << std::endl;
-    // std::cout << cnf << std::endl;
+    std::for_each(std::begin(bc), std::end(bc),
+                  [&](const clause_id cid) { cnf.remove_clause(cid); });
 
     size_t total_strengthened = naive_self_subsume(cnf);
     if (total_strengthened) {
       // std::cerr << "[NSS] " << total_strengthened << std::endl;
       did_work = true;
     }
+
+    while (literal_t u = find_unit(cnf)) {
+      // std::cout << "[PRE][NUP] " << u << std::endl;
+      commit_literal(cnf, u);
+      did_work = true;
+    }
+    bool VIV(cnf_t& cnf);
+
+    //if (VIV(cnf)) {
+    //did_work = true;
+    //}
     /*
     std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
                                                     std::sort(std::begin(cnf[cid]),

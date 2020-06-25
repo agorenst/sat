@@ -1,6 +1,8 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++1z -g -O2 -flto
+CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
+
+#ifdef SAT_DEBUG_MODE
 
 uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cnf)))
 
@@ -35,6 +37,9 @@ benchmark5: $(uf100-430-tests-medium)
 benchmark6: $(uuf150-645-tests-brief)
 benchmark7: $(uuf150-645-tests)
 
+# The ultimate!
+benchmark10: $(uuf250-1065-tests)
+
 timing1: sat
 	cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | ./sat
 	cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | ./sat
@@ -46,7 +51,7 @@ unit: sat
 # minisat -no-pre -no-elim -no-luby -rfirst=100000
 
 %.unsatresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - UNSAT
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - UNSAT
@@ -93,7 +98,8 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0615.cnf
+	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0222.cnf
+#gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0615.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0830.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0757.cnf

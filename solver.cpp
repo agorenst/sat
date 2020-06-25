@@ -69,8 +69,12 @@ void solver_t::install_watched_literals() {
     if (c.size() > 1) watch.watch_clause(cid);
     SAT_ASSERT(watch.validate_state());
   });
-  // remove_literal.add_listener([&trace](clause_id cid, literal_t l) {
-  //}
+  remove_literal.add_listener([&](clause_id cid, literal_t l) {
+    watch.remove_clause(cid);
+    if (cnf[cid].size() > 1) {
+      watch.watch_clause(cid);
+    }
+  });
 }
 
 void solver_t::install_lcm() {
@@ -79,6 +83,19 @@ void solver_t::install_lcm() {
                                 learned_clause_minimization(cnf, c, trail, stamped);
   });
 }
+
+/*
+void solver_t::install_fake_on_the_fly_subsumption() {
+  learned_clause.add_listener([&](clause_t& c, const trail_t& trail) {
+                                for (action_t a : trail) {
+                                  if (!a.has_clause()) {
+                                    continue;
+                                  }
+                                  clause_t& c = cnf[a.get_clause()];
+                                }
+                              }
+}
+    */
 
 void solver_t::install_lbm() {
   before_decision.add_listener([&](cnf_t& cnf) {
