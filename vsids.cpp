@@ -34,5 +34,6 @@ literal_t vsids_t::choose() const {
     }
   }
   if (!c) return 0;
-  return (c << 1) + 1;
+  return trail.previously_assigned_literal(c);
+  //return (c << 1) + 1;
 }

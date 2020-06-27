@@ -1,13 +1,6 @@
 #include "trail.h"
 #include <iostream>
 
-trail_t::v_state_t satisfy_literal(literal_t l) {
-  if (ispos(l)) {
-    return trail_t::v_state_t::var_true;
-  }
-  return trail_t::v_state_t::var_false;
-}
-
 void trail_t::construct(size_t m) {
   max_var = m;
   size = max_var + 1;
@@ -15,6 +8,7 @@ void trail_t::construct(size_t m) {
   dlevel = 0;
 
   litstate.construct(m);
+  oldlitstate.construct(m);
   varset.construct(m);
   varlevel.construct(m);
   lit_to_action.construct(m);
@@ -23,6 +17,7 @@ void trail_t::construct(size_t m) {
 
   varset.clear();
   std::fill(std::begin(litstate), std::end(litstate), v_state_t::unassigned);
+  std::fill(std::begin(oldlitstate), std::end(oldlitstate), v_state_t::unassigned);
 }
 
 bool trail_t::literal_true(const literal_t l) const {
@@ -59,6 +54,8 @@ void trail_t::append(action_t a) {
     varlevel[v] = dlevel;
     litstate[l] = v_state_t::var_true;
     litstate[neg(l)] = v_state_t::var_false;
+    oldlitstate[l] = v_state_t::var_true;
+    oldlitstate[neg(l)] = v_state_t::var_false;
 
     // We never bother cleaning this. Mistake?
     lit_to_action[l] = next_index;
@@ -74,6 +71,14 @@ void trail_t::append(action_t a) {
   next_index++;
 }
 
+literal_t trail_t::previously_assigned_literal(variable_t v) const {
+  literal_t l = lit(v);
+  switch (oldlitstate[l]) {
+  case v_state_t::var_false: return neg(l);
+  default: return l;
+  }
+}
+
 void trail_t::pop() {
   SAT_ASSERT(next_index > 0);
   next_index--;
@@ -84,6 +89,7 @@ void trail_t::pop() {
     varset.clear(v);
     litstate[l] = v_state_t::unassigned;
     litstate[neg(l)] = v_state_t::unassigned;
+    // we deliberately *don't* erase the oldlitstate.
   }
   if (a.is_decision()) {
     dlevel--;

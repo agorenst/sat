@@ -7,8 +7,9 @@
 #include "debug.h"
 
 variable_t var(literal_t l) { return l >> 1; }
+literal_t lit(variable_t l) { return l << 1; } // given variable x, make it literal x
 literal_t neg(literal_t l) { return l ^ 1; }
-bool ispos(literal_t l) { return neg(l) & 0; }
+bool ispos(literal_t l) { return neg(l) & 1; }
 literal_t dimacs_to_lit(int x) {
   bool is_neg = x < 0;
   literal_t l = std::abs(x);

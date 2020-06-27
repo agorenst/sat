@@ -8,6 +8,7 @@
 struct trail_t {
   enum class v_state_t { unassigned, var_true, var_false };
   literal_map_t<v_state_t> litstate;
+  literal_map_t<v_state_t> oldlitstate;
   literal_map_t<size_t> lit_to_action;
   action_t* mem = nullptr;
   var_map_t<size_t> varlevel;
@@ -19,7 +20,7 @@ struct trail_t {
   variable_t max_var;
 
   trail_t(const trail_t& t) = delete;
-  trail_t(): litstate(0), lit_to_action(0) {}
+  trail_t(): litstate(0), oldlitstate(0), lit_to_action(0) {}
   void construct(size_t _max_var);
 
   action_t* cbegin() const { return &(mem[0]); }
@@ -49,6 +50,7 @@ struct trail_t {
   bool literal_true(const literal_t l) const;
   bool literal_false(const literal_t l) const;
   bool literal_unassigned(const literal_t l) const;
+  literal_t previously_assigned_literal(variable_t v) const;
 
   bool clause_unsat(const clause_t& c) const;
   bool clause_sat(const clause_t& c) const;
