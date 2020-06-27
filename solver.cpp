@@ -15,12 +15,16 @@ solver_t::solver_t(const cnf_t& CNF)
   trail.construct(max_var);
   for (clause_id cid : cnf) {
     watch.watch_clause(cid);
+    for (literal_t l : cnf[cid]) {
+      literal_to_clauses_complete[l].push_back(cid);
+    }
   }
   SAT_ASSERT(watch.validate_state());
   install_core_plugins();
   install_watched_literals();
   install_lcm();
   install_lbm();
+  //install_restart();
 }
 auto find_unit_clause(const cnf_t& cnf, const trail_t& trail) {
   return std::find_if(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
@@ -45,9 +49,44 @@ void solver_t::install_core_plugins() {
   });
   remove_clause.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
 
+  // maintain the literal_to_clauses_complete map:
+  /*
+  remove_clause.add_listener([&](clause_id cid) {
+                               for (literal_t l : cnf[cid]) {
+                                   literal_to_clauses_complete[l].remove(cid);
+                               }
+                             });
+  remove_literal.add_listener([&](clause_id cid, literal_t l) {
+                                literal_to_clauses_complete[l].remove(cid);
+  });
+  clause_added.add_listener([&](clause_id cid) {
+                              const clause_t& c = cnf[cid];
+                              for (literal_t l : c) {
+                                literal_to_clauses_complete[l].push_back(cid);
+                              }
+                            });
+  */
+
   // Invariatns:
+  #ifdef SAT_DEBUG_MODE
   before_decision.precondition(
       [&](const cnf_t& avoid) { SAT_ASSERT(!has_unit_clause(cnf, trail)); });
+  /*
+  before_decision.precondition(
+    [&](const cnf_t& cnf) {
+      for (clause_id cid : cnf) {
+        for (literal_t l : cnf[cid]) {
+          SAT_ASSERT(contains(literal_to_clauses_complete[l], cid));
+        }
+      }
+      for (literal_t l : cnf.lit_range()) {
+        for (clause_id cid : literal_to_clauses_complete[l]) {
+          SAT_ASSERT(contains(cnf, cid));
+        }
+      }
+    });
+  */
+  #endif
 }
 
 // These install various counters to track interesting things.
@@ -96,6 +135,43 @@ void solver_t::install_fake_on_the_fly_subsumption() {
                               }
 }
     */
+void solver_t::naive_cleaning() {
+  static lit_bitset_t seen(cnf);
+  for (action_t a : trail) {
+    if (trail.level(a)) break;
+    if (!a.is_unit_prop()) continue;
+    clause_id cid = a.get_clause();
+    {
+      const clause_t& c = cnf[cid];
+      if (c.size() != 1) continue;
+    }
+
+    literal_t l = a.get_literal();
+    if (seen.get(l)) continue;
+    seen.set(l);
+
+    // Collect all clauses with that literal.
+    //std::cerr << "Cleaning literal " << l << std::endl;
+    std::vector<clause_id> to_remove;
+    std::copy_if(std::begin(cnf), std::end(cnf), std::back_inserter(to_remove),
+                 [&](clause_id cid) { return contains(cnf[cid], l); });
+    // Don't remove those on the trail
+    auto to_save_it = std::remove_if(std::begin(to_remove), std::end(to_remove),
+                                     [&](clause_id cid) { return trail.contains_clause(cid); });
+    std::for_each(std::begin(to_remove), to_save_it, [&](const clause_id cid) { remove_clause(cid); });
+    //std::cerr << "Removed " << to_remove.size() << " clauses" << std::endl;
+
+    // Remove literals
+    to_remove.clear();
+    std::copy_if(std::begin(cnf), std::end(cnf), std::back_inserter(to_remove),
+                 [&](clause_id cid) { return contains(cnf[cid], neg(l)); });
+    auto to_not_clean_it = std::remove_if(std::begin(to_remove), std::end(to_remove),
+                                     [&](clause_id cid) { return trail.contains_clause(cid); });
+    std::for_each(std::begin(to_remove), to_not_clean_it, [&](const clause_id cid) { remove_literal(cid, neg(l)); });
+    //std::cerr << "Cleaned " << to_remove.size() << " clauses" << std::endl;
+
+  }
+}
 
 void solver_t::install_lbm() {
   before_decision.add_listener([&](cnf_t& cnf) {
@@ -124,6 +200,18 @@ void solver_t::install_lbm() {
   clause_added.add_listener([&](clause_id cid) { lbm.flush_value(cid); });
 }
 
+
+void solver_t::install_restart() {
+  static int counter = 0;
+  before_decision.add_listener([&](const cnf_t& cnf) {
+                                 counter++;
+                                 if (counter > 10000) {
+                                   counter = 0;
+                                   while (trail.level()) trail.pop();
+                                 }
+                               });
+}
+
 // This is the core method:
 bool solver_t::solve() {
   SAT_ASSERT(state == state_t::quiescent);
@@ -149,6 +237,10 @@ bool solver_t::solve() {
         while (!unit_queue.empty()) {
           action_t a = unit_queue.pop();
           apply_unit(a.get_literal(), a.get_clause());
+          //if (trail.level() == 0) {
+            //std::cerr << "Cleaning" << std::endl;
+            //naive_cleaning();
+            //}
           if (halted()) {
             break;
           }

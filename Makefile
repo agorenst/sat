@@ -1,6 +1,7 @@
 CXX=clang++
 CC=clang++
 CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
+#-O2 -flto
 
 #ifdef SAT_DEBUG_MODE
 
@@ -51,7 +52,7 @@ unit: sat
 # minisat -no-pre -no-elim -no-luby -rfirst=100000
 
 %.unsatresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n
+	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - UNSAT
 #	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - UNSAT

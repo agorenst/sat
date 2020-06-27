@@ -59,7 +59,10 @@ void watched_literals_t::watch_clause(clause_id cid) {
 
   // Find a non-false watcher; one should exist.
   literal_t l1 = find_first_watcher(c);
+#ifdef SAT_DEBUG_MODE
+  if (!l1) std::cerr << "Could not find watch in " << c << std::endl;
   SAT_ASSERT(l1);  // shouldn't be 0, at least
+#endif
   w.l1 = l1;
 
   auto it2 = find_second_watcher(c, l1);

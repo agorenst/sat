@@ -186,3 +186,8 @@ void trail_t::drop_from(action_t* it) {
   // next_index = std::distance(begin(), it);
   // std::cout << next_index << std::endl;
 }
+
+bool trail_t::contains_clause(clause_id cid) const {
+  return std::any_of(std::begin(*this), std::end(*this),
+                     [&](const action_t a) { return a.has_clause() && a.get_clause() == cid; });
+}

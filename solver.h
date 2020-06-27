@@ -68,6 +68,7 @@ struct solver_t {
   void install_watched_literals();
   void install_lcm();
   void install_lbm();
+  void install_restart();
 
   // These install various counters to track interesting things.
   void install_metrics_plugins();
@@ -76,6 +77,8 @@ struct solver_t {
   solver_t(const cnf_t& cnf);
   // This is the core method:
   bool solve();
+
+  void naive_cleaning();
 
   bool halt_state(const action_t action) const {
     return action.action_kind == action_t::action_kind_t::halt_conflict ||

@@ -60,6 +60,7 @@ struct trail_t {
   bool uses_clause(const clause_id cid) const;
 
   action_t cause(literal_t l) const;
+  bool contains_clause(clause_id cid) const;
 };
 
 std::ostream& operator<<(std::ostream& o, const trail_t::v_state_t s);
