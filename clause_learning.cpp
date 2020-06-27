@@ -89,7 +89,6 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
   return c;
 }
 
-__attribute__((noinline))
 clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t& stamped) {
   auto count_level_literals = [&actions](const clause_t& c) {
     return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {

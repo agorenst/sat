@@ -26,7 +26,7 @@ void lbm_t::flush_value(clause_id cid) {
   SAT_ASSERT(value_cache != 0);
   // worklist.push({value_cache, cid});
   worklist.push_back({value_cache, cid});
-  value_cache = 0;
+  // value_cache = 0; this isn't needed, and is actually a problem.
 }
 
 lbm_t::lbm_t(const cnf_t& cnf) : lbm(cnf.live_clause_count()) {

@@ -21,6 +21,7 @@ uuf150-645-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/u
 
 uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
+uuf250-1065-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/uuf250-01*.cnf)))
 
 sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o circuit.o clause_set.o lbm.o solver.o
 
@@ -39,6 +40,7 @@ benchmark6: $(uuf150-645-tests-brief)
 benchmark7: $(uuf150-645-tests)
 
 # The ultimate!
+benchmark9: $(uuf250-1065-tests-brief)
 benchmark10: $(uuf250-1065-tests)
 
 timing1: sat

@@ -58,6 +58,7 @@ struct solver_t {
   plugin<clause_t&, trail_t&> learned_clause;
   plugin<clause_id, literal_t> remove_literal;
   plugin<clause_id, literal_t> unit_detected;
+  plugin<> restart;
 
   // Best opportunity for 
   plugin<cnf_t&> before_decision;

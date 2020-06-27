@@ -24,7 +24,7 @@ solver_t::solver_t(const cnf_t& CNF)
   install_watched_literals();
   install_lcm();
   install_lbm();
-  //install_restart();
+  install_restart();
 }
 auto find_unit_clause(const cnf_t& cnf, const trail_t& trail) {
   return std::find_if(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
@@ -48,6 +48,10 @@ void solver_t::install_core_plugins() {
     trail.append(make_unit_prop(l, cid));
   });
   remove_clause.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
+
+  restart.add_listener([&](){
+                         while (trail.level()) trail.pop();
+                       });
 
   // maintain the literal_to_clauses_complete map:
   /*
@@ -202,14 +206,49 @@ void solver_t::install_lbm() {
 
 
 void solver_t::install_restart() {
+  const float alpha_fast = 1.0/32.0;
+  const float alpha_slow = 1.0/4096.0;
+  const float c = 1.25;
+
+  static float alpha_incremental = 1;
   static int counter = 0;
+  static float ema_fast = 0;
+  static float ema_slow = 0;
+  restart.add_listener([&]() {
+                         alpha_incremental = 1;
+                         counter = 0;
+                         ema_fast = 0;
+                         ema_slow = 0;
+                       });
   before_decision.add_listener([&](const cnf_t& cnf) {
-                                 counter++;
-                                 if (counter > 10000) {
-                                   counter = 0;
-                                   while (trail.level()) trail.pop();
+                                 if (counter < 50) return;
+                                 if (ema_fast > c * ema_slow) {
+                                   //std::cerr << "RESTART!" << ema_fast << " is bigger than " << c << " * " << ema_slow << std::endl;
+                                   //std::cerr << "RESTART! " << counter << std::endl;
+                                   restart(); // this is calling the solver's "restart" plugin!
                                  }
                                });
+  learned_clause.add_listener(
+                              [&](const clause_t& c, const trail_t& trail) {
+                                // Update the emas
+
+                                if (alpha_incremental > alpha_fast) {
+                                  ema_fast = alpha_incremental * lbm.value_cache + (1.0 - alpha_incremental) * ema_fast;
+                                } else {
+                                  ema_fast = alpha_fast * lbm.value_cache + (1.0 - alpha_fast) * ema_fast;
+                                }
+
+                                if (alpha_incremental > alpha_slow) {
+                                  ema_slow = alpha_incremental * lbm.value_cache + (1.0 - alpha_incremental) * ema_slow;
+                                }
+                                else {
+                                  ema_slow = alpha_slow * lbm.value_cache + (1.0 - alpha_slow) * ema_slow;
+                                }
+                                alpha_incremental *= 0.5;
+
+                                //std::cerr << lbm.value_cache << "; " << ema_fast << "; " << ema_slow << std::endl;
+                                counter++;
+                              });
 }
 
 // This is the core method:
