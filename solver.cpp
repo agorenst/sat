@@ -49,6 +49,8 @@ void solver_t::install_core_plugins() {
   });
   remove_clause.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
 
+  remove_clause_set.add_listener([&](const clause_set_t& cs) { cnf.remove_clause_set(cs); });
+
   restart.add_listener([&](){
                          while (trail.level()) trail.pop();
                        });
@@ -106,6 +108,13 @@ void solver_t::install_watched_literals() {
     SAT_ASSERT(halted() || watch.validate_state());
   });
   remove_clause.add_listener([&](clause_id cid) { watch.remove_clause(cid); });
+
+  // No special optimization here.
+  remove_clause_set.add_listener([&](const clause_set_t& cs) {
+                                   for (clause_id cid : cs) {
+                                   watch.remove_clause(cid);
+                                   }
+                                 });
 
   clause_added.add_listener([&](clause_id cid) {
     const clause_t& c = cnf[cid];
@@ -181,15 +190,22 @@ void solver_t::install_lbm() {
   before_decision.add_listener([&](cnf_t& cnf) {
     if (lbm.should_clean(cnf)) {
       auto to_remove = lbm.clean();
+      // don't remove things on the trail
       auto et =
           std::remove_if(std::begin(to_remove), std::end(to_remove),
                          [&](clause_id cid) { return trail.uses_clause(cid); });
-      to_remove.erase(et, std::end(to_remove));
-      for (clause_id cid : to_remove) {
-        remove_clause(cid);
-      }
+
+      // erase those
+      while (std::end(to_remove) != et) to_remove.pop_back();
+
+      // this is a plugin that supports large number of clause removals, which
+      // can be expensive otherwise.
+      remove_clause_set(to_remove);
     }
   });
+
+  // this is not really needed: the only time we remove clauses (for now...)
+  // is in LBM, which removes this for us.
   remove_clause.add_listener([&](clause_id cid) {
     auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
                            [cid](const lbm_entry& e) { return e.id == cid; });
@@ -198,6 +214,7 @@ void solver_t::install_lbm() {
       lbm.worklist.pop_back();
     }
   });
+
   learned_clause.add_listener(
       [&](clause_t& c, trail_t& trail) { lbm.push_value(c, trail); });
 

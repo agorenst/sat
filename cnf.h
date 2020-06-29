@@ -5,6 +5,8 @@
 #include <queue>
 #include <vector>
 
+
+#include "clause_set.h"
 #include "debug.h"
 
 typedef int32_t literal_t;
@@ -105,7 +107,6 @@ struct clause_t {
   void pop_back() { mem.pop_back(); }
 };
 
-typedef size_t clause_id;
 
 template <typename C, typename V>
 bool contains(const C& c, const V& v) {
@@ -171,10 +172,8 @@ struct cnf_t {
   auto end() const { return key_to_mem.end(); }
   auto begin() { return key_to_mem.begin(); }
   auto end() { return key_to_mem.end(); }
-  template <typename IT>
-  void erase(IT a, IT e) {
-    key_to_mem.erase(a, e);
-  }
+
+  void remove_clause_set(const clause_set_t& cs);
 
   void remove_clause(clause_id cid) {
     // this is likely pretty expensive because we keep things in sorted order.

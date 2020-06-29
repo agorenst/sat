@@ -31,10 +31,8 @@ struct lbm_t {
   // We clean whenever we've since doubled in size.
   bool should_clean(const cnf_t& cnf);
 
-  __attribute__((noinline))
-  std::vector<clause_id> clean();
+  clause_set_t clean();
 
-  __attribute__((noinline))
   size_t compute_value(const clause_t& c, const trail_t& trail) const;
 
   void push_value(const clause_t& c, const trail_t& trail);

@@ -53,6 +53,7 @@ struct solver_t {
   plugin<literal_t> apply_decision;
   plugin<literal_t,clause_id> apply_unit;
   plugin<clause_id> remove_clause;
+  plugin<clause_set_t> remove_clause_set;
   plugin<clause_id> clause_added;
   plugin<const cnf_t&, trail_t&> on_conflict;
   plugin<clause_t&, trail_t&> learned_clause;

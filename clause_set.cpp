@@ -1,3 +1,4 @@
+#include "cnf.h"
 #include "clause_set.h"
 // Really a "clause set", we don't promise anything about order.
 
