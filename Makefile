@@ -1,7 +1,7 @@
 CXX=clang++
 CC=clang++
 CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
-#-O2 -flto
+#CXXFLAGS=-Wall -std=c++2a -g -D SAT_DEBUG_MODE -O2 -flto
 
 #ifdef SAT_DEBUG_MODE
 
@@ -23,7 +23,7 @@ uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-106
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
 uuf250-1065-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/uuf250-01*.cnf)))
 
-sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o circuit.o clause_set.o lbm.o solver.o
+sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o circuit.o clause_set.o lbm.o solver.o measurements.o vmtf.o acids.o
 
 # to test learning, e.g.: ./test_learning < tests/clause_learning/t3.learninglog
 test_learning: clause_learning.o trail.o cnf.o action.o lcm.o literal_incidence_map.o visualizations.o
@@ -101,7 +101,7 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0222.cnf
+	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0495.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0615.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0830.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf

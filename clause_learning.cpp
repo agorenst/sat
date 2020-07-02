@@ -98,7 +98,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t
 
   stamped.clear();
 
-  std::vector<literal_t> C;
+  static std::vector<literal_t> C;
   C.clear();
   const size_t D = actions.level();
   auto it = actions.rbegin();
@@ -143,7 +143,9 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t
       }
     }
   }
+
   while (!stamped.get(it->get_literal())) it++;
+
   SAT_ASSERT(it->has_literal());
   C.push_back(neg(it->get_literal()));
 
@@ -157,18 +159,11 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t
   return C;
 }
 
+__attribute__((noinline))
 clause_t learn_clause(const cnf_t& cnf, const trail_t& actions, lit_bitset_t& stamped) {
   SAT_ASSERT(actions.rbegin()->action_kind ==
              action_t::action_kind_t::halt_conflict);
+  return stamp_resolution(cnf, actions, stamped);
   // std::cout << "About to learn clause from: " << *this << std::endl;
 
-  if (learn_mode == learn_mode_t::simplest) {
-    return simplest_learning(actions);
-  } else if (false) {
-    return explicit_resolution(cnf, actions);
-  } else if (learn_mode == learn_mode_t::explicit_resolution) {
-    return stamp_resolution(cnf, actions, stamped);
-  }
-  assert(0);
-  return {};
 }

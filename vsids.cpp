@@ -8,6 +8,7 @@ vsids_t::vsids_t(const cnf_t& cnf, const trail_t& trail)
   // std::fill(std::begin(polarity), std::end(polarity), false);
 }
 
+__attribute__((noinline))
 void vsids_t::clause_learned(const clause_t& c) {
   for (literal_t l : c) {
     activity[var(l)] += bump;
@@ -16,6 +17,7 @@ void vsids_t::clause_learned(const clause_t& c) {
                 [this](float& s) { s *= alpha; });
 }
 
+__attribute__((noinline))
 literal_t vsids_t::choose() const {
   variable_t c = 0;
   float a = -1;

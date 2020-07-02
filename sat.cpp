@@ -37,6 +37,7 @@
 // Debugging and experiments.
 #include "visualizations.h"
 
+#include "measurements.h"
 // The understanding of this project is that it will evolve
 // frequently. We'll first start with the basic data structures,
 // and then refine things as they progress.
@@ -153,7 +154,11 @@ int main(int argc, char* argv[]) {
   cnf_t cnf = load_cnf(std::cin);
   SAT_ASSERT(cnf.live_clause_count() > 0);  // make sure parsing worked.
 
+  auto start = std::chrono::steady_clock::now();
   preprocess(cnf);
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end-start;
+  std::cout << "preprocessing elapsed time: " << elapsed_seconds.count() << "s\n";
 
   // TODO(aaron): fold this into a more general case, if possible.
   if (immediately_unsat(cnf)) {
@@ -169,13 +174,14 @@ int main(int argc, char* argv[]) {
 
   process_flags(argc, argv);
 
-  auto start = std::chrono::steady_clock::now();
+  start = std::chrono::steady_clock::now();
   solver_t solver(cnf);
 
   bool result = solver.solve();
-  auto end = std::chrono::steady_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end-start;
+  end = std::chrono::steady_clock::now();
+  elapsed_seconds = end-start;
   std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+  std::cout << "time for literal_falsed: " << timer::cumulative_time[static_cast<int>(timer::action::literal_falsed)].count() << std::endl;
   if (result) {
     std::cout << "SATISFIABLE" << std::endl;
   } else {

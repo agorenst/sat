@@ -158,48 +158,10 @@ void cnf_t::remove_clause_set(const clause_set_t& cs) {
   SAT_ASSERT(key_to_mem.size() > cs.size());
 
   // We can do this truly in-place, but for now let's see what happens.
-  //std::vector<size_t> key_to_mem_2;
-  //std::set_difference(std::begin(key_to_mem), std::end(key_to_mem),
-  //std::begin(cs), std::end(cs),
-  //std::back_inserter(key_to_mem_2));
-  //std::swap(key_to_mem, key_to_mem_2);
-  //assert(key_to_mem.size() + cs.size() == key_to_mem_2.size());
-  //return;
-
-  if (cs.size() == 0) return;
-
-  //std::cerr << "Removing ";
-  //for (auto cid : cs) std::cerr << cid << " ";
-  //std::cerr << std::endl;
-
-  auto ct = std::begin(cs);
-  auto it = std::lower_bound(std::begin(key_to_mem), std::end(key_to_mem), *ct);
-  auto jt = it;
-  while (jt != std::end(key_to_mem)) {
-    // Found an item to skip
-    while (ct != std::end(cs) && *jt == *ct) {
-      //std::cerr << "Skipping " << *ct << std::endl;
-      ct++; // consider the next item
-      jt++;
-    }
-    if (jt == std::end(key_to_mem)) {
-      //std::cerr << "Bailing " << std::endl;
-      break;
-    }
-    //std::cerr << "Copying " << *jt << " into " << *it << std::endl;
-    *it = *jt;
-    it++;
-    jt++;
-  }
-  //std::cerr <<std::distance(it, jt) << "; " << cs.size() << std::endl;
-  //SAT_ASSERT(std::distance(it, jt) == cs.size());
-  key_to_mem.erase(it, std::end(key_to_mem));
-  SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
-  //if (key_to_mem != key_to_mem_2) {
-  //for (auto c : key_to_mem) std::cerr << c << " ";
-  //std::cerr << std::endl;
-  //for (auto c : key_to_mem_2) std::cerr << c << " ";
-  //std::cerr << std::endl;
-  //}
-  SAT_ASSERT(key_to_mem == key_to_mem_2);
+  std::vector<size_t> key_to_mem_2;
+  std::set_difference(std::begin(key_to_mem), std::end(key_to_mem),
+                      std::begin(cs), std::end(cs),
+                      std::back_inserter(key_to_mem_2));
+  std::swap(key_to_mem, key_to_mem_2);
+  SAT_ASSERT(key_to_mem.size() + cs.size() == key_to_mem_2.size());
 }

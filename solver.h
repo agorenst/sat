@@ -5,6 +5,8 @@
 #include "literal_incidence_map.h"
 #include "plugins.h"
 #include "lbm.h"
+#include "vmtf.h"
+#include "acids.h"
 
 struct solver_t {
   // The root data structure, the "true" CNF.
@@ -38,6 +40,8 @@ struct solver_t {
 
   // This VSIDS object is how we choose our literals.
   vsids_t vsids;
+  vmtf_t vmtf;
+  acids_t acids;
 
   // Our main clause-removal heuristic:
   lbm_t lbm;

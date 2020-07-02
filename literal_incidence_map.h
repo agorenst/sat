@@ -39,9 +39,9 @@ struct var_map_t {
 
   void construct(variable_t m) {
     max_var = m;
-    mem.resize(max_var);
+    mem.resize(max_var+1);
   }
-  size_t variable_to_index(variable_t v) const { return v - 1; }
+  size_t variable_to_index(variable_t v) const { return v; }
   size_t literal_to_index(literal_t l) const { return variable_to_index(var(l)); }
 
   T& operator[](variable_t v) {
@@ -99,7 +99,7 @@ public:
 };
 
 struct var_bitset_t {
-  typedef std::vector<bool> mem_t;
+  typedef std::vector<char> mem_t;
   mem_t mem;
   variable_t max_var;
 

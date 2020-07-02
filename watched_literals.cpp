@@ -1,4 +1,5 @@
 #include "watched_literals.h"
+#include "measurements.h"
 
 #include "trace.h"
 
@@ -83,7 +84,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
   literals_to_watcher[w.l1].push_back({cid, w.l2});
   literals_to_watcher[w.l2].push_back({cid, w.l1});
 
-  // Keep the watch literlas in the front of the clause.
+  // Keep the watch literals in the front of the clause.
   {
     auto it = std::find(std::begin(c), std::end(c), w.l1);
     std::iter_swap(std::begin(c), it);
@@ -94,6 +95,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
 }
 
 void watched_literals_t::literal_falsed(literal_t l) {
+  //timer t(timer::action::literal_falsed);
   // ul is the literal that is now unsat.
   literal_t ul = neg(l);
   SAT_ASSERT(
@@ -180,6 +182,7 @@ literal_t watched_literals_t::find_first_watcher(const clause_t& c) {
   return 0;
 }
 
+__attribute__((noinline))
 void watched_literals_t::remove_clause(clause_id cid) {
   if (!clause_watched(cid)) return;
   const clause_t& c = cnf[cid];

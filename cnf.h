@@ -105,6 +105,12 @@ struct clause_t {
   auto& operator[](size_t i) { return mem[i]; }
   auto& operator[](size_t i) const { return mem[i]; }
   void pop_back() { mem.pop_back(); }
+  bool operator==(const clause_t& that) const {
+    return mem == that.mem;
+  }
+  bool operator!=(const clause_t& that) const {
+    return mem != that.mem;
+  }
 };
 
 

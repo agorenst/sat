@@ -3,6 +3,8 @@
 #include "clause_learning.h"
 #include "lcm.h"
 
+#include "measurements.h"
+
 // We create a local copy of the CNF.
 solver_t::solver_t(const cnf_t& CNF)
     : cnf(CNF),
@@ -10,6 +12,8 @@ solver_t::solver_t(const cnf_t& CNF)
       stamped(cnf),
       watch(cnf, trail, unit_queue),
       vsids(cnf, trail),
+      vmtf(cnf, trail),
+      acids(cnf, trail),
       lbm(cnf) {
   variable_t max_var = max_variable(cnf);
   trail.construct(max_var);
@@ -271,14 +275,18 @@ void solver_t::install_restart() {
 // This is the core method:
 bool solver_t::solve() {
   SAT_ASSERT(state == state_t::quiescent);
+  timer::initialize();
   for (;;) {
     // std::cerr << "State: " << static_cast<int>(state) << std::endl;
-    // std::cerr << "Trail: " << trail << std::endl;
+    //std::cerr << "Trail: " << trail << std::endl;
+    //vmtf.debug();
     switch (state) {
       case state_t::quiescent: {
         before_decision(cnf);
 
         literal_t l = vsids.choose();
+        //literal_t l = vmtf.choose();
+        //literal_t l = acids.choose();
         if (l == 0) {
           state = state_t::sat;
         } else {
@@ -323,6 +331,8 @@ bool solver_t::solve() {
         // Order matters (we want to minimize before LBM'ing)
         learned_clause(c, trail);
         vsids.clause_learned(c);
+        //vmtf.clause_learned(c);
+        //acids.clause_learned(c);
 
         // early out in the unsat case.
         if (c.empty()) {
@@ -330,7 +340,13 @@ bool solver_t::solve() {
           break;
         }
 
-        backtrack(c, trail);
+        action_t* target = backtrack(c, trail);
+        //for (auto x = target; x != std::end(trail); x++) {
+        //if (x->has_literal()) vmtf.unassign(var(x->get_literal()));
+        //}
+        trail.drop_from(target);
+        //std::cerr << trail.count_unassigned_literals(c) << std::endl;
+        SAT_ASSERT(trail.count_unassigned_literals(c) == 1);
 
         unit_queue.clear();  // ???
 
