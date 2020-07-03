@@ -2,6 +2,7 @@
 #include "backtrack.h"
 #include "clause_learning.h"
 #include "lcm.h"
+#include "subsumption.h"
 
 #include "measurements.h"
 
@@ -56,7 +57,26 @@ void solver_t::install_core_plugins() {
   remove_clause_set.add_listener([&](const clause_set_t& cs) { cnf.remove_clause_set(cs); });
 
   restart.add_listener([&](){
-                         while (trail.level()) trail.pop();
+                         #if 0
+                         if (trail.level() > 200) {
+                           // The key insight is that any assignment that is made before xnext after
+                           // a restart must also have been assigned before the restart.
+                           literal_t n = vsids.choose();
+                           float nscore = vsids.score(n);
+                           size_t level = 0;
+                           for (auto it = trail.begin(); it != trail.end(); it++) {
+                             if (!it->is_decision()) {
+                               continue;
+                             }
+                             level++;
+                             literal_t l = it->get_literal();
+                             if (vsids.score(l) < nscore) break; // this is the first decision we'd change.
+                           }
+                           while (trail.level() >= level) trail.pop();
+                         } else {
+                           #endif
+                           while (trail.level()) trail.pop();
+                           //}
                        });
 
   // maintain the literal_to_clauses_complete map:
@@ -341,6 +361,14 @@ bool solver_t::solve() {
         }
 
         action_t* target = backtrack(c, trail);
+
+        // Not-quite-on-the-fly subsumption...
+        for (action_t* a = target; a != std::end(trail); a++) {
+          if (a->has_clause() && subsumes_and_sort(c, cnf[a->get_clause()])) {
+            //std::cerr << "removing clause! " << cnf[a->get_clause()] << " with " << c << std::endl;
+            remove_clause(a->get_clause());
+          }
+        }
         //for (auto x = target; x != std::end(trail); x++) {
         //if (x->has_literal()) vmtf.unassign(var(x->get_literal()));
         //}

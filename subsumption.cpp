@@ -8,6 +8,18 @@
 
 std::unique_ptr<literal_map_t<clause_set_t>> literal_to_clause;
 
+bool subsumes_and_sort(clause_t c, clause_t d) {
+  // Basic early-out. Also needed for correctness (otherwise c always subsumes
+  // c)
+  if (d.size() <= c.size()) return false;
+
+  std::sort(std::begin(c), std::end(c));
+  std::sort(std::begin(d), std::end(d));
+
+  // This says c is a subset of d.
+  return std::includes(std::begin(d), std::end(d), std::begin(c), std::end(c));
+}
+
 bool subsumes(const clause_t& c, const clause_t& d) {
   // Basic early-out. Also needed for correctness (otherwise c always subsumes
   // c)

@@ -6,6 +6,7 @@ struct vsids_t {
   vsids_t(const cnf_t& cnf, const trail_t& trail);
   literal_t choose() const;
   void clause_learned(const clause_t& c);
+  float score(literal_t l) const;
 
   //const float alpha = 0.95;
   const float alpha = 0.95;

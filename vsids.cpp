@@ -5,10 +5,9 @@ vsids_t::vsids_t(const cnf_t& cnf, const trail_t& trail)
     : vars(cnf.var_range()), trail(trail) {
   activity.construct(max_variable(cnf));
   std::fill(std::begin(activity), std::end(activity), 0.0);
-  // std::fill(std::begin(polarity), std::end(polarity), false);
 }
 
-__attribute__((noinline))
+//__attribute__((noinline))
 void vsids_t::clause_learned(const clause_t& c) {
   for (literal_t l : c) {
     activity[var(l)] += bump;
@@ -17,7 +16,7 @@ void vsids_t::clause_learned(const clause_t& c) {
                 [this](float& s) { s *= alpha; });
 }
 
-__attribute__((noinline))
+//__attribute__((noinline))
 literal_t vsids_t::choose() const {
   variable_t c = 0;
   float a = -1;
@@ -38,4 +37,8 @@ literal_t vsids_t::choose() const {
   if (!c) return 0;
   return trail.previously_assigned_literal(c);
   //return (c << 1) + 1;
+}
+
+float vsids_t::score(literal_t l) const {
+  return activity[var(l)];
 }
