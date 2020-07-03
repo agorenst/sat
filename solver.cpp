@@ -305,45 +305,15 @@ void solver_t::install_lbm() {
 
 void solver_t::install_restart() {
   restart.add_listener([&]() {
-    alpha_incremental = 1;
-    counter = 0;
-    ema_fast = 0;
-    ema_slow = 0;
+                         ema_restart.reset();
   });
   before_decision.add_listener([&](const cnf_t& cnf) {
-    if (counter < 50) return;
-    if (ema_fast > c * ema_slow) {
-      // std::cerr << "RESTART!" << ema_fast << " is bigger than " << c << " * "
-      // << ema_slow << std::endl; std::cerr << "RESTART! " << counter <<
-      // std::endl;
-
-      // *****************
-      restart();  // this is calling the solver's "restart" plugin!
-      // *****************
-
-    }
+                                 if (ema_restart.should_restart()) {
+                                   restart();
+                                 }
   });
   learned_clause.add_listener([&](const clause_t& c, const trail_t& trail) {
-    // Update the emas
-
-    if (alpha_incremental > alpha_fast) {
-      ema_fast = alpha_incremental * lbm.value_cache +
-                 (1.0 - alpha_incremental) * ema_fast;
-    } else {
-      ema_fast = alpha_fast * lbm.value_cache + (1.0 - alpha_fast) * ema_fast;
-    }
-
-    if (alpha_incremental > alpha_slow) {
-      ema_slow = alpha_incremental * lbm.value_cache +
-                 (1.0 - alpha_incremental) * ema_slow;
-    } else {
-      ema_slow = alpha_slow * lbm.value_cache + (1.0 - alpha_slow) * ema_slow;
-    }
-    alpha_incremental *= 0.5;
-
-    // std::cerr << lbm.value_cache << "; " << ema_fast << "; " << ema_slow <<
-    // std::endl;
-    counter++;
+                                ema_restart.step(lbm.value_cache);
   });
 }
 
@@ -368,15 +338,15 @@ bool solver_t::solve() {
     // std::cerr << "Trail: " << trail << std::endl;
     switch (state) {
       case state_t::quiescent: {
-        before_decision(cnf);
+        before_decision_f(cnf);
 
         literal_t l;
-        choose_literal(l);
+        choose_literal_f(l);
 
         if (l == 0) {
           state = state_t::sat;
         } else {
-          apply_decision(l);
+          apply_decision_f(l);
           state = state_t::check_units;
         }
         break;
@@ -386,7 +356,7 @@ bool solver_t::solve() {
 
         while (!unit_queue.empty()) {
           action_t a = unit_queue.pop();
-          apply_unit(a.get_literal(), a.get_clause());
+          apply_unit_f(a.get_literal(), a.get_clause());
           // if (trail.level() == 0) {
           // std::cerr << "Cleaning" << std::endl;
           // naive_cleaning();
@@ -410,7 +380,7 @@ bool solver_t::solve() {
 
         // Minimize, cache lbm score, etc.
         // Order matters (we want to minimize before LBM'ing)
-        learned_clause(c, trail);
+        learned_clause_f(c, trail);
 
         // early out in the unsat case.
         if (c.empty()) {
@@ -420,14 +390,7 @@ bool solver_t::solve() {
 
         action_t* target = backtrack(c, trail);
 
-        // TODO: mesh this with on-the-fly subsumption?
-        for (action_t* a = target; a != std::end(trail); a++) {
-          if (a->has_clause() && subsumes_and_sort(c, cnf[a->get_clause()])) {
-            // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
-            // with " << c << std::endl;
-            remove_clause(a->get_clause());
-          }
-        }
+        backtrack_subsumption(c, target, std::end(trail));
         trail.drop_from(target);
 
         unit_queue.clear();  // ???
@@ -436,7 +399,7 @@ bool solver_t::solve() {
         cnf_t::clause_k cid = cnf.add_clause(c);
 
         // Commit the clause, the LBM score of that clause, and so on.
-        clause_added(cid);
+        clause_added_f(cid);
 
         SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
         SAT_ASSERT(trail.literal_unassigned(cnf[cid][0]));
@@ -479,26 +442,21 @@ void solver_t::before_decision_f(cnf_t& cnf) {
   }
 
   // Restart policy
-  if (counter < 50) return;
-  if (ema_fast > c * ema_slow) {
-    // std::cerr << "RESTART!" << ema_fast << " is bigger than " << c << " * "
-    // << ema_slow << std::endl; std::cerr << "RESTART! " << counter <<
-    // std::endl;
-
-    // *****************
+  if (ema_restart.should_restart()) {
     restart_f();  // this is calling the solver's "restart" plugin!
-    // *****************
-
   }
 }
+__attribute__((noinline))
 void solver_t::apply_unit_f(literal_t l, clause_id cid) {
   trail.append(make_unit_prop(l, cid));
   watch.literal_falsed(l);
 }
+__attribute__((noinline))
 void solver_t::apply_decision_f(literal_t l) {
   trail.append(make_decision(l)); 
   watch.literal_falsed(l);
 }
+__attribute__((noinline))
 void solver_t::remove_clause_f(clause_id cid) {
   cnf.remove_clause(cid); 
   watch.remove_clause(cid);
@@ -510,6 +468,7 @@ void solver_t::remove_clause_f(clause_id cid) {
     lbm.worklist.pop_back();
   }
 }
+__attribute__((noinline))
 void solver_t::remove_clause_set_f(clause_set_t cs) {
   cnf.remove_clause_set(cs);
 
@@ -517,6 +476,7 @@ void solver_t::remove_clause_set_f(clause_set_t cs) {
     watch.remove_clause(cid);
   }
 }
+__attribute__((noinline))
 void solver_t::clause_added_f(clause_id cid) {
     const clause_t& c = cnf[cid];
 
@@ -525,6 +485,7 @@ void solver_t::clause_added_f(clause_id cid) {
 
     lbm.flush_value(cid);
 }
+__attribute__((noinline))
 void solver_t::learned_clause_f(clause_t& c, trail_t& trail) {
     learned_clause_minimization(cnf, c, trail, stamped);
 
@@ -532,41 +493,36 @@ void solver_t::learned_clause_f(clause_t& c, trail_t& trail) {
 
     // Update the emas
 
-    if (alpha_incremental > alpha_fast) {
-      ema_fast = alpha_incremental * lbm.value_cache +
-        (1.0 - alpha_incremental) * ema_fast;
-    } else {
-      ema_fast = alpha_fast * lbm.value_cache + (1.0 - alpha_fast) * ema_fast;
-    }
-
-    if (alpha_incremental > alpha_slow) {
-      ema_slow = alpha_incremental * lbm.value_cache +
-        (1.0 - alpha_incremental) * ema_slow;
-    } else {
-      ema_slow = alpha_slow * lbm.value_cache + (1.0 - alpha_slow) * ema_slow;
-    }
-    alpha_incremental *= 0.5;
-
-    // std::cerr << lbm.value_cache << "; " << ema_fast << "; " << ema_slow <<
-    // std::endl;
-    counter++;
+    ema_restart.step(lbm.value_cache);
 
     vsids.clause_learned(c);
 }
+__attribute__((noinline))
 void solver_t::remove_literal_f(clause_id cid, literal_t l) {
   watch.remove_clause(cid);
   if (cnf[cid].size() > 1) {
     watch.watch_clause(cid);
   }
 }
+__attribute__((noinline))
 void solver_t::restart_f() {
   while (trail.level()) trail.pop();
 
-  alpha_incremental = 1;
-  counter = 0;
-  ema_fast = 0;
-  ema_slow = 0;
+  ema_restart.reset();
 }
+__attribute__((noinline))
 void solver_t::choose_literal_f(literal_t& l) {
   l = vsids.choose(); 
+}
+
+__attribute__((noinline))
+void solver_t::backtrack_subsumption(const clause_t& c, action_t* a, action_t* e) {
+  // TODO: mesh this with on-the-fly subsumption?
+  for (; a != e; a++) {
+    if (a->has_clause() && subsumes_and_sort(c, cnf[a->get_clause()])) {
+      // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
+      // with " << c << std::endl;
+      remove_clause_f(a->get_clause());
+    }
+  }
 }

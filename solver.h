@@ -82,6 +82,7 @@ struct solver_t {
   void restart_f();
   void choose_literal_f(literal_t&);
 
+  void backtrack_subsumption(const clause_t& c, action_t* a, action_t* e);
 
   // These install the fundamental actions.
   void install_core_plugins();
@@ -131,13 +132,50 @@ struct solver_t {
            action.action_kind == action_t::action_kind_t::halt_sat;
   }
 
-  // For restarts...
-  const float alpha_fast = 1.0 / 32.0;
-  const float alpha_slow = 1.0 / 4096.0;
-  const float c = 1.25;
+  struct ema_restart_t {
+    // For restarts...
+    const float alpha_fast = 1.0 / 32.0;
+    const float alpha_slow = 1.0 / 4096.0;
+    const float c = 1.25;
 
-  float alpha_incremental = 1;
-  int counter = 0;
-  float ema_fast = 0;
-  float ema_slow = 0;
+    float alpha_incremental = 1;
+    int counter = 0;
+    float ema_fast = 0;
+    float ema_slow = 0;
+
+    void reset() {
+      alpha_incremental = 1;
+      counter = 0;
+      ema_fast = 0;
+      ema_slow = 0;
+    }
+    bool should_restart() const {
+      if (counter < 50) return false;
+      if (ema_fast > c * ema_slow) return true;
+      return false;
+    }
+    void step(const size_t lbd) {
+      // Update the emas
+
+      if (alpha_incremental > alpha_fast) {
+        ema_fast = alpha_incremental * lbd +
+          (1.0 - alpha_incremental) * ema_fast;
+      } else {
+        ema_fast = alpha_fast * lbd + (1.0 - alpha_fast) * ema_fast;
+      }
+
+      if (alpha_incremental > alpha_slow) {
+        ema_slow = alpha_incremental * lbd +
+          (1.0 - alpha_incremental) * ema_slow;
+      } else {
+        ema_slow = alpha_slow * lbd + (1.0 - alpha_slow) * ema_slow;
+      }
+      alpha_incremental *= 0.5;
+
+      // std::cerr << lbd << "; " << ema_fast << "; " << ema_slow <<
+      // std::endl;
+      counter++;
+    }
+  };
+  ema_restart_t ema_restart;
 };
