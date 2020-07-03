@@ -14,8 +14,8 @@ variable_choice_mode_t variable_choice_mode =
     variable_choice_mode_t::nextclause;
 
 void trace_t::reset() {
-  assert(0); // actions.clear shoudl exist?
-  //actions.clear();
+  assert(0);  // actions.clear shoudl exist?
+  // actions.clear();
   units.clear();
 
   variable_t max_var = 0;

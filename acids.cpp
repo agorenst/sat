@@ -1,9 +1,6 @@
 #include "acids.h"
-acids_t::acids_t(const cnf_t& cnf, const trail_t& trail):
-  cnf(cnf),
-  vr(cnf.var_range()),
-  trail(trail)
-{
+acids_t::acids_t(const cnf_t& cnf, const trail_t& trail)
+    : cnf(cnf), vr(cnf.var_range()), trail(trail) {
   conflict_index = 0;
   variable_t max_var = max_variable(cnf);
   score.construct(max_var);

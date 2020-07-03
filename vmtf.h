@@ -1,11 +1,10 @@
 
 #include <list>
 #include "cnf.h"
-#include "trail.h"
 #include "literal_incidence_map.h"
+#include "trail.h"
 
 struct vmtf_t {
-
   using queue_t = std::list<variable_t>;
 
   queue_t q;
@@ -26,5 +25,4 @@ struct vmtf_t {
   void invariant();
 
   void unassign(variable_t v);
-
 };

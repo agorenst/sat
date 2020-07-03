@@ -8,7 +8,7 @@ struct vsids_t {
   void clause_learned(const clause_t& c);
   float score(literal_t l) const;
 
-  //const float alpha = 0.95;
+  // const float alpha = 0.95;
   const float alpha = 0.95;
   const float bump = 1.0;
 

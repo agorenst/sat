@@ -95,7 +95,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
 }
 
 void watched_literals_t::literal_falsed(literal_t l) {
-  //timer t(timer::action::literal_falsed);
+  // timer t(timer::action::literal_falsed);
   // ul is the literal that is now unsat.
   literal_t ul = neg(l);
   SAT_ASSERT(
@@ -182,8 +182,8 @@ literal_t watched_literals_t::find_first_watcher(const clause_t& c) {
   return 0;
 }
 
-__attribute__((noinline))
-void watched_literals_t::remove_clause(clause_id cid) {
+__attribute__((noinline)) void watched_literals_t::remove_clause(
+    clause_id cid) {
   if (!clause_watched(cid)) return;
   const clause_t& c = cnf[cid];
 

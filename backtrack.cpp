@@ -3,7 +3,8 @@
 
 __attribute__((noinline))
 // return the level to which we backtrack.
-action_t* backtrack(const clause_t& c, trail_t& actions) {
+action_t*
+backtrack(const clause_t& c, trail_t& actions) {
   if (false && backtrack_mode == backtrack_mode_t::simplest) {
     SAT_ASSERT(std::prev(actions.end())->action_kind ==
                action_t::action_kind_t::halt_conflict);
@@ -33,10 +34,9 @@ action_t* backtrack(const clause_t& c, trail_t& actions) {
     // /That's/ the actual thing we can't pop.
     // Note if we actually pass a decision...
     bool worth_it = true;
-    auto needed_for_implication = std::find_if(
-        bit + 1, std::rend(actions),
-        [&](const action_t& a) {
-          //if (a.is_decision()) worth_it = true;
+    auto needed_for_implication =
+        std::find_if(bit + 1, std::rend(actions), [&](const action_t& a) {
+          // if (a.is_decision()) worth_it = true;
           return contains(c, neg(a.get_literal()));
         });
 
@@ -45,16 +45,17 @@ action_t* backtrack(const clause_t& c, trail_t& actions) {
 
     // Ok, we actually can get a win
     if (worth_it) {
-      //std::cerr << "Case 1" << std::endl;
+      // std::cerr << "Case 1" << std::endl;
       // Look forwards again, starting at the trail entry after that necessary
       // one.
       // We look for the first decision we find. We basically scanned backwards,
       // finding the first thing we /couldn't/ pop without compromising the
-      // unit-ness of our new clause c. Then we scan forward -- the next decision
-      // we find is the "chronologically earliest" one we can pop. So we do that.
+      // unit-ness of our new clause c. Then we scan forward -- the next
+      // decision we find is the "chronologically earliest" one we can pop. So
+      // we do that.
       auto to_erase =
-        std::find_if(del_it + 1, std::end(actions),
-                     [](const action_t& a) { return a.is_decision(); });
+          std::find_if(del_it + 1, std::end(actions),
+                       [](const action_t& a) { return a.is_decision(); });
       // if (c.size() == 1) std::cerr << c << std::endl << actions << std::endl;
       SAT_ASSERT(to_erase != std::end(actions));
 
@@ -65,12 +66,12 @@ action_t* backtrack(const clause_t& c, trail_t& actions) {
 
       // Actually do the erasure:
       return to_erase;
-      //actions.drop_from(to_erase);
+      // actions.drop_from(to_erase);
 
-      //SAT_ASSERT(actions.count_unassigned_literals(c) == 1);
+      // SAT_ASSERT(actions.count_unassigned_literals(c) == 1);
       // literal_t l = find_unassigned_literal(c);
-      // SAT_ASSERT(l == new_implied); // derived from when we learned the clause,
-      // this passed all our tests. SAT_ASSERT(cnf[cnf.size()-1] == c);
+      // SAT_ASSERT(l == new_implied); // derived from when we learned the
+      // clause, this passed all our tests. SAT_ASSERT(cnf[cnf.size()-1] == c);
 
       // Reset whatever could be units (TODO: only reset what we know we've
       // invalidated?)
@@ -81,7 +82,7 @@ action_t* backtrack(const clause_t& c, trail_t& actions) {
     }
     // The simple backtrack:
     else {
-      //std::cerr << "Case 2" << std::endl;
+      // std::cerr << "Case 2" << std::endl;
       while (actions.level(*del_it) == actions.level()) del_it--;
       return del_it;
     }

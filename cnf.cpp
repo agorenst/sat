@@ -7,7 +7,9 @@
 #include "debug.h"
 
 variable_t var(literal_t l) { return l >> 1; }
-literal_t lit(variable_t l) { return l << 1; } // given variable x, make it literal x
+literal_t lit(variable_t l) {
+  return l << 1;
+}  // given variable x, make it literal x
 literal_t neg(literal_t l) { return l ^ 1; }
 bool ispos(literal_t l) { return neg(l) & 1; }
 literal_t dimacs_to_lit(int x) {
@@ -70,7 +72,8 @@ literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after = 0) {
 
 void commit_literal(cnf_t& cnf, literal_t l) {
   std::vector<clause_id> containing_clauses;
-  std::copy_if(std::begin(cnf), std::end(cnf), std::back_inserter(containing_clauses),
+  std::copy_if(std::begin(cnf), std::end(cnf),
+               std::back_inserter(containing_clauses),
                [&](const clause_id cid) { return contains(cnf[cid], l); });
   std::for_each(std::begin(containing_clauses), std::end(containing_clauses),
                 [&](const clause_id cid) { cnf.remove_clause(cid); });

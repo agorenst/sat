@@ -20,7 +20,7 @@ struct trail_t {
   variable_t max_var;
 
   trail_t(const trail_t& t) = delete;
-  trail_t(): litstate(0), oldlitstate(0), lit_to_action(0) {}
+  trail_t() : litstate(0), oldlitstate(0), lit_to_action(0) {}
   void construct(size_t _max_var);
 
   action_t* cbegin() const { return &(mem[0]); }

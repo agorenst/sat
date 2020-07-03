@@ -1,7 +1,7 @@
 #pragma once
+#include <forward_list>
 #include <map>
 #include <vector>
-#include <forward_list>
 
 #include "clause_key_map.h"
 #include "cnf.h"
@@ -29,7 +29,8 @@ struct watched_literals_t {
   trail_t& trail;
   unit_queue_t& units;
   const literal_map_t<trail_t::v_state_t>& litstate;
-  literal_map_t<std::vector<std::pair<clause_id, literal_t>>> literals_to_watcher;
+  literal_map_t<std::vector<std::pair<clause_id, literal_t>>>
+      literals_to_watcher;
   clause_map_t<watcher_t> watched_literals;
 
   bool literal_true(literal_t l) {

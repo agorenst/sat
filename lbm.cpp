@@ -39,9 +39,7 @@ clause_set_t lbm_t::clean() {
   std::sort(std::begin(worklist), std::end(worklist), entry_cmp);
   clause_set_t to_remove;
   std::for_each(std::begin(worklist) + target_size, std::end(worklist),
-                [&](auto& e) {
-                  to_remove.push_back(e.id);
-                });
+                [&](auto& e) { to_remove.push_back(e.id); });
   std::sort(std::begin(to_remove), std::end(to_remove));
 
   worklist.erase(std::begin(worklist) + target_size, std::end(worklist));

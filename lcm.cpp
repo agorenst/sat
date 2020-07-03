@@ -16,8 +16,7 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
   for (action_t a : trail) {
     if (a.is_decision()) {
       decisions.set(a.get_literal());
-    }
-    else if (a.is_unit_prop()) {
+    } else if (a.is_unit_prop()) {
       literal_t l = a.get_literal();
       const clause_t& r = cnf[a.get_clause()];
       for (auto m : r) {
@@ -29,16 +28,14 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
     }
   }
 
-  auto et = std::remove_if(std::begin(c), std::end(c), [&](literal_t l) {
-                                                         return !decisions.get(neg(l));
-                                                       });
+  auto et = std::remove_if(std::begin(c), std::end(c),
+                           [&](literal_t l) { return !decisions.get(neg(l)); });
   c.erase(et, std::end(c));
   std::sort(std::begin(c), std::end(c));
-
 }
 
 void action_work_list_method(const cnf_t& cnf, clause_t& c,
-                                 const trail_t& actions, lit_bitset_t& seen) {
+                             const trail_t& actions, lit_bitset_t& seen) {
   for (size_t i = 0; i < c.size(); i++) {
     literal_t l = c[i];
 
@@ -54,7 +51,8 @@ void action_work_list_method(const cnf_t& cnf, clause_t& c,
 
     bool is_removable = true;
     while (!work_list.empty()) {
-      action_t a = work_list.back(); work_list.pop_back();
+      action_t a = work_list.back();
+      work_list.pop_back();
       SAT_ASSERT(a.is_unit_prop());
       const clause_t& d = cnf[a.get_clause()];
       SAT_ASSERT(contains(d, a.get_literal()));
@@ -96,41 +94,43 @@ void lcm_cache_dfs(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
 
   // This is a recursive DFS, but we also cache results
   // along the way.
-  std::function<bool(literal_t)> explore =
-    [&](literal_t l) -> bool {
+  std::function<bool(literal_t)> explore = [&](literal_t l) -> bool {
+    // Have we already computed the answer?
+    if (not_removable.get(l)) {
+      return false;
+    }
+    if (removable.get(l)) {
+      return true;
+    }
 
-      // Have we already computed the answer?
-      if (not_removable.get(l)) { return false; }
-      if (removable.get(l)) { return true; }
+    // If we're already in c, we're done.
+    if (contains(c, l)) {
+      removable.set(l);
+      return true;
+    }
 
-      // If we're already in c, we're done.
-      if (contains(c, l)) {
-        removable.set(l);
-        return true;
-      }
+    action_t a = actions.cause(neg(l));
 
-      action_t a = actions.cause(neg(l));
+    // If we're a decision, we're not removable.
+    if (a.is_decision()) {
+      not_removable.set(l);
+      return false;
+    }
 
-      // If we're a decision, we're not removable.
-      if (a.is_decision()) {
+    // If we have a reason, we're removable
+    // only if everything else is.
+    const clause_t& d = cnf[a.get_clause()];
+    for (literal_t p : d) {
+      if (p == neg(l)) continue;
+      if (!explore(p)) {
         not_removable.set(l);
         return false;
       }
+    }
 
-      // If we have a reason, we're removable
-      // only if everything else is.
-      const clause_t& d = cnf[a.get_clause()];
-      for (literal_t p : d) {
-        if (p == neg(l)) continue;
-        if (!explore(p)) {
-          not_removable.set(l);
-          return false;
-        }
-      }
-
-      removable.set(l);
-      return true;
-    };
+    removable.set(l);
+    return true;
+  };
 
   for (size_t i = 0; i < c.size(); i++) {
     literal_t l = c[i];
@@ -175,11 +175,11 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
   // lcm(cnf, c, actions);
   // return;
 
-  //auto ccopy = c;
+  // auto ccopy = c;
   lcm_cache_dfs(cnf, c, actions);
   return;
-  //auto answer1 = c;
-  //c = ccopy;
+  // auto answer1 = c;
+  // c = ccopy;
 
   for (size_t i = 0; i < c.size(); i++) {
     literal_t l = c[i];
@@ -259,7 +259,7 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     }
   }
   std::sort(std::begin(c), std::end(c));
-  //std::cerr << "problem with " << c << "; " << answer1 << std::endl;
-  //SAT_ASSERT(c == answer1);
-  //assert(c == answer1);
+  // std::cerr << "problem with " << c << "; " << answer1 << std::endl;
+  // SAT_ASSERT(c == answer1);
+  // assert(c == answer1);
 }

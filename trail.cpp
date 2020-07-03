@@ -17,7 +17,8 @@ void trail_t::construct(size_t m) {
 
   varset.clear();
   std::fill(std::begin(litstate), std::end(litstate), v_state_t::unassigned);
-  std::fill(std::begin(oldlitstate), std::end(oldlitstate), v_state_t::unassigned);
+  std::fill(std::begin(oldlitstate), std::end(oldlitstate),
+            v_state_t::unassigned);
 }
 
 bool trail_t::literal_true(const literal_t l) const {
@@ -74,8 +75,10 @@ void trail_t::append(action_t a) {
 literal_t trail_t::previously_assigned_literal(variable_t v) const {
   literal_t l = lit(v);
   switch (oldlitstate[l]) {
-  case v_state_t::var_false: return neg(l);
-  default: return l;
+    case v_state_t::var_false:
+      return neg(l);
+    default:
+      return l;
   }
 }
 
@@ -194,6 +197,7 @@ void trail_t::drop_from(action_t* it) {
 }
 
 bool trail_t::contains_clause(clause_id cid) const {
-  return std::any_of(std::begin(*this), std::end(*this),
-                     [&](const action_t a) { return a.has_clause() && a.get_clause() == cid; });
+  return std::any_of(std::begin(*this), std::end(*this), [&](const action_t a) {
+    return a.has_clause() && a.get_clause() == cid;
+  });
 }

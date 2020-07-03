@@ -89,7 +89,8 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
   return c;
 }
 
-clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t& stamped) {
+clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
+                          lit_bitset_t& stamped) {
   auto count_level_literals = [&actions](const clause_t& c) {
     return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {
       return actions.level(l) == actions.level();
@@ -159,11 +160,11 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions, lit_bitset_t
   return C;
 }
 
-__attribute__((noinline))
-clause_t learn_clause(const cnf_t& cnf, const trail_t& actions, lit_bitset_t& stamped) {
+__attribute__((noinline)) clause_t learn_clause(const cnf_t& cnf,
+                                                const trail_t& actions,
+                                                lit_bitset_t& stamped) {
   SAT_ASSERT(actions.rbegin()->action_kind ==
              action_t::action_kind_t::halt_conflict);
   return stamp_resolution(cnf, actions, stamped);
   // std::cout << "About to learn clause from: " << *this << std::endl;
-
 }

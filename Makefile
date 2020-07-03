@@ -1,7 +1,8 @@
 CXX=clang++
 CC=clang++
 CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
-#CXXFLAGS=-Wall -std=c++2a -g -D SAT_DEBUG_MODE -O2 -flto
+#-D SAT_DEBUG_MODE 
+#CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
 
 #ifdef SAT_DEBUG_MODE
 

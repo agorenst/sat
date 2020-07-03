@@ -5,7 +5,6 @@
 #include <queue>
 #include <vector>
 
-
 #include "clause_set.h"
 #include "debug.h"
 
@@ -21,7 +20,7 @@ literal_t dimacs_to_lit(int x);
 
 struct variable_range {
   const variable_t max_var;
-  variable_range(const variable_t max_var): max_var(max_var) {}
+  variable_range(const variable_t max_var) : max_var(max_var) {}
   struct iterator {
     const variable_t after_last_var;
     variable_t v;
@@ -31,28 +30,17 @@ struct variable_range {
       return *this;
     }
 
-    literal_t operator*() {
-      return v;
-    }
+    literal_t operator*() { return v; }
 
-    bool operator==(const iterator& that) {
-      return this->v == that.v;
-    }
-    bool operator!=(const iterator& that) {
-      return this->v != that.v;
-    }
-
+    bool operator==(const iterator& that) { return this->v == that.v; }
+    bool operator!=(const iterator& that) { return this->v != that.v; }
   };
-  iterator begin() const {
-    return iterator{max_var+1, 1};
-  }
-  iterator end() const {
-    return iterator{max_var+1, max_var+1};
-  }
+  iterator begin() const { return iterator{max_var + 1, 1}; }
+  iterator end() const { return iterator{max_var + 1, max_var + 1}; }
 };
 struct literal_range {
   const variable_t max_var;
-  literal_range(const variable_t max_var): max_var(max_var) {}
+  literal_range(const variable_t max_var) : max_var(max_var) {}
   struct iterator {
     const literal_t after_last_literal;
     literal_t l;
@@ -63,24 +51,17 @@ struct literal_range {
       return *this;
     }
 
-    literal_t operator*() {
-      return l;
-    }
+    literal_t operator*() { return l; }
 
-    bool operator==(const iterator& that) {
-      return this->l == that.l;
-    }
-    bool operator!=(const iterator& that) {
-      return this->l != that.l;
-    }
-
+    bool operator==(const iterator& that) { return this->l == that.l; }
+    bool operator!=(const iterator& that) { return this->l != that.l; }
   };
   iterator begin() const {
-    //return iterator{max_var, -max_var};
-    return iterator{(2*max_var)+2, 2};
+    // return iterator{max_var, -max_var};
+    return iterator{(2 * max_var) + 2, 2};
   }
   iterator end() const {
-    return iterator{(2*max_var)+2, (2*max_var)+2};
+    return iterator{(2 * max_var) + 2, (2 * max_var) + 2};
   }
 };
 
@@ -105,14 +86,9 @@ struct clause_t {
   auto& operator[](size_t i) { return mem[i]; }
   auto& operator[](size_t i) const { return mem[i]; }
   void pop_back() { mem.pop_back(); }
-  bool operator==(const clause_t& that) const {
-    return mem == that.mem;
-  }
-  bool operator!=(const clause_t& that) const {
-    return mem != that.mem;
-  }
+  bool operator==(const clause_t& that) const { return mem == that.mem; }
+  bool operator!=(const clause_t& that) const { return mem != that.mem; }
 };
-
 
 template <typename C, typename V>
 bool contains(const C& c, const V& v) {
@@ -127,7 +103,7 @@ void unsorted_remove(C& c, const V& v) {
   // it's unique
   SAT_ASSERT(std::find(std::next(it), std::end(c), v) == std::end(c));
   std::iter_swap(std::prev(std::end(c)), it);
-  c.pop_back(); // remove.
+  c.pop_back();  // remove.
   SAT_ASSERT(std::find(std::begin(c), std::end(c), v) == std::end(c));
 }
 
@@ -139,8 +115,8 @@ struct cnf_t {
   std::vector<clause_t> mem;
 
   // keep track of the old key vacancies.
-  //std::priority_queue<clause_id, std::vector<clause_id>,
-  //std::greater<clause_id>>
+  // std::priority_queue<clause_id, std::vector<clause_id>,
+  // std::greater<clause_id>>
   std::vector<clause_id> free_keys;
 
   // This extra layer of indirection supports
@@ -239,7 +215,5 @@ std::ostream& operator<<(std::ostream& o, const cnf_t& cnf);
 void print_cnf(const cnf_t& cnf);
 
 cnf_t load_cnf(std::istream& in);
-
-
 
 variable_t max_variable(const cnf_t& cnf);

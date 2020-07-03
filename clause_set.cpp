@@ -1,5 +1,5 @@
-#include "cnf.h"
 #include "clause_set.h"
+#include "cnf.h"
 // Really a "clause set", we don't promise anything about order.
 
 clause_set_t::clause_set_t() {
