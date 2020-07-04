@@ -30,8 +30,12 @@ struct watched_literals_t {
   unit_queue_t& units;
   const literal_map_t<trail_t::v_state_t>& litstate;
   literal_map_t<std::vector<std::pair<clause_id, literal_t>>>
-      literals_to_watcher;
-  clause_map_t<watcher_t> watched_literals;
+      literals_to_clause;
+  // Using this map (instead of "embedding" it as the first 2 literals
+  // of the clause) has benchmark9 go from 80 seconds to 103 seconds. Not good!
+  // But, it's nice to never change the contents of a clause... Enables multiple
+  // watching for, e.g., vivification...
+  clause_map_t<watcher_t> clause_to_literals;
 
   bool literal_true(literal_t l) {
     return litstate[l] == trail_t::v_state_t::var_true;
@@ -48,9 +52,12 @@ struct watched_literals_t {
 
   void remove_clause(clause_id cid);
 
+  void construct(cnf_t& cnf);
+  void reset();
+
   literal_t find_first_watcher(const clause_t& c);
   auto find_second_watcher(clause_t& c, literal_t o);
-  auto find_next_watcher(clause_t& c, literal_t o);
+  auto find_next_watcher(const clause_t& c, literal_t o);
   void print_watch_state();
   bool validate_state();
 };
