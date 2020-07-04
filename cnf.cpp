@@ -136,6 +136,7 @@ cnf_t load_cnf(std::istream& in) {
 
   while (in >> next_literal) {
     if (next_literal == 0) {
+      std::sort(std::begin(next_clause), std::end(next_clause));
       cnf.add_clause(next_clause);
       next_clause.clear();
       continue;

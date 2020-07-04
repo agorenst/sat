@@ -25,7 +25,7 @@ struct watcher_t {
 };
 
 struct watched_literals_t {
-  cnf_t& cnf;
+  const cnf_t& cnf;
   trail_t& trail;
   unit_queue_t& units;
   const literal_map_t<trail_t::v_state_t>& litstate;
@@ -44,7 +44,7 @@ struct watched_literals_t {
     return litstate[l] == trail_t::v_state_t::var_false;
   }
 
-  watched_literals_t(cnf_t& cnf, trail_t& t, unit_queue_t& q);
+  watched_literals_t(const cnf_t& cnf, trail_t& t, unit_queue_t& q);
   void watch_clause(clause_id cid);
   void literal_falsed(literal_t l);
 
@@ -56,7 +56,7 @@ struct watched_literals_t {
   void reset();
 
   literal_t find_first_watcher(const clause_t& c);
-  auto find_second_watcher(clause_t& c, literal_t o);
+  auto find_second_watcher(const clause_t& c, literal_t o);
   auto find_next_watcher(const clause_t& c, literal_t o);
   void print_watch_state();
   bool validate_state();

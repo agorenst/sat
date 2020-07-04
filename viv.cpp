@@ -55,7 +55,7 @@ struct vivifier_t {
     if (!watch.clause_watched(cid)) return false;
 
     clause_t& c = cnf[cid];
-    // std::cerr << "[VIV][VERBOSE] Starting to viv " << c << std::endl;
+    //// std::cerr << "[VIV][VERBOSE] Starting to viv " << c << std::endl;
 
     // Provisionally stop watching c.
     // This is simulating "cnf \ c".
@@ -76,9 +76,9 @@ struct vivifier_t {
         assert(trail.crbegin()->action_kind ==
                action_t::action_kind_t::halt_conflict);
         if (std::next(it) != std::end(c)) {
-          std::cerr << "Case 1: " << c << " into ";
+          //std::cerr << "Case 1: " << c << " into ";
           c.erase(std::next(it), std::end(c));
-          std::cerr << c << std::endl;
+          //std::cerr << c << std::endl;
           did_work = true;
         }
         break;
@@ -97,10 +97,10 @@ struct vivifier_t {
       literal_t j = *jt;
       if (trail.literal_false(j)) {
         // case 1, we can exactly remove j.
-        std::cerr << "Case 2a: " << c << " into ";
+        //std::cerr << "Case 2a: " << c << " into ";
         std::iter_swap(jt, std::prev(std::end(c)));
         c.pop_back();
-        std::cerr << c << std::endl;
+        //std::cerr << c << std::endl;
         did_work = true;
         break;
       } else {
@@ -109,17 +109,21 @@ struct vivifier_t {
 
         // Include j in our clause
         if (std::next(std::next(it)) != std::end(c)) {
-          std::cerr << "Case 2b: " << c << " into ";
+          //std::cerr << "Case 2b: " << c << " into ";
           std::iter_swap(jt, std::next(it));
           it++;
 
           // Erase everything after that
           c.erase(std::next(it), std::end(c));
-          std::cerr << c << std::endl;
+          //std::cerr << c << std::endl;
           did_work = true;
         }
         break;
       }
+    }
+
+    if (did_work) {
+      std::sort(std::begin(c), std::end(c));
     }
 
     // reset completely.
@@ -138,7 +142,7 @@ struct vivifier_t {
     // Report if there's any change.
     bool change = false;
 
-    // The iterator we use here shouldn't
+    // The iterator we use here shouldn't be invalidated by vivify.
     while (std::any_of(std::begin(cnf), std::end(cnf),
                        [&](clause_id cid) { return vivify(cid); })) {
       change = true;

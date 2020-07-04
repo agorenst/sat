@@ -283,6 +283,17 @@ void solver_t::install_lbm() {
       // this is a plugin that supports large number of clause removals, which
       // can be expensive otherwise.
       remove_clause_set(to_remove);
+
+      // Now let's vivify, baby.
+      #if 0
+    bool VIV(cnf_t & cnf);
+      while (VIV(cnf));
+      watch.reset();
+      if (std::find_if(std::begin(cnf), std::end(cnf), [](clause_id cid) { return cnf[cid].size() == 0; }) != std::end(cnf)) {
+        // We've vivified things into unsat...
+      }
+      watch.construct(cnf);
+      #endif
     }
   });
 
@@ -325,6 +336,33 @@ void solver_t::install_literal_chooser() {
   choose_literal.add_listener([&](literal_t& d) { d = vsids.choose(); });
 }
 
+// This is my poor-man's attempt at on-the-fly subsumption... to  be honest
+__attribute__((noinline))
+void solver_t::backtrack_subsumption(clause_t& c, action_t* a, action_t* e) {
+  // TODO: mesh this with on-the-fly subsumption?
+  //size_t counter = 0;
+  for (; a != e; a++) {
+    if (a->has_clause()) {
+      const clause_t& d = cnf[a->get_clause()];
+      if (c.size() >= d.size()) continue;
+      if (!c.possibly_subsumes(d)) continue;
+      if (!std::is_sorted(std::begin(c), std::end(c))) {
+        std::cerr << "Not sorted : " << c << std::endl;
+      }
+      if (!std::is_sorted(std::begin(d), std::end(d))) {
+        std::cerr << "Not sorted d: " << d << std::endl;
+      }
+      if (subsumes(c, d)) {
+        //counter++;
+        // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
+        // with " << c << std::endl;
+        remove_clause(a->get_clause());
+      }
+    }
+  }
+  //if (counter) std::cerr << counter << std::endl;
+}
+
 // This is the core method:
 bool solver_t::solve() {
   SAT_ASSERT(state == state_t::quiescent);
@@ -333,20 +371,22 @@ bool solver_t::solve() {
 
   timer::initialize();
 
+  //for (auto cid : cnf) { assert(std::is_sorted(std::begin(cnf[cid]), std::end(cnf[cid]))); }
+
   for (;;) {
     // std::cerr << "State: " << static_cast<int>(state) << std::endl;
     // std::cerr << "Trail: " << trail << std::endl;
     switch (state) {
       case state_t::quiescent: {
-        before_decision_f(cnf);
+        before_decision(cnf);
 
         literal_t l;
-        choose_literal_f(l);
+        choose_literal(l);
 
         if (l == 0) {
           state = state_t::sat;
         } else {
-          apply_decision_f(l);
+          apply_decision(l);
           state = state_t::check_units;
         }
         break;
@@ -356,7 +396,7 @@ bool solver_t::solve() {
 
         while (!unit_queue.empty()) {
           action_t a = unit_queue.pop();
-          apply_unit_f(a.get_literal(), a.get_clause());
+          apply_unit(a.get_literal(), a.get_clause());
           // if (trail.level() == 0) {
           // std::cerr << "Cleaning" << std::endl;
           // naive_cleaning();
@@ -380,7 +420,7 @@ bool solver_t::solve() {
 
         // Minimize, cache lbm score, etc.
         // Order matters (we want to minimize before LBM'ing)
-        learned_clause_f(c, trail);
+        learned_clause(c, trail);
 
         // early out in the unsat case.
         if (c.empty()) {
@@ -399,14 +439,15 @@ bool solver_t::solve() {
         cnf_t::clause_k cid = cnf.add_clause(c);
 
         // Commit the clause, the LBM score of that clause, and so on.
-        clause_added_f(cid);
+        clause_added(cid);
 
         SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
-        SAT_ASSERT(trail.literal_unassigned(cnf[cid][0]));
+        literal_t u = trail.find_unassigned_literal(cnf[cid]);
+        //SAT_ASSERT(trail.literal_unassigned(cnf[cid][0]));
 
         // Add it as a unit... this is dependent on certain backtracking, I
         // think.
-        unit_queue.push(make_unit_prop(cnf[cid][0], cid));
+        unit_queue.push(make_unit_prop(u, cid));
 
         state = state_t::check_units;
         break;
@@ -513,24 +554,4 @@ void solver_t::restart_f() {
 __attribute__((noinline))
 void solver_t::choose_literal_f(literal_t& l) {
   l = vsids.choose(); 
-}
-
-__attribute__((noinline))
-void solver_t::backtrack_subsumption(clause_t& c, action_t* a, action_t* e) {
-  // TODO: mesh this with on-the-fly subsumption?
-  //size_t counter = 0;
-  for (; a != e; a++) {
-    if (a->has_clause()) {
-      clause_t& d = cnf[a->get_clause()];
-      if (c.size() >= d.size()) continue;
-      if (!c.possibly_subsumes(d)) continue;
-      if (subsumes_and_sort(c, d)) {
-        //counter++;
-        // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
-        // with " << c << std::endl;
-        remove_clause_f(a->get_clause());
-      }
-    }
-  }
-  //if (counter) std::cerr << counter << std::endl;
 }

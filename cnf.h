@@ -69,8 +69,6 @@ struct literal_range {
 
 struct clause_t {
   literal_t* raw;
-  size_t sig;
-  bool sig_computed = false;
   size_t len;
   std::vector<literal_t> mem;
   clause_t() {}
@@ -93,8 +91,10 @@ struct clause_t {
   bool operator==(const clause_t& that) const { return mem == that.mem; }
   bool operator!=(const clause_t& that) const { return mem != that.mem; }
 
+  mutable size_t sig;
+  mutable bool sig_computed = false;
   // For easier subsumption. This is its hash, really
-  size_t signature() {
+  size_t signature() const {
     if (sig_computed) {
       return sig;
     }
@@ -105,7 +105,7 @@ struct clause_t {
     return sig;
   }
 
-  bool possibly_subsumes(clause_t& that) {
+  bool possibly_subsumes(const clause_t& that) const {
     return (this->signature() & that.signature()) == this->signature();
   }
 };

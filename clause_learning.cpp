@@ -159,7 +159,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
 
   // std::cout << "Counter: " << counter << std::endl;
   // std::cout << "Learned: " << C << std::endl;
-  //std::sort(std::begin(C), std::end(C));
+  std::sort(std::begin(C), std::end(C));
 
   return C;
 }

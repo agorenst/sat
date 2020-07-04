@@ -5,7 +5,7 @@
 
 std::ostream& operator<<(std::ostream& o, const watcher_t& w);
 
-watched_literals_t::watched_literals_t(cnf_t& cnf, trail_t& trail,
+watched_literals_t::watched_literals_t(const cnf_t& cnf, trail_t& trail,
                                        unit_queue_t& units)
     : cnf(cnf),
       trail(trail),
@@ -25,7 +25,7 @@ void watched_literals_t::construct(cnf_t& cnf) {
   }
 }
 
-auto watched_literals_t::find_second_watcher(clause_t& c, literal_t o) {
+auto watched_literals_t::find_second_watcher(const clause_t& c, literal_t o) {
   auto it = std::begin(c);
   for (; it != std::end(c); it++) {
     literal_t l = *it;
@@ -62,7 +62,7 @@ auto watched_literals_t::find_next_watcher(const clause_t& c, literal_t o) {
 // Add in a new clause to be watched
 void watched_literals_t::watch_clause(clause_id cid) {
   // SAT_ASSERT(!clause_watched(cid));
-  clause_t& c = cnf[cid];
+  const clause_t& c = cnf[cid];
   SAT_ASSERT(c.size() > 1);
 
   watcher_t w = {0, 0};
@@ -93,6 +93,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
   literals_to_clause[w.l1].push_back({cid, w.l2});
   literals_to_clause[w.l2].push_back({cid, w.l1});
 
+  #if 0
   // Keep the watch literals in the front of the clause.
   {
     auto it = std::find(std::begin(c), std::end(c), w.l1);
@@ -100,6 +101,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
     auto jt = std::find(std::begin(c), std::end(c), w.l2);
     std::iter_swap(std::next(std::begin(c)), jt);
   }
+  #endif
 
   clause_to_literals[cid] = w;
 }
