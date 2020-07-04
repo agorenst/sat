@@ -11,7 +11,8 @@ std::unique_ptr<literal_map_t<clause_set_t>> literal_to_clause;
 bool subsumes_and_sort(clause_t c, clause_t d) {
   // Basic early-out. Also needed for correctness (otherwise c always subsumes
   // c)
-  if (d.size() <= c.size()) return false;
+  SAT_ASSERT(d.size() > c.size());
+  SAT_ASSERT(c.possibly_subsumes(d));
 
   std::sort(std::begin(c), std::end(c));
   std::sort(std::begin(d), std::end(d));

@@ -99,8 +99,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
 
   stamped.clear();
 
-  static std::vector<literal_t> C;
-  C.clear();
+  clause_t C;
   const size_t D = actions.level();
   auto it = actions.rbegin();
 
@@ -109,7 +108,11 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
   it++;
 
   // This is the amount of things we know we'll be resolving against.
-  int counter = count_level_literals(c);
+  size_t counter = 0;
+  for (literal_t l : c) {
+    if (actions.level(l) == actions.level()) counter++;
+  }
+  //int counter = count_level_literals(c);
 
   for (literal_t l : c) {
     stamped.set(neg(l));
@@ -131,6 +134,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
     counter--;  // track the number of resolutions we're doing.
 
     const clause_t& d = cnf[it->get_clause()];
+
     for (literal_t a : d) {
       if (a == L) continue;
       // We care about future resolutions, so we negate a
@@ -155,7 +159,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
 
   // std::cout << "Counter: " << counter << std::endl;
   // std::cout << "Learned: " << C << std::endl;
-  std::sort(std::begin(C), std::end(C));
+  //std::sort(std::begin(C), std::end(C));
 
   return C;
 }

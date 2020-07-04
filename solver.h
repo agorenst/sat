@@ -82,7 +82,7 @@ struct solver_t {
   void restart_f();
   void choose_literal_f(literal_t&);
 
-  void backtrack_subsumption(const clause_t& c, action_t* a, action_t* e);
+  void backtrack_subsumption(clause_t& c, action_t* a, action_t* e);
 
   // These install the fundamental actions.
   void install_core_plugins();

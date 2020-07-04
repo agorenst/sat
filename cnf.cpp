@@ -168,3 +168,4 @@ void cnf_t::remove_clause_set(const clause_set_t& cs) {
   std::swap(key_to_mem, key_to_mem_2);
   SAT_ASSERT(key_to_mem.size() + cs.size() == key_to_mem_2.size());
 }
+

@@ -250,9 +250,13 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
 }
 
 cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
+  /*
   clause_id id = cnf.add_clause(c);
 
   return id;
+  */
+  assert(0); // no longer supported.
+  return 0;
 }
 
 void trace_t::print_actions(std::ostream& o) const {

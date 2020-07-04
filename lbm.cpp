@@ -6,14 +6,16 @@ bool lbm_t::should_clean(const cnf_t& cnf) {
 }
 
 size_t lbm_t::compute_value(const clause_t& c, const trail_t& trail) const {
-  static std::vector<bool> level_present(trail.level() + 1);
+  static std::vector<char> level_present(trail.level() + 1);
   level_present.resize(trail.level() + 1);
   std::fill(std::begin(level_present), std::end(level_present), false);
+  size_t value = 0;
   for (literal_t l : c) {
-    level_present[trail.level(l)] = true;
+    if (!level_present[trail.level(l)]) {
+      level_present[trail.level(l)] = true;
+      value++;
+    }
   }
-  auto value =
-      std::count(std::begin(level_present), std::end(level_present), true);
   return value;
 }
 

@@ -516,13 +516,21 @@ void solver_t::choose_literal_f(literal_t& l) {
 }
 
 __attribute__((noinline))
-void solver_t::backtrack_subsumption(const clause_t& c, action_t* a, action_t* e) {
+void solver_t::backtrack_subsumption(clause_t& c, action_t* a, action_t* e) {
   // TODO: mesh this with on-the-fly subsumption?
+  //size_t counter = 0;
   for (; a != e; a++) {
-    if (a->has_clause() && subsumes_and_sort(c, cnf[a->get_clause()])) {
-      // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
-      // with " << c << std::endl;
-      remove_clause_f(a->get_clause());
+    if (a->has_clause()) {
+      clause_t& d = cnf[a->get_clause()];
+      if (c.size() >= d.size()) continue;
+      if (!c.possibly_subsumes(d)) continue;
+      if (subsumes_and_sort(c, d)) {
+        //counter++;
+        // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
+        // with " << c << std::endl;
+        remove_clause_f(a->get_clause());
+      }
     }
   }
+  //if (counter) std::cerr << counter << std::endl;
 }

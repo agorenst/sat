@@ -89,8 +89,14 @@ void action_work_list_method(const cnf_t& cnf, clause_t& c,
 void lcm_cache_dfs(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
   static lit_bitset_t not_removable(cnf);
   static lit_bitset_t removable(cnf);
+  static lit_bitset_t inclause(cnf);
   not_removable.clear();
   removable.clear();
+  inclause.clear();
+
+  for (literal_t l : c) {
+    inclause.set(l);
+  }
 
   // This is a recursive DFS, but we also cache results
   // along the way.
@@ -104,7 +110,8 @@ void lcm_cache_dfs(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
     }
 
     // If we're already in c, we're done.
-    if (contains(c, l)) {
+    //if (contains(c, l)) {
+    if (inclause.get(l)) {
       removable.set(l);
       return true;
     }

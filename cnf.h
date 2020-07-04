@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <iostream>
 #include <queue>
+#include <functional>
 #include <vector>
+#include <numeric>
 
 #include "clause_set.h"
 #include "debug.h"
@@ -67,6 +69,8 @@ struct literal_range {
 
 struct clause_t {
   literal_t* raw;
+  size_t sig;
+  bool sig_computed = false;
   size_t len;
   std::vector<literal_t> mem;
   clause_t() {}
@@ -88,6 +92,22 @@ struct clause_t {
   void pop_back() { mem.pop_back(); }
   bool operator==(const clause_t& that) const { return mem == that.mem; }
   bool operator!=(const clause_t& that) const { return mem != that.mem; }
+
+  // For easier subsumption. This is its hash, really
+  size_t signature() {
+    if (sig_computed) {
+      return sig;
+    }
+    sig_computed = true;
+    auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
+    auto addhash = [&h](literal_t a, literal_t b) { return h(a) | h(b); };
+    sig = std::accumulate(begin(), end(), 0, addhash);
+    return sig;
+  }
+
+  bool possibly_subsumes(clause_t& that) {
+    return (this->signature() & that.signature()) == this->signature();
+  }
 };
 
 template <typename C, typename V>
@@ -217,3 +237,5 @@ void print_cnf(const cnf_t& cnf);
 cnf_t load_cnf(std::istream& in);
 
 variable_t max_variable(const cnf_t& cnf);
+
+size_t signature(const clause_t& c);
