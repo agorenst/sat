@@ -133,7 +133,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
       SAT_ASSERT(!contains(new_set, std::make_pair(cid, ol)));
 
       // Watch in the new clause
-      new_set.push_back({cid, ol});
+      new_set.emplace_back(std::make_pair(cid, ol));
 
       // Remove from the old set
       std::swap(watchers[i], watchers[watchers.size() - 1]);
@@ -142,23 +142,8 @@ void watched_literals_t::literal_falsed(literal_t l) {
 
       // Do the swap
       // LOCAL VERISON:
-      //c[1] = n;
-      //*it = ul;
-
-      auto slider = std::begin(c)+1; // iterator to c[1];
-      auto prev_value = *slider;
-      while (slider != it) {
-        slider++;
-        auto tmp = *slider;
-        *slider = prev_value;
-        prev_value = tmp;
-      }
       c[1] = n;
-
-
-      //std::shift_right(ft, std::next(it), 1); NYI...
-      //std::copy_backward(ft, it, it); // this is UB, it is in the range (ft, it]
-      //std::copy(ft, it, std::next(ft)); // this is UB, std::next(ft) is in the range [ft, it)
+      *it = ul;
 
       SAT_ASSERT(c[0] == ol);
       SAT_ASSERT(c[1] == n);
@@ -262,39 +247,50 @@ bool watched_literals_t::validate_state() {
     // I would think that the watched literals shouldn't be pointed to false,
     // but I'm not sure.
 
-    // If both watches are false, the clause should be entirely unsat.
-    if (trail.literal_false(c[0]) && trail.literal_false(c[1])) {
-      SAT_ASSERT(trail.clause_unsat(cnf[cid]));
-    }
+    literal_t l1 = c[0];
+    literal_t l2 = c[1];
 
-    // If exactly one watch is false, then the clause should be unit.
-    else if (trail.clause_sat(c)) {
-      //???
-    }
-    // we have this condition (c[1], instead of c[0] || c[1] or something) mainly out
-    // of experimental results. Hrrrrrm.
-    else if (trail.literal_false(c[1])) {
-      if (trail.count_unassigned_literals(cnf[cid]) != 1) {
-        std::cout << "Failing with unit inconsistencies in: " << std::endl
+    // If both watches are false, the clause should be entirely unsat.
+    if (trail.literal_false(l1) && trail.literal_false(l2)) {
+      if (!trail.clause_unsat(c)) {
+        std::cerr << "Failing with unit inconsistencies in: " << std::endl
                   << c << "; " << std::endl
                   << "With trail state: " << std::endl
                   << trail << std::endl;
       }
-      SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
-    } else if (trail.literal_false(c[0])) {
+      SAT_ASSERT(trail.clause_unsat(c));
+    }
+    else if (trail.clause_sat(c)) {
+      // ???
+    }
+    // we have this condition (c[1], instead of c[0] || c[1] or something) mainly out
+    // of experimental results. Hrrrrrm.
+    else if (trail.literal_false(l2)) {
+      if (trail.count_unassigned_literals(c) != 1) {
+        std::cerr << "Failing with unit inconsistencies in: " << std::endl
+                  << c << "; " << std::endl
+                  << "With trail state: " << std::endl
+                  << trail << std::endl;
+      }
+      SAT_ASSERT(trail.count_unassigned_literals(c) == 1);
+    } else if (trail.literal_false(l1)) {
       // this is something subtle, because we do have a "lazy" update
       // strategy -- see what happens in literal_falsed, for instance.
-      auto& watchers = literals_to_watcher[c[0]];
+      auto& watchers = literals_to_watcher[l1];
       // find our watcher
       auto w = std::find_if(std::begin(watchers), std::end(watchers), [cid](const std::pair<clause_id, literal_t>& o) {
         return o.first == cid;
       });
       SAT_ASSERT(w != std::end(watchers));
       if (trail.literal_false(w->second)) {
+        // this suggests that 
         // I don't know about this! something to synthesize.
       }
       else {
+        SAT_ASSERT(w->second != l2);
       }
+    } else {
+      SAT_ASSERT(!trail.clause_unsat(c));
     }
 
     contains(literals_to_watcher[c[0]], std::make_pair(cid, c[1]));

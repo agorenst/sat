@@ -54,13 +54,13 @@ timing2: sat
 	cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | ./sat
 	cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | ./sat
 minisattiming1:
-	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat
-	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat
-	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat
+	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre
+	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre
+	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre
 minisattiming2:
-	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat
-	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat
-	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat
+	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat -no-pre
+	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat -no-pre
+	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat -no-pre
 
 unit: sat
 	./sat < tests/units1.cnf | diff - SAT

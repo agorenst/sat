@@ -36,7 +36,6 @@ literal_t vsids_t::choose() const {
   }
   if (!c) return 0;
   return trail.previously_assigned_literal(c);
-  // return (c << 1) + 1;
 }
 
 float vsids_t::score(literal_t l) const { return activity[var(l)]; }

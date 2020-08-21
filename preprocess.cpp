@@ -142,9 +142,9 @@ void preprocess(cnf_t& cnf) {
     }
     bool VIV(cnf_t & cnf);
 
-    if (VIV(cnf)) {
-     did_work = true;
-    }
+    //if (VIV(cnf)) {
+     //did_work = true;
+    //}
     /*
     std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
                                                     std::sort(std::begin(cnf[cid]),

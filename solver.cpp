@@ -341,19 +341,13 @@ __attribute__((noinline))
 void solver_t::backtrack_subsumption(clause_t& c, action_t* a, action_t* e) {
   // TODO: mesh this with on-the-fly subsumption?
   //size_t counter = 0;
-  return;
   for (; a != e; a++) {
     if (a->has_clause()) {
       const clause_t& d = cnf[a->get_clause()];
       if (c.size() >= d.size()) continue;
       if (!c.possibly_subsumes(d)) continue;
-      if (!std::is_sorted(std::begin(c), std::end(c))) {
-        std::cerr << "Not sorted : " << c << std::endl;
-      }
-      if (!std::is_sorted(std::begin(d), std::end(d))) {
-        std::cerr << "Not sorted d: " << d << std::endl;
-      }
-      if (subsumes(c, d)) {
+      //if (subsumes(c, d)) {
+      if (subsumes_and_sort(c, d)) {
         //counter++;
         // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
         // with " << c << std::endl;

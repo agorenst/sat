@@ -8,17 +8,29 @@
 
 std::unique_ptr<literal_map_t<clause_set_t>> literal_to_clause;
 
-bool subsumes_and_sort(clause_t c, clause_t d) {
+bool subsumes_and_sort(const clause_t& c, const clause_t& d) {
+
+  // Keep the memory pool as large as needed.
+  static std::vector<literal_t> cbuff;
+  static std::vector<literal_t> dbuff;
+
+  cbuff.clear();
+  dbuff.clear();
+
+  std::copy(std::begin(c), std::end(c), std::back_inserter(cbuff));
+  std::copy(std::begin(d), std::end(d), std::back_inserter(dbuff));
+
   // Basic early-out. Also needed for correctness (otherwise c always subsumes
   // c)
   SAT_ASSERT(d.size() > c.size());
   SAT_ASSERT(c.possibly_subsumes(d));
 
-  std::sort(std::begin(c), std::end(c));
-  std::sort(std::begin(d), std::end(d));
+  std::sort(std::begin(cbuff), std::end(cbuff));
+  std::sort(std::begin(dbuff), std::end(dbuff));
 
   // This says c is a subset of d.
-  return std::includes(std::begin(d), std::end(d), std::begin(c), std::end(c));
+  return std::includes(std::begin(dbuff), std::end(dbuff),
+                       std::begin(cbuff), std::end(cbuff));
 }
 
 bool subsumes(const clause_t& c, const clause_t& d) {
