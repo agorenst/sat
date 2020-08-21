@@ -30,7 +30,9 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
 
   auto et = std::remove_if(std::begin(c), std::end(c),
                            [&](literal_t l) { return !decisions.get(neg(l)); });
-  c.erase(et, std::end(c));
+      auto to_erase = std::distance(et, std::end(c));
+      for (auto i = 0; i < to_erase; i++) { c.pop_back(); }
+  //c.erase(et, std::end(c));
   std::sort(std::begin(c), std::end(c));
 }
 

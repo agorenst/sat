@@ -1,6 +1,6 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++2a -g -O2 -flto #-D SAT_DEBUG_MODE 
+CXXFLAGS=-Wall -std=c++2a -g -O2 -flto $(DBG) #-D SAT_DEBUG_MODE 
 #CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
 
 #ifdef SAT_DEBUG_MODE
@@ -9,6 +9,8 @@ uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cn
 
 uf50-218-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf50-218/*.cnf)))
 uuf50-218-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf50-218/*.cnf)))
+
+uuf100-430-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uuf100-430/*.cnf)))
 
 uf100-430-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf100-430/*.cnf)))
 uf100-430-tests-medium = $(addsuffix .satresult, $(basename $(wildcard tests/uf100-430/uf100-01*.cnf)))
@@ -28,7 +30,7 @@ sat: cnf.o trace.o watched_literals.o preprocess.o lcm.o action.o trail.o clause
 # to test learning, e.g.: ./test_learning < tests/clause_learning/t3.learninglog
 test_learning: clause_learning.o trail.o cnf.o action.o lcm.o literal_incidence_map.o visualizations.o
 
-tests: $(uuf50-218-tests) $(uf50-218-tests) tests0 tests8 unit
+tests: $(uuf50-218-tests) $(uf50-218-tests) $(uf100-430-tests) $(uuf100-430-tests)
 #tests: $(uf20-91-tests)
 
 benchmark1: $(uuf50-218-tests)

@@ -2,6 +2,7 @@
 #include "lcm.h"
 #include "trace.h"
 
+//learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
 learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
 
 // Debugging purposes
@@ -43,17 +44,18 @@ bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
 
 clause_t simplest_learning(const trail_t& actions) {
   assert(0);
-  clause_t new_clause;
+  std::vector<literal_t> new_clause;
   for (action_t a : actions) {
     if (a.action_kind == action_t::action_kind_t::decision) {
       new_clause.push_back(neg(a.get_literal()));
     }
   }
   // std::cout << "Learned clause: " << new_clause << std::endl;
-  return new_clause;
+  return clause_t{new_clause};
 }
 
 clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
+  assert(0);
   auto count_level_literals = [&actions](const clause_t& c) {
     return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {
       return actions.level(l) == actions.level();
@@ -99,7 +101,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
 
   stamped.clear();
 
-  clause_t C;
+  std::vector<literal_t> C;
   const size_t D = actions.level();
   auto it = actions.rbegin();
 
@@ -161,7 +163,7 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
   // std::cout << "Learned: " << C << std::endl;
   std::sort(std::begin(C), std::end(C));
 
-  return C;
+  return clause_t{C};
 }
 
 __attribute__((noinline)) clause_t learn_clause(const cnf_t& cnf,

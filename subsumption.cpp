@@ -65,7 +65,9 @@ std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
       // std::cerr << "[SUB] Shrinking " << d << " -> ";
       auto dit = std::remove(std::begin(d), std::end(d), c[i]);
       SAT_ASSERT(dit != std::end(d));
-      d.erase(dit, std::end(d));
+      auto to_erase = std::distance(dit, std::end(d));
+      for (auto i = 0; i < to_erase; i++) { d.pop_back(); }
+      //d.erase(dit, std::end(d));
       // std::cerr << d << std::endl;
       strengthened.push_back(did);
     }

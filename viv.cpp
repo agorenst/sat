@@ -77,7 +77,9 @@ struct vivifier_t {
                action_t::action_kind_t::halt_conflict);
         if (std::next(it) != std::end(c)) {
           //std::cerr << "Case 1: " << c << " into ";
-          c.erase(std::next(it), std::end(c));
+          //c.erase(std::next(it), std::end(c));
+      auto to_erase = std::distance(std::next(it), std::end(c));
+      for (auto i = 0; i < to_erase; i++) { c.pop_back(); }
           //std::cerr << c << std::endl;
           did_work = true;
         }
@@ -114,7 +116,9 @@ struct vivifier_t {
           it++;
 
           // Erase everything after that
-          c.erase(std::next(it), std::end(c));
+          //c.erase(std::next(it), std::end(c));
+      auto to_erase = std::distance(std::next(it), std::end(c));
+      for (auto i = 0; i < to_erase; i++) { c.pop_back(); }
           //std::cerr << c << std::endl;
           did_work = true;
         }

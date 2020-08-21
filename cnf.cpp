@@ -29,23 +29,28 @@ std::ostream& operator<<(std::ostream& o, const clause_t& c) {
 }
 
 clause_t resolve(clause_t c1, clause_t c2, literal_t l) {
+  assert(0);
   SAT_ASSERT(contains(c1, l));
   SAT_ASSERT(contains(c2, neg(l)));
-  clause_t c3;
+  std::vector<literal_t> c3tmp;
+  //clause_t c3tmp;
   for (literal_t x : c1) {
     if (var(x) != var(l)) {
-      c3.push_back(x);
+      c3tmp.push_back(x);
     }
   }
   for (literal_t x : c2) {
     if (var(x) != var(l)) {
-      c3.push_back(x);
+      c3tmp.push_back(x);
     }
   }
-  std::sort(std::begin(c3), std::end(c3));
-  auto new_end = std::unique(std::begin(c3), std::end(c3));
-  c3.erase(new_end, std::end(c3));
-  return c3;
+  std::sort(std::begin(c3tmp), std::end(c3tmp));
+  auto new_end = std::unique(std::begin(c3tmp), std::end(c3tmp));
+  //c3tmp.erase(new_end, std::end(c3tmp));
+  for (int i = std::distance(new_end, std::end(c3tmp)); i >= 0; i--) {
+    c3tmp.pop_back();
+  }
+  return c3tmp;
 }
 
 literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after = 0) {
@@ -80,7 +85,9 @@ void commit_literal(cnf_t& cnf, literal_t l) {
   for (auto cid : cnf) {
     clause_t& c = cnf[cid];
     auto new_end = std::remove(std::begin(c), std::end(c), neg(l));
-    c.erase(new_end, std::end(c));
+    //c.erase(new_end, std::end(c));
+      auto to_erase = std::distance(new_end, std::end(c));
+      for (auto i = 0; i < to_erase; i++) { c.pop_back(); }
   }
 }
 
@@ -118,7 +125,7 @@ cnf_t load_cnf(std::istream& in) {
   cnf_t cnf;
   // Load in cnf from stdin.
   literal_t next_literal;
-  clause_t next_clause;
+  std::vector<literal_t> next_clause_tmp;
 
   std::string line;
   while (std::getline(in, line)) {
@@ -136,12 +143,12 @@ cnf_t load_cnf(std::istream& in) {
 
   while (in >> next_literal) {
     if (next_literal == 0) {
-      std::sort(std::begin(next_clause), std::end(next_clause));
-      cnf.add_clause(next_clause);
-      next_clause.clear();
+      std::sort(std::begin(next_clause_tmp), std::end(next_clause_tmp));
+      cnf.add_clause(next_clause_tmp);
+      next_clause_tmp.clear();
       continue;
     }
-    next_clause.push_back(dimacs_to_lit(next_literal));
+    next_clause_tmp.push_back(dimacs_to_lit(next_literal));
   }
   return cnf;
 }

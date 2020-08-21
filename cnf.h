@@ -10,6 +10,8 @@
 #include "clause_set.h"
 #include "debug.h"
 
+#include "clause.h"
+
 typedef int32_t literal_t;
 // Really, we can be clever and use unsigned, but come on.
 typedef int32_t variable_t;
@@ -34,8 +36,8 @@ struct variable_range {
 
     literal_t operator*() { return v; }
 
-    bool operator==(const iterator& that) { return this->v == that.v; }
-    bool operator!=(const iterator& that) { return this->v != that.v; }
+    bool operator==(const iterator& that) const { return this->v == that.v; }
+    bool operator!=(const iterator& that) const { return this->v != that.v; }
   };
   iterator begin() const { return iterator{max_var + 1, 1}; }
   iterator end() const { return iterator{max_var + 1, max_var + 1}; }
@@ -55,8 +57,8 @@ struct literal_range {
 
     literal_t operator*() { return l; }
 
-    bool operator==(const iterator& that) { return this->l == that.l; }
-    bool operator!=(const iterator& that) { return this->l != that.l; }
+    bool operator==(const iterator& that) const { return this->l == that.l; }
+    bool operator!=(const iterator& that) const { return this->l != that.l; }
   };
   iterator begin() const {
     // return iterator{max_var, -max_var};
@@ -68,17 +70,18 @@ struct literal_range {
 };
 
 struct clause_t {
-  literal_t* raw;
-  size_t len;
-  std::vector<literal_t> mem;
-  clause_t() {}
+  //std::vector<literal_t> mem;
+  cache_storage<literal_t, 16> mem;
   clause_t(std::vector<literal_t> m) : mem(m) {}
-  template <typename IT>
-  void erase(IT it, IT et) {
-    mem.erase(it, et);
-  }
+  clause_t(const clause_t& that): mem(that.mem) {}
+
+  //clause_t() {}
+  //void push_back(literal_t l) { mem.push_back(l); }
+
+
+  //template<typename IT>
+  //void erase(IT b, IT e) { mem.erase(b, e); }
   void clear() { mem.clear(); }
-  void push_back(literal_t l) { mem.push_back(l); }
   auto begin() { return mem.begin(); }
   auto begin() const { return mem.begin(); }
   auto end() { return mem.end(); }
@@ -147,11 +150,11 @@ struct cnf_t {
   clause_t& operator[](size_t i) { return mem[i]; }
   const clause_t& operator[](size_t i) const { return mem[i]; }
 
-  clause_k add_clause(const clause_t& c) {
+  clause_k add_clause(clause_t c) {
     if (!free_keys.empty()) {
       clause_id key = free_keys.back();
       free_keys.pop_back();
-      mem[key] = c;
+      mem[key] = std::move(c);
       // std::cerr << "Re-using key: " << key << std::endl;
       // maintain sorted order:
       auto kt =
@@ -161,9 +164,10 @@ struct cnf_t {
       key_to_mem.insert(kt, key);
       SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
       return key;
-    } else {
+    } else
+    {
       clause_id key = mem.size();
-      mem.push_back(c);
+      mem.emplace_back(std::move(c));
       key_to_mem.push_back(key);
       SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
       return key;
