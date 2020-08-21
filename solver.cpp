@@ -341,6 +341,7 @@ __attribute__((noinline))
 void solver_t::backtrack_subsumption(clause_t& c, action_t* a, action_t* e) {
   // TODO: mesh this with on-the-fly subsumption?
   //size_t counter = 0;
+  return;
   for (; a != e; a++) {
     if (a->has_clause()) {
       const clause_t& d = cnf[a->get_clause()];

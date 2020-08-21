@@ -1,6 +1,6 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++2a -g -O2 -flto $(DBG) #-D SAT_DEBUG_MODE 
+CXXFLAGS=-Wall -std=c++20 -g -O2 -flto $(DBG) #-D SAT_DEBUG_MODE 
 #CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
 
 #ifdef SAT_DEBUG_MODE
@@ -53,6 +53,14 @@ timing2: sat
 	cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | ./sat
 	cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | ./sat
 	cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | ./sat
+minisattiming1:
+	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat
+	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat
+	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat
+minisattiming2:
+	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat
+	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat
+	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat
 
 unit: sat
 	./sat < tests/units1.cnf | diff - SAT
