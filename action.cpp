@@ -1,4 +1,5 @@
 #include "action.h"
+
 #include <iostream>
 
 bool action_t::has_literal() const {
@@ -45,33 +46,33 @@ action_t make_conflict(clause_id cid) {
   return a;
 }
 
-std::ostream& operator<<(std::ostream& o, const action_t::action_kind_t a) {
+std::ostream &operator<<(std::ostream &o, const action_t::action_kind_t a) {
   switch (a) {
-    case action_t::action_kind_t::decision:
-      return o << "decision";
-    case action_t::action_kind_t::unit_prop:
-      return o << "unit_prop";
-    case action_t::action_kind_t::backtrack:
-      return o << "backtrack";
-    case action_t::action_kind_t::halt_conflict:
-      return o << "halt_conflict";
-    case action_t::action_kind_t::halt_unsat:
-      return o << "halt_unsat";
-    case action_t::action_kind_t::halt_sat:
-      return o << "halt_sat";
+  case action_t::action_kind_t::decision:
+    return o << "decision";
+  case action_t::action_kind_t::unit_prop:
+    return o << "unit_prop";
+  case action_t::action_kind_t::backtrack:
+    return o << "backtrack";
+  case action_t::action_kind_t::halt_conflict:
+    return o << "halt_conflict";
+  case action_t::action_kind_t::halt_unsat:
+    return o << "halt_unsat";
+  case action_t::action_kind_t::halt_sat:
+    return o << "halt_sat";
   }
   return o;
 }
-std::ostream& operator<<(std::ostream& o, const action_t a) {
+std::ostream &operator<<(std::ostream &o, const action_t a) {
   o << "{ " << a.action_kind;
   switch (a.action_kind) {
-    case action_t::action_kind_t::decision:
-      return o << ", " << a.l << " }";
-    case action_t::action_kind_t::unit_prop:
-      return o << ", " << a.l << ", " << a.c << " }";
-    case action_t::action_kind_t::halt_conflict:
-      return o << ", " << a.c << " }";
-    default:
-      return o << " }";
+  case action_t::action_kind_t::decision:
+    return o << ", " << a.l << " }";
+  case action_t::action_kind_t::unit_prop:
+    return o << ", " << a.l << ", " << a.c << " }";
+  case action_t::action_kind_t::halt_conflict:
+    return o << ", " << a.c << " }";
+  default:
+    return o << " }";
   }
 }

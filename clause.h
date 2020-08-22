@@ -1,6 +1,9 @@
+#pragma once
 #include <iterator>
 #include <memory>
-#include "cnf.h"
+#include <algorithm>
+#include <numeric>
+#include <cassert>
 typedef int32_t literal_t;
 
 template<typename T, size_t B>
@@ -251,7 +254,6 @@ cache_storage& operator=(const cache_storage& that) {
     bool operator==(const cache_storage<T,B>& that) const {
         return std::equal(begin(), end(), that.begin(), that.end());
     }
-
 };
 #if 0
 template<typename T, size_t B>
@@ -280,3 +282,165 @@ struct std::iterator_traits<cache_storage<literal_t,16>::const_iterator> {
     typedef int difference_type;
     typedef std::random_access_iterator_tag iterator_category;
 };
+
+#if 0
+struct clause_t {
+  cache_storage<literal_t, 16> mem;
+  clause_t(std::vector<literal_t> m) : mem(m) {}
+
+  // no copy constructor
+  clause_t(const clause_t& that): mem(that.mem) {}
+  clause_t(clause_t&& that): mem(std::move(that.mem)) {}
+  clause_t& operator=(clause_t&& that) {
+    mem = std::move(that.mem);
+    return *this;
+  }
+
+  //clause_t() {}
+  //void push_back(literal_t l) { mem.push_back(l); }
+
+
+  //template<typename IT>
+  //void erase(IT b, IT e) { mem.erase(b, e); }
+  void clear() { mem.clear(); }
+  auto begin() { return mem.begin(); }
+  auto begin() const { return mem.begin(); }
+  auto end() { return mem.end(); }
+  auto end() const { return mem.end(); }
+  auto size() const { return mem.size(); }
+  auto empty() const { return mem.empty(); }
+  auto& operator[](size_t i) { return mem[i]; }
+  auto& operator[](size_t i) const { return mem[i]; }
+  void pop_back() { mem.pop_back(); }
+  bool operator==(const clause_t& that) const { return mem == that.mem; }
+  bool operator!=(const clause_t& that) const { return mem != that.mem; }
+
+  mutable size_t sig;
+  mutable bool sig_computed = false;
+  // For easier subsumption. This is its hash, really
+  size_t signature() const {
+    if (sig_computed) {
+      return sig;
+    }
+    sig_computed = true;
+    auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
+    auto addhash = [&h](literal_t a, literal_t b) { return h(a) | h(b); };
+    sig = std::accumulate(begin(), end(), 0, addhash);
+    return sig;
+  }
+
+  bool possibly_subsumes(const clause_t& that) const {
+    return (this->signature() & that.signature()) == this->signature();
+  }
+};
+#else
+struct clause_t {
+  std::unique_ptr<char[]> mem = nullptr;
+  size_t* len = nullptr;
+  size_t* sig = nullptr;
+  bool* sig_computed = nullptr;
+  literal_t* lits = nullptr;
+  //literal_t* zero = nullptr;
+  clause_t(std::vector<literal_t> m) {
+      size_t lits_size = (m.size() + 1) * sizeof(literal_t);
+      size_t s = lits_size;
+      s += sizeof(*len); // length
+      s += sizeof(*sig); // signature
+      s += sizeof(*sig_computed); // length
+      mem = std::make_unique<char[]>(s);
+
+      len = (size_t*)&mem[0];
+      lits = (literal_t*)&mem[sizeof(*len)];
+      sig = (size_t*)&mem[sizeof(*len)+lits_size];
+      sig_computed = (bool*)&mem[sizeof(*len)+lits_size+sizeof(*sig)];
+      int i = 0;
+       for (literal_t l : m) {
+           lits[i++] = l;
+       }
+       lits[i] = 0;
+       *len = m.size();
+       *sig = 0;
+       *sig_computed = false;
+  }
+
+  // no copy constructor
+  #if 0
+  clause_t(const clause_t& that):
+  len(that.len),
+   mem(std::make_unique<literal_t[]>(that.len)) {
+       for (int i = 0; i < len; i++) {
+          mem[i] = that.mem[i];
+      }
+   }
+   #endif
+   clause_t() {}
+  clause_t(clause_t&& that):
+   mem(std::move(that.mem)),
+   len(that.len),
+   sig(that.sig),
+   sig_computed(that.sig_computed),
+   lits(that.lits)
+   {}
+
+  clause_t& operator=(clause_t&& that) {
+    mem = std::move(that.mem);
+    len = that.len;
+    sig = that.sig;
+    sig_computed = that.sig_computed;
+    lits = that.lits;
+    return *this;
+  }
+
+  //clause_t() {}
+  //void push_back(literal_t l) { mem.push_back(l); }
+
+
+  //template<typename IT>
+  //void erase(IT b, IT e) { mem.erase(b, e); }
+  //void clear() { mem.clear(); }
+  auto begin() { return lits; }
+  auto begin() const { return lits; }
+  auto end() {
+      return &lits[*len];
+  }
+  auto end() const {
+      return &lits[*len];
+  }
+  auto size() const { 
+      return std::distance(begin(), end());
+  }
+  auto empty() const { return *len == 0; }
+  auto& operator[](size_t i) { return lits[i]; }
+  auto& operator[](size_t i) const { return lits[i]; }
+  void pop_back() {
+      (*len)--;
+      lits[*len] = 0; // update the end marker
+  }
+  bool operator==(const clause_t& that) const {
+      return std::equal(begin(), end(), that.begin(), that.end());
+  }
+  bool operator!=(const clause_t& that) const {
+      return !std::equal(begin(), end(), that.begin(), that.end());
+  }
+
+// this should be embedded in the array as well...
+  // For easier subsumption. This is its hash, really
+  size_t signature() const {
+    if (*sig_computed) {
+      return *sig;
+    }
+    *sig_computed = true;
+    auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
+    auto addhash = [&h](literal_t a, literal_t b) { return h(a) | h(b); };
+    *sig = std::accumulate(begin(), end(), 0, addhash);
+    return *sig;
+  }
+
+  bool possibly_subsumes(const clause_t& that) const {
+    return (this->signature() & that.signature()) == this->signature();
+  }
+};
+#endif
+
+typedef size_t clause_id;
+typedef clause_t* clause_key;

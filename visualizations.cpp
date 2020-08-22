@@ -1,10 +1,10 @@
-#include "cnf.h"
-#include "trail.h"
-
 #include <map>
 #include <set>
 #include <stack>
 #include <string>
+
+#include "cnf.h"
+#include "trail.h"
 
 std::map<literal_t, std::string> literal_to_defn;
 
@@ -23,7 +23,7 @@ std::string render_literal(literal_t x) {
 
 // Given an action, it generates the node.
 // This can be used in, e.g., declaring the node, drawing an edge., etc. etc.
-std::string render_action(const cnf_t& cnf, const action_t& a) {
+std::string render_action(const cnf_t &cnf, const action_t &a) {
   if (a.has_literal()) {
     auto it = literal_to_defn.find(a.get_literal());
     if (it != literal_to_defn.end()) {
@@ -34,7 +34,7 @@ std::string render_action(const cnf_t& cnf, const action_t& a) {
   std::string res;
   res += "\"$";
   if (a.is_unit_prop()) {
-    const clause_t& c = cnf[a.get_clause()];
+    const clause_t &c = cnf[a.get_clause()];
     res += "(";
     for (literal_t l : c) {
       res += render_literal(l);
@@ -47,7 +47,7 @@ std::string render_action(const cnf_t& cnf, const action_t& a) {
     res += "\\Delta \\to ";
     res += render_literal(a.get_literal());
   } else if (a.is_conflict()) {
-    const clause_t& c = cnf[a.get_clause()];
+    const clause_t &c = cnf[a.get_clause()];
     res += "(";
     for (literal_t l : c) {
       res += render_literal(l);
@@ -67,10 +67,11 @@ std::string render_action(const cnf_t& cnf, const action_t& a) {
   return res;
 }
 
-std::string draw_edge(const cnf_t& cnf, const trail_t& t, literal_t l,
-                      const action_t& p) {
+std::string draw_edge(const cnf_t &cnf, const trail_t &t, literal_t l,
+                      const action_t &p) {
   auto al = std::find_if(std::begin(t), std::end(t), [l](action_t a) {
-    if (a.has_literal()) return a.get_literal() == l;
+    if (a.has_literal())
+      return a.get_literal() == l;
     return false;
   });
 
@@ -83,7 +84,7 @@ std::string draw_edge(const cnf_t& cnf, const trail_t& t, literal_t l,
 
 std::map<size_t, std::set<std::string>> layers;
 
-bool operator<(const action_t& a, const action_t b) {
+bool operator<(const action_t &a, const action_t b) {
   assert(a.has_literal() || a.has_clause());
   assert(b.has_literal() || b.has_clause());
   std::pair<clause_id, literal_t> ap = {100000, 0};
@@ -105,8 +106,8 @@ bool operator<(const action_t& a, const action_t b) {
   return ap < bp;
 }
 
-void print_conflict_graph(const cnf_t& cnf, const trail_t& trail) {
-  std::ostream& o = std::cerr;
+void print_conflict_graph(const cnf_t &cnf, const trail_t &trail) {
+  std::ostream &o = std::cerr;
 
   // std::set<action_t> printed;
 
@@ -130,14 +131,14 @@ void print_conflict_graph(const cnf_t& cnf, const trail_t& trail) {
     worklist.pop();
     auto r = render_action(cnf, a);
     size_t level = trail.level(a);
-    auto& level_set = layers[level];
+    auto &level_set = layers[level];
     level_set.insert(r);
 
     // printed.insert(a);
 
-    o << r << ";" << std::endl;  // render the appropriate node.
+    o << r << ";" << std::endl; // render the appropriate node.
     if (a.is_unit_prop()) {
-      const clause_t& c = cnf[a.get_clause()];
+      const clause_t &c = cnf[a.get_clause()];
       for (literal_t l : c) {
         if (l == a.get_literal()) {
           continue;
@@ -147,7 +148,8 @@ void print_conflict_graph(const cnf_t& cnf, const trail_t& trail) {
 
         auto al =
             std::find_if(std::begin(trail), std::end(trail), [l](action_t a) {
-              if (a.has_literal()) return a.get_literal() == -l;
+              if (a.has_literal())
+                return a.get_literal() == -l;
               return false;
             });
         assert(al != std::end(trail));
@@ -155,13 +157,14 @@ void print_conflict_graph(const cnf_t& cnf, const trail_t& trail) {
       }
     }
     if (a.is_conflict()) {
-      const clause_t& c = cnf[a.get_clause()];
+      const clause_t &c = cnf[a.get_clause()];
       for (literal_t l : c) {
         o << draw_edge(cnf, trail, -l, a) << std::endl;
 
         auto al =
             std::find_if(std::begin(trail), std::end(trail), [l](action_t a) {
-              if (a.has_literal()) return a.get_literal() == -l;
+              if (a.has_literal())
+                return a.get_literal() == -l;
               return false;
             });
         assert(al != std::end(trail));

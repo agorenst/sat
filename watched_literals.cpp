@@ -1,23 +1,21 @@
 #include "watched_literals.h"
-#include "measurements.h"
 
+#include "measurements.h"
 #include "trace.h"
 
+watched_literals_t::watched_literals_t(cnf_t &cnf, trail_t &trail,
+                                       unit_queue_t &units)
+    : cnf(cnf), trail(trail), litstate(trail.litstate),
+      literals_to_watcher(cnf), units(units) {}
 
-watched_literals_t::watched_literals_t(cnf_t& cnf, trail_t& trail,
-                                       unit_queue_t& units)
-    : cnf(cnf),
-      trail(trail),
-      litstate(trail.litstate),
-      literals_to_watcher(cnf),
-      units(units) {}
-
-auto watched_literals_t::find_second_watcher(clause_t& c, literal_t o) {
+auto watched_literals_t::find_second_watcher(clause_t &c, literal_t o) {
   auto it = std::begin(c);
   for (; it != std::end(c); it++) {
     literal_t l = *it;
-    if (l == o) continue;
-    if (!literal_false(l)) return it;
+    if (l == o)
+      continue;
+    if (!literal_false(l))
+      return it;
   }
   /*
   for (auto jt = it; jt != std::end(c); jt++) {
@@ -28,12 +26,14 @@ auto watched_literals_t::find_second_watcher(clause_t& c, literal_t o) {
   */
   return it;
 }
-auto watched_literals_t::find_next_watcher(clause_t& c, literal_t o) {
+auto watched_literals_t::find_next_watcher(clause_t &c, literal_t o) {
   auto it = std::begin(c) + 2;
   for (; it != std::end(c); it++) {
     literal_t l = *it;
-    if (l == o) continue;
-    if (!literal_false(l)) return it;
+    if (l == o)
+      continue;
+    if (!literal_false(l))
+      return it;
   }
   /*
   for (auto jt = it; jt != std::end(c); jt++) {
@@ -48,14 +48,15 @@ auto watched_literals_t::find_next_watcher(clause_t& c, literal_t o) {
 // Add in a new clause to be watched
 void watched_literals_t::watch_clause(clause_id cid) {
   // SAT_ASSERT(!clause_watched(cid));
-  clause_t& c = cnf[cid];
+  clause_t &c = cnf[cid];
   SAT_ASSERT(c.size() > 1);
 
   // Find a non-false watcher; one should exist.
   literal_t l1 = find_first_watcher(c);
 #ifdef SAT_DEBUG_MODE
-  if (!l1) std::cerr << "Could not find watch in " << c << std::endl;
-  SAT_ASSERT(l1);  // shouldn't be 0, at least
+  if (!l1)
+    std::cerr << "Could not find watch in " << c << std::endl;
+  SAT_ASSERT(l1); // shouldn't be 0, at least
 #endif
 
   auto it2 = find_second_watcher(c, l1);
@@ -91,9 +92,9 @@ void watched_literals_t::literal_falsed(literal_t l) {
   // ul is the literal that is now unsat.
   literal_t ul = neg(l);
   SAT_ASSERT(
-      trail.literal_false(ul));  // that's the whole point of this function
+      trail.literal_false(ul)); // that's the whole point of this function
   // std::cerr << "literal_falsed: " << ul << std::endl;
-  auto& watchers = literals_to_watcher[ul];
+  auto &watchers = literals_to_watcher[ul];
 
   int s = watchers.size();
   for (int i = 0; i < s; i++) {
@@ -103,19 +104,22 @@ void watched_literals_t::literal_falsed(literal_t l) {
     literal_t ol = watchers[i].second;
 
     // Can we immediately conclude things?
-    if (literal_true(ol)) continue;
+    if (literal_true(ol))
+      continue;
 
     // The first two literals in the clause are always the "live" watcher.
     // What if we're not live?
-    clause_t& c = cnf[cid];
-    if (c[0] == ul) std::swap(c[0], c[1]);
+    clause_t &c = cnf[cid];
+    if (c[0] == ul)
+      std::swap(c[0], c[1]);
 
     // Update our information
     watchers[i].second = c[0];
     ol = watchers[i].second;
 
     // Check the updated information
-    if (literal_true(ol)) continue;
+    if (literal_true(ol))
+      continue;
 
     SAT_ASSERT(c[0] == ol);
     SAT_ASSERT(c[1] == ul);
@@ -129,7 +133,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
       // we do have a next watcher, "n", at location "it".
       literal_t n = *it;
       SAT_ASSERT(n != ul);
-      auto& new_set = literals_to_watcher[n];
+      auto &new_set = literals_to_watcher[n];
       SAT_ASSERT(!contains(new_set, std::make_pair(cid, ol)));
 
       // Watch in the new clause
@@ -148,7 +152,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
       SAT_ASSERT(c[0] == ol);
       SAT_ASSERT(c[1] == n);
 
-      i--;  // don't skip the thing we just swapped.
+      i--; // don't skip the thing we just swapped.
       s--;
     } else {
       if (literal_false(ol)) {
@@ -167,41 +171,44 @@ void watched_literals_t::literal_falsed(literal_t l) {
   // SAT_ASSERT(trace.halted() || validate_state());
 }
 
-literal_t watched_literals_t::find_first_watcher(const clause_t& c) {
+literal_t watched_literals_t::find_first_watcher(const clause_t &c) {
   for (literal_t l : c) {
-    if (trail.literal_true(l)) return l;
+    if (trail.literal_true(l))
+      return l;
   }
   for (literal_t l : c) {
-    if (!trail.literal_false(l)) return l;
+    if (!trail.literal_false(l))
+      return l;
   }
   return 0;
 }
 
-__attribute__((noinline)) void watched_literals_t::remove_clause(
-    clause_id cid) {
-  if (!clause_watched(cid)) return;
-  const clause_t& c = cnf[cid];
+__attribute__((noinline)) void
+watched_literals_t::remove_clause(clause_id cid) {
+  if (!clause_watched(cid))
+    return;
+  const clause_t &c = cnf[cid];
 
   {
-    auto& l1 = literals_to_watcher[c[0]];
+    auto &l1 = literals_to_watcher[c[0]];
     auto it = std::find_if(std::begin(l1), std::end(l1),
-                           [cid](auto& p) { return p.first == cid; });
+                           [cid](auto &p) { return p.first == cid; });
     SAT_ASSERT(it != std::end(l1));
     std::iter_swap(it, std::prev(std::end(l1)));
     l1.pop_back();
-    SAT_ASSERT(std::find_if(std::begin(l1), std::end(l1), [cid](auto& p) {
+    SAT_ASSERT(std::find_if(std::begin(l1), std::end(l1), [cid](auto &p) {
                  return p.first == cid;
                }) == std::end(l1));
   }
 
   {
-    auto& l2 = literals_to_watcher[c[1]];
+    auto &l2 = literals_to_watcher[c[1]];
     auto it = std::find_if(std::begin(l2), std::end(l2),
-                           [cid](auto& p) { return p.first == cid; });
+                           [cid](auto &p) { return p.first == cid; });
     SAT_ASSERT(it != std::end(l2));
     std::iter_swap(it, std::prev(std::end(l2)));
     l2.pop_back();
-    SAT_ASSERT(std::find_if(std::begin(l2), std::end(l2), [cid](auto& p) {
+    SAT_ASSERT(std::find_if(std::begin(l2), std::end(l2), [cid](auto &p) {
                  return p.first == cid;
                }) == std::end(l2));
   }
@@ -210,17 +217,18 @@ __attribute__((noinline)) void watched_literals_t::remove_clause(
 #ifdef SAT_DEBUG_MODE
 void watched_literals_t::print_watch_state() {
   for (auto cid : cnf) {
-    if (!clause_watched(cid)) continue;
-    //const watcher_t& w = watched_literals[cid];
-    //std::cout << "#" << cid << ": " << cnf[cid] << " watched by " << w
-              //<< std::endl;
+    if (!clause_watched(cid))
+      continue;
+    // const watcher_t& w = watched_literals[cid];
+    // std::cout << "#" << cid << ": " << cnf[cid] << " watched by " << w
+    //<< std::endl;
   }
 
   auto lits = cnf.lit_range();
   for (literal_t l : lits) {
     std::cerr << "Literal " << l << " watching: ";
-    for (const auto& wp : literals_to_watcher[l]) {
-      const clause_t& c = cnf[wp.first];
+    for (const auto &wp : literals_to_watcher[l]) {
+      const clause_t &c = cnf[wp.first];
       std::cerr << "#" << wp.first << ": " << c << "; ";
     }
     std::cerr << std::endl;
@@ -233,7 +241,7 @@ bool watched_literals_t::clause_watched(clause_id cid) {
 }
 bool watched_literals_t::validate_state() {
   for (clause_id cid : cnf) {
-    const clause_t& c = cnf[cid];
+    const clause_t &c = cnf[cid];
     if (c.size() < 2) {
       SAT_ASSERT(!clause_watched(cid));
       continue;
@@ -259,12 +267,11 @@ bool watched_literals_t::validate_state() {
                   << trail << std::endl;
       }
       SAT_ASSERT(trail.clause_unsat(c));
-    }
-    else if (trail.clause_sat(c)) {
+    } else if (trail.clause_sat(c)) {
       // ???
     }
-    // we have this condition (c[1], instead of c[0] || c[1] or something) mainly out
-    // of experimental results. Hrrrrrm.
+    // we have this condition (c[1], instead of c[0] || c[1] or something)
+    // mainly out of experimental results. Hrrrrrm.
     else if (trail.literal_false(l2)) {
       if (trail.count_unassigned_literals(c) != 1) {
         std::cerr << "Failing with unit inconsistencies in: " << std::endl
@@ -276,17 +283,17 @@ bool watched_literals_t::validate_state() {
     } else if (trail.literal_false(l1)) {
       // this is something subtle, because we do have a "lazy" update
       // strategy -- see what happens in literal_falsed, for instance.
-      auto& watchers = literals_to_watcher[l1];
+      auto &watchers = literals_to_watcher[l1];
       // find our watcher
-      auto w = std::find_if(std::begin(watchers), std::end(watchers), [cid](const std::pair<clause_id, literal_t>& o) {
-        return o.first == cid;
-      });
+      auto w = std::find_if(std::begin(watchers), std::end(watchers),
+                            [cid](const std::pair<clause_id, literal_t> &o) {
+                              return o.first == cid;
+                            });
       SAT_ASSERT(w != std::end(watchers));
       if (trail.literal_false(w->second)) {
-        // this suggests that 
+        // this suggests that
         // I don't know about this! something to synthesize.
-      }
-      else {
+      } else {
         SAT_ASSERT(w->second != l2);
       }
     } else {
@@ -304,7 +311,7 @@ bool watched_literals_t::validate_state() {
   std::map<clause_id, int> counter;
   auto lits = cnf.lit_range();
   for (literal_t l : lits) {
-    const auto& cl = literals_to_watcher[l];
+    const auto &cl = literals_to_watcher[l];
     for (auto wp : cl) {
       counter[wp.first]++;
     }
@@ -316,7 +323,7 @@ bool watched_literals_t::validate_state() {
   return true;
 }
 
-std::ostream& operator<<(std::ostream& o, const watched_literals_t& w) {
+std::ostream &operator<<(std::ostream &o, const watched_literals_t &w) {
   assert(0);
   // w.print_watch_state();
   return o;

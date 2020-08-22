@@ -1,22 +1,23 @@
+#include "preprocess.h"
+
 #include <cassert>
 #include <iostream>
 #include <map>
 
 #include "bce.h"
 #include "circuit.h"
-#include "preprocess.h"
 #include "subsumption.h"
 
 // PRE = preprocess
 // NUP = Niave unit prop
 // PLE = Pure literal elimination
-size_t naive_self_subsume(cnf_t& cnf);
+size_t naive_self_subsume(cnf_t &cnf);
 
-literal_t find_pure_literal(const cnf_t& cnf) {
+literal_t find_pure_literal(const cnf_t &cnf) {
   std::vector<literal_t> positives;
   std::vector<literal_t> negatives;
   for (const clause_id cid : cnf) {
-    const clause_t& c = cnf[cid];
+    const clause_t &c = cnf[cid];
     for (const literal_t l : c) {
       if (l < 0) {
         if (!contains(negatives, neg(l))) {
@@ -48,8 +49,8 @@ literal_t find_pure_literal(const cnf_t& cnf) {
   return 0;
 }
 
-bool clauses_self_subsume(variable_t v, const clause_t& pclause,
-                          const clause_t& nclause) {
+bool clauses_self_subsume(variable_t v, const clause_t &pclause,
+                          const clause_t &nclause) {
   auto pit = std::begin(pclause);
   auto nit = std::begin(nclause);
   while (pit != std::end(pclause) && nit != std::end(nclause)) {
@@ -69,7 +70,7 @@ bool clauses_self_subsume(variable_t v, const clause_t& pclause,
   }
   return pit == std::end(pclause) && nit == std::end(nclause);
 }
-void naive_self_subsumption(cnf_t& cnf) {
+void naive_self_subsumption(cnf_t &cnf) {
   std::map<literal_t, std::vector<clause_id>> literal_to_clauses;
   variable_t max_var = 0;
   for (clause_id i : cnf) {
@@ -79,12 +80,12 @@ void naive_self_subsumption(cnf_t& cnf) {
     }
   }
   for (variable_t v = 1; v < max_var + 1; v++) {
-    const auto& pos_clause_list = literal_to_clauses[v];
-    const auto& neg_clause_list = literal_to_clauses[neg(v)];
+    const auto &pos_clause_list = literal_to_clauses[v];
+    const auto &neg_clause_list = literal_to_clauses[neg(v)];
     for (auto pcid : pos_clause_list) {
       for (auto ncid : neg_clause_list) {
-        const auto& pclause = cnf[pcid];
-        const auto& nclause = cnf[ncid];
+        const auto &pclause = cnf[pcid];
+        const auto &nclause = cnf[ncid];
         if (clauses_self_subsume(v, pclause, nclause)) {
         }
       }
@@ -92,12 +93,12 @@ void naive_self_subsumption(cnf_t& cnf) {
   }
 }
 
-void preprocess(cnf_t& cnf) {
+void preprocess(cnf_t &cnf) {
   // Niavely unit-prop
   bool did_work = true;
   // this will be useful for self-subsumption.
   std::for_each(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
-    clause_t& c = cnf[cid];
+    clause_t &c = cnf[cid];
     std::sort(std::begin(c), std::end(c));
   });
 
@@ -129,11 +130,11 @@ void preprocess(cnf_t& cnf) {
     std::for_each(std::begin(bc), std::end(bc),
                   [&](const clause_id cid) { cnf.remove_clause(cid); });
 
-    size_t total_strengthened = naive_self_subsume(cnf);
-    if (total_strengthened) {
-      // std::cerr << "[NSS] " << total_strengthened << std::endl;
-      did_work = true;
-    }
+    // size_t total_strengthened = naive_self_subsume(cnf);
+    // if (total_strengthened) {
+    // std::cerr << "[NSS] " << total_strengthened << std::endl;
+    // did_work = true;
+    //}
 
     while (literal_t u = find_unit(cnf)) {
       // std::cout << "[PRE][NUP] " << u << std::endl;
@@ -142,8 +143,8 @@ void preprocess(cnf_t& cnf) {
     }
     bool VIV(cnf_t & cnf);
 
-    //if (VIV(cnf)) {
-     //did_work = true;
+    // if (VIV(cnf)) {
+    // did_work = true;
     //}
     /*
     std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {

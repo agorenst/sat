@@ -8,8 +8,7 @@
 
 std::unique_ptr<literal_map_t<clause_set_t>> literal_to_clause;
 
-bool subsumes_and_sort(const clause_t& c, const clause_t& d) {
-
+bool subsumes_and_sort(const clause_t &c, const clause_t &d) {
   // Keep the memory pool as large as needed.
   static std::vector<literal_t> cbuff;
   static std::vector<literal_t> dbuff;
@@ -29,14 +28,15 @@ bool subsumes_and_sort(const clause_t& c, const clause_t& d) {
   std::sort(std::begin(dbuff), std::end(dbuff));
 
   // This says c is a subset of d.
-  return std::includes(std::begin(dbuff), std::end(dbuff),
-                       std::begin(cbuff), std::end(cbuff));
+  return std::includes(std::begin(dbuff), std::end(dbuff), std::begin(cbuff),
+                       std::end(cbuff));
 }
 
-bool subsumes(const clause_t& c, const clause_t& d) {
+bool subsumes(const clause_t &c, const clause_t &d) {
   // Basic early-out. Also needed for correctness (otherwise c always subsumes
   // c)
-  if (d.size() <= c.size()) return false;
+  if (d.size() <= c.size())
+    return false;
 
   SAT_ASSERT(std::is_sorted(std::begin(c), std::end(c)));
   SAT_ASSERT(std::is_sorted(std::begin(d), std::end(d)));
@@ -45,7 +45,7 @@ bool subsumes(const clause_t& c, const clause_t& d) {
   return std::includes(std::begin(d), std::end(d), std::begin(c), std::end(c));
 }
 
-std::vector<clause_id> find_subsumed(cnf_t& cnf, const clause_t& c) {
+std::vector<clause_id> find_subsumed(cnf_t &cnf, const clause_t &c) {
   // Find the literal with the shortest occur list.
   auto compare_incidence_list = [&](literal_t a, literal_t b) {
     return (*literal_to_clause)[a].size() < (*literal_to_clause)[b].size();
@@ -53,7 +53,7 @@ std::vector<clause_id> find_subsumed(cnf_t& cnf, const clause_t& c) {
   literal_t l =
       *std::min_element(std::begin(c), std::end(c), compare_incidence_list);
 
-  const auto& cids = (*literal_to_clause)[l];
+  const auto &cids = (*literal_to_clause)[l];
 
   // Find everything in that occur list that we subsume.
   std::vector<clause_id> result;
@@ -64,6 +64,7 @@ std::vector<clause_id> find_subsumed(cnf_t& cnf, const clause_t& c) {
   return result;
 }
 
+#if 0
 std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
   // deliberately *copying* here.
   std::vector<clause_id> strengthened;
@@ -88,7 +89,9 @@ std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
   }
   return strengthened;
 }
+#endif
 
+#if 0
 size_t naive_self_subsume(cnf_t& cnf) {
   std::for_each(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
     std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
@@ -114,3 +117,5 @@ size_t naive_self_subsume(cnf_t& cnf) {
   }
   return total_strengthened;
 }
+
+#endif

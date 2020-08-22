@@ -1,9 +1,10 @@
 #include "trace.h"
+
 #include <algorithm>
-#include "debug.h"
 
 #include "backtrack.h"
 #include "clause_learning.h"
+#include "debug.h"
 #include "vsids.h"
 
 // Defaults: fast and working...
@@ -14,16 +15,16 @@ variable_choice_mode_t variable_choice_mode =
     variable_choice_mode_t::nextclause;
 
 void trace_t::reset() {
-  assert(0);  // actions.clear shoudl exist?
+  assert(0); // actions.clear shoudl exist?
   // actions.clear();
   units.clear();
 
   variable_t max_var = 0;
   for (clause_id i : cnf) {
-    const auto& clause = cnf[i];
+    const auto &clause = cnf[i];
     SAT_ASSERT(clause.size() >
-               1);  // for watched literals, TODO, make this more robust.
-    for (auto& literal : clause) {
+               1); // for watched literals, TODO, make this more robust.
+    for (auto &literal : clause) {
       max_var = std::max(max_var, var(literal));
     }
   }
@@ -37,9 +38,8 @@ void trace_t::reset() {
   SAT_ASSERT(watch.validate_state());
 }
 
-trace_t::trace_t(cnf_t& cnf)
-    : cnf(cnf),
-      watch(cnf, actions, units),
+trace_t::trace_t(cnf_t &cnf)
+    : cnf(cnf), watch(cnf, actions, units),
       // Actions is invalid at this point, but we don't read it
       // until after it's constructed. We're really just taking a pointer
       // to it.
@@ -72,15 +72,15 @@ bool trace_t::final_state() {
 }
 
 // TODO(aaron): This should not be called, anymore.
-bool trace_t::clause_sat(const clause_t& clause) const {
+bool trace_t::clause_sat(const clause_t &clause) const {
   return this->actions.clause_sat(clause);
 }
 bool trace_t::clause_sat(clause_id cid) const { return clause_sat(cnf[cid]); }
 
 // this means, stricly, that all literals are false (not just that none are
 // true)
-bool trace_t::clause_unsat(const clause_t& clause) const {
-  return std::all_of(std::begin(clause), std::end(clause), [this](auto& l) {
+bool trace_t::clause_unsat(const clause_t &clause) const {
+  return std::all_of(std::begin(clause), std::end(clause), [this](auto &l) {
     return this->actions.literal_false(l);
   });
 }
@@ -90,21 +90,21 @@ bool trace_t::clause_unsat(clause_id cid) const {
 
 auto trace_t::unsat_clause() const {
   return std::find_if(std::begin(cnf), std::end(cnf),
-                      [this](auto& c) { return this->clause_unsat(c); });
+                      [this](auto &c) { return this->clause_unsat(c); });
 }
 
 bool trace_t::cnf_unsat() const { return unsat_clause() != std::end(cnf); }
 
-size_t trace_t::count_true_literals(const clause_t& clause) const {
+size_t trace_t::count_true_literals(const clause_t &clause) const {
   return this->actions.count_true_literals(clause);
 }
-size_t trace_t::count_false_literals(const clause_t& clause) const {
-  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {
+size_t trace_t::count_false_literals(const clause_t &clause) const {
+  return std::count_if(std::begin(clause), std::end(clause), [this](auto &c) {
     return this->actions.literal_false(c);
   });
 }
-size_t trace_t::count_unassigned_literals(const clause_t& clause) const {
-  return std::count_if(std::begin(clause), std::end(clause), [this](auto& c) {
+size_t trace_t::count_unassigned_literals(const clause_t &clause) const {
+  return std::count_if(std::begin(clause), std::end(clause), [this](auto &c) {
     return this->actions.literal_unassigned(c);
   });
 }
@@ -113,8 +113,8 @@ size_t trace_t::count_unassigned_literals(clause_id cid) const {
 }
 
 // To help unit-prop, for now.
-literal_t trace_t::find_unassigned_literal(const clause_t& clause) const {
-  auto it = std::find_if(std::begin(clause), std::end(clause), [this](auto& c) {
+literal_t trace_t::find_unassigned_literal(const clause_t &clause) const {
+  auto it = std::find_if(std::begin(clause), std::end(clause), [this](auto &c) {
     return this->actions.literal_unassigned(c);
   });
   SAT_ASSERT(it != std::end(clause));
@@ -127,7 +127,7 @@ literal_t trace_t::find_unassigned_literal(clause_id cid) const {
 // Purely for debugging.
 bool trace_t::unit_clause_exists() const {
   for (clause_id cid : cnf) {
-    const clause_t& c = cnf[cid];
+    const clause_t &c = cnf[cid];
     if (!clause_sat(c) && count_unassigned_literals(c) == 1) {
       return true;
     }
@@ -138,7 +138,7 @@ bool trace_t::unit_clause_exists() const {
 // Really, "no conflict found". That's why we don't have the counterpart.
 bool trace_t::cnf_sat() const {
   return std::all_of(std::begin(cnf), std::end(cnf),
-                     [this](auto& c) { return this->clause_sat(c); });
+                     [this](auto &c) { return this->clause_sat(c); });
 }
 
 // Note we *don't* push to the action queue, yet.
@@ -200,7 +200,7 @@ literal_t trace_t::decide_literal() {
   } else if (false) {
     auto it = std::find_if(std::begin(cnf), std::end(cnf),
                            [this](const clause_id cid) {
-                             const clause_t& clause = cnf[cid];
+                             const clause_t &clause = cnf[cid];
                              return !clause_sat(clause) &&
                                     this->count_unassigned_literals(clause) > 0;
                            });
@@ -249,7 +249,7 @@ std::pair<literal_t, clause_id> trace_t::prop_unit() {
 #endif
 }
 
-cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
+clause_id trace_t::add_clause(const clause_t &c) {
   /*
   clause_id id = cnf.add_clause(c);
 
@@ -259,19 +259,19 @@ cnf_t::clause_k trace_t::add_clause(const clause_t& c) {
   return 0;
 }
 
-void trace_t::print_actions(std::ostream& o) const {
-  for (const auto& a : actions) {
+void trace_t::print_actions(std::ostream &o) const {
+  for (const auto &a : actions) {
     o << a << std::endl;
   }
 }
 
-std::ostream& operator<<(std::ostream& o, const trace_t& t) {
+std::ostream &operator<<(std::ostream &o, const trace_t &t) {
   t.print_actions(o);
   return o;
 }
 
 literal_t trace_t::find_last_falsified(clause_id cid) {
-  const clause_t& c = cnf[cid];
+  const clause_t &c = cnf[cid];
   for (auto it = std::rbegin(actions); it != std::rend(actions); it++) {
     if (it->has_literal()) {
       literal_t l = it->get_literal();

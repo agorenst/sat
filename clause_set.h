@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-typedef size_t clause_id;
+#include "clause.h"
 // Really a "clause set", we don't promise anything about order.
 // Using a vector is faster (?!) than just the array. Presumably I'm doing
 // something silly.

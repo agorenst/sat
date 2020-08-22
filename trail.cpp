@@ -1,4 +1,5 @@
 #include "trail.h"
+
 #include <iostream>
 
 void trail_t::construct(size_t m) {
@@ -75,10 +76,10 @@ void trail_t::append(action_t a) {
 literal_t trail_t::previously_assigned_literal(variable_t v) const {
   literal_t l = lit(v);
   switch (oldlitstate[l]) {
-    case v_state_t::var_false:
-      return neg(l);
-    default:
-      return l;
+  case v_state_t::var_false:
+    return neg(l);
+  default:
+    return l;
   }
 }
 
@@ -99,43 +100,43 @@ void trail_t::pop() {
   }
 }
 
-bool trail_t::clause_unsat(const clause_t& c) const {
+bool trail_t::clause_unsat(const clause_t &c) const {
   return std::all_of(std::begin(c), std::end(c),
                      [this](literal_t l) { return this->literal_false(l); });
 }
-bool trail_t::clause_sat(const clause_t& c) const {
+bool trail_t::clause_sat(const clause_t &c) const {
   return std::any_of(std::begin(c), std::end(c),
                      [this](literal_t l) { return this->literal_true(l); });
 }
-size_t trail_t::count_true_literals(const clause_t& clause) const {
+size_t trail_t::count_true_literals(const clause_t &clause) const {
   return std::count_if(std::begin(clause), std::end(clause),
-                       [this](auto& c) { return this->literal_true(c); });
+                       [this](auto &c) { return this->literal_true(c); });
 }
-size_t trail_t::count_unassigned_literals(const clause_t& c) const {
+size_t trail_t::count_unassigned_literals(const clause_t &c) const {
   return std::count_if(std::begin(c), std::end(c), [this](literal_t l) {
     return this->literal_unassigned(l);
   });
 }
-literal_t trail_t::find_unassigned_literal(const clause_t& c) const {
+literal_t trail_t::find_unassigned_literal(const clause_t &c) const {
   return *std::find_if(std::begin(c), std::end(c), [this](literal_t l) {
     return this->literal_unassigned(l);
   });
 }
 
-std::ostream& operator<<(std::ostream& o, const trail_t::v_state_t s) {
+std::ostream &operator<<(std::ostream &o, const trail_t::v_state_t s) {
   switch (s) {
-    case trail_t::v_state_t::unassigned:
-      return o << "unassigned";
-    case trail_t::v_state_t::var_true:
-      return o << "true";
-    case trail_t::v_state_t::var_false:
-      return o << "false";
+  case trail_t::v_state_t::unassigned:
+    return o << "unassigned";
+  case trail_t::v_state_t::var_true:
+    return o << "true";
+  case trail_t::v_state_t::var_false:
+    return o << "false";
   };
   return o;
 }
 
-std::ostream& operator<<(std::ostream& o,
-                         const std::vector<trail_t::v_state_t>& s) {
+std::ostream &operator<<(std::ostream &o,
+                         const std::vector<trail_t::v_state_t> &s) {
   o << "{ ";
   for (size_t i = 0; i < s.size(); i++) {
     auto v = s[i];
@@ -146,14 +147,14 @@ std::ostream& operator<<(std::ostream& o,
   return o << "}";
 }
 
-std::ostream& operator<<(std::ostream& o, const trail_t& t) {
+std::ostream &operator<<(std::ostream &o, const trail_t &t) {
   for (auto a : t) {
     o << '\t' << a << std::endl;
   }
   return o;
 }
 
-literal_t trail_t::find_last_falsified(const clause_t& c) const {
+literal_t trail_t::find_last_falsified(const clause_t &c) const {
   auto it = std::find_if(rbegin(), rend(), [&c](action_t a) {
     return a.has_literal() && contains(c, neg(a.get_literal()));
   });
@@ -164,7 +165,7 @@ literal_t trail_t::find_last_falsified(const clause_t& c) const {
 }
 
 bool trail_t::uses_clause(const clause_id cid) const {
-  for (action_t& a : *this) {
+  for (action_t &a : *this) {
     if (a.has_clause() && a.get_clause() == cid) {
       return true;
     }
@@ -175,7 +176,8 @@ bool trail_t::uses_clause(const clause_id cid) const {
 size_t trail_t::level(action_t a) const {
   size_t l = 0;
   for (action_t b : *this) {
-    if (b.is_decision()) l++;
+    if (b.is_decision())
+      l++;
     if (b == a) {
       return l;
     }
@@ -185,7 +187,7 @@ size_t trail_t::level(action_t a) const {
 }
 size_t trail_t::level(literal_t l) const { return varlevel[var(l)]; }
 
-void trail_t::drop_from(action_t* it) {
+void trail_t::drop_from(action_t *it) {
   // std::cout << it << " " << &(mem[next_index]) << std::endl;
   SAT_ASSERT(it <= &(mem[next_index]));
   while (end() > it) {

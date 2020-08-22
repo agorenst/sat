@@ -69,7 +69,7 @@ struct trace_t {
   void apply_unit(literal_t l, clause_id cid);
   literal_t decide_literal();
   std::pair<literal_t, clause_id> prop_unit();
-  cnf_t::clause_k add_clause(const clause_t& c);
+  clause_id add_clause(const clause_t& c);
   bool verify_resolution_expected(const clause_t& c);
   size_t count_true_literals(const clause_t& clause) const;
   size_t count_false_literals(const clause_t& clause) const;

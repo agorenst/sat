@@ -6,7 +6,7 @@
 #include "literal_incidence_map.h"
 // Blocked clause elimination
 
-bool resolve_taut(const clause_t& c, const clause_t& d, literal_t l) {
+bool resolve_taut(const clause_t &c, const clause_t &d, literal_t l) {
   SAT_ASSERT(contains(c, l));
   SAT_ASSERT(contains(d, neg(l)));
   // we trust that c, d are sorted by the literal absolute values.
@@ -45,11 +45,11 @@ bool resolve_taut(const clause_t& c, const clause_t& d, literal_t l) {
   return false;
 }
 
-std::vector<clause_id> BCE(cnf_t& cnf) {
+std::vector<clause_id> BCE(cnf_t &cnf) {
   // Prepare the CNF itself by sorting the contents of its clauses.
   // This does not invalidate our indexing, though it is risky...
   for (clause_id cid : cnf) {
-    clause_t& c = cnf[cid];
+    clause_t &c = cnf[cid];
     std::sort(std::begin(c), std::end(c),
               [](literal_t l1, literal_t l2) { return var(l1) < var(l2); });
   }
@@ -59,7 +59,7 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
 #endif
   literal_map_t<clause_set_t> literal_to_clauses(cnf);
   for (clause_id cid : cnf) {
-    const clause_t& c = cnf[cid];
+    const clause_t &c = cnf[cid];
     for (literal_t l : c) {
       literal_to_clauses[l].push_back(cid);
     }
@@ -93,20 +93,22 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
     literal_t l = worklist.back();
     worklist.pop_back();
 
-    auto& CL = literal_to_clauses[l];
-    const auto& DL = literal_to_clauses[neg(l)];
+    auto &CL = literal_to_clauses[l];
+    const auto &DL = literal_to_clauses[neg(l)];
     const auto orig_size = result.size();
 
     for (clause_id cid : CL) {
       // If we've already eliminated this, skip.
-      if (contains(result, cid)) continue;
+      if (contains(result, cid))
+        continue;
 
       bool is_blocked = std::all_of(
           std::begin(DL), std::end(DL), [l, cid, &cnf](clause_id did) {
             return resolve_taut(cnf[cid], cnf[did], l);
           });
 
-      if (!is_blocked) continue;
+      if (!is_blocked)
+        continue;
 
       result.push_back(cid);
 
@@ -122,7 +124,7 @@ std::vector<clause_id> BCE(cnf_t& cnf) {
     auto orig_end = result.begin() + orig_size;
     std::for_each(orig_end, std::end(result), [&](clause_id cid) {
       for (literal_t l : cnf[cid]) {
-        auto& cl = literal_to_clauses[l];
+        auto &cl = literal_to_clauses[l];
         cl.remove(cid);
         // auto dit = std::remove(std::begin(cl), std::end(cl), cid);
         // cl.erase(dit, std::end(cl));

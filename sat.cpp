@@ -1,43 +1,36 @@
+#include <getopt.h>
+
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <list>
 #include <map>
 #include <queue>
 #include <vector>
 
-#include <cstring>
-
-#include <getopt.h>
-
-#include "cnf.h"
-
-#include "debug.h"
-#include "preprocess.h"
-#include "trace.h"
-#include "watched_literals.h"
-
 #include "backtrack.h"
 #include "bce.h"
 #include "clause_learning.h"
-#include "lcm.h"
-
+#include "cnf.h"
+#include "debug.h"
 #include "lbm.h"
-
+#include "lcm.h"
+#include "preprocess.h"
 #include "subsumption.h"
+#include "trace.h"
+#include "watched_literals.h"
 
 // Help with control flow and such...
 #include "plugins.h"
-
 #include "solver.h"
 
 // Debugging and experiments.
-#include "visualizations.h"
-
 #include "measurements.h"
+#include "visualizations.h"
 // The understanding of this project is that it will evolve
 // frequently. We'll first start with the basic data structures,
 // and then refine things as they progress.
@@ -58,7 +51,7 @@ void print() {
   int max_value = 0;
   int total_count = 0;
   int total_length = 0;
-  for (auto&& [l, c] : lcsh) {
+  for (auto &&[l, c] : lcsh) {
     max_index = std::max(l, max_index);
     max_value = std::max(c, max_value);
     total_count += c;
@@ -91,7 +84,7 @@ void print() {
   std::cout << "Average learned clause length: "
             << float(total_length) / float(conflicts) << std::endl;
 }
-}  // namespace counters
+} // namespace counters
 
 // The perspective I want to take is not one of deriving an assignment,
 // but a trace exploring the recursive, DFS space of assignments.
@@ -99,10 +92,10 @@ void print() {
 // So let's see what this looks like.
 
 // these are our global settings
-bool optarg_match(const char* o, const char* s1, const char* s2) {
+bool optarg_match(const char *o, const char *s1, const char *s2) {
   return strcmp(o, s1) == 0 || strcmp(o, s2) == 0;
 }
-void process_flags(int argc, char* argv[]) {
+void process_flags(int argc, char *argv[]) {
   for (;;) {
     static struct option long_options[] = {
         {"backtracking", required_argument, nullptr, 'b'},
@@ -117,29 +110,29 @@ void process_flags(int argc, char* argv[]) {
     }
 
     switch (c) {
-      case 'b':
-        if (optarg_match(optarg, "simplest", "s")) {
-          backtrack_mode = backtrack_mode_t::simplest;
-        } else if (optarg_match(optarg, "nonchron", "n")) {
-          backtrack_mode = backtrack_mode_t::nonchron;
-        }
-        break;
-      case 'l':
-        if (optarg_match(optarg, "simplest", "s")) {
-          learn_mode = learn_mode_t::simplest;
-        } else if (optarg_match(optarg, "resolution", "r")) {
-          learn_mode = learn_mode_t::explicit_resolution;
-        }
-        break;
-      case 'u':
-        if (optarg_match(optarg, "simplest", "s")) {
-          unit_prop_mode = unit_prop_mode_t::simplest;
-        } else if (optarg_match(optarg, "queue", "q")) {
-          unit_prop_mode = unit_prop_mode_t::queue;
-        } else if (optarg_match(optarg, "watched", "w")) {
-          unit_prop_mode = unit_prop_mode_t::watched;
-        }
-        break;
+    case 'b':
+      if (optarg_match(optarg, "simplest", "s")) {
+        backtrack_mode = backtrack_mode_t::simplest;
+      } else if (optarg_match(optarg, "nonchron", "n")) {
+        backtrack_mode = backtrack_mode_t::nonchron;
+      }
+      break;
+    case 'l':
+      if (optarg_match(optarg, "simplest", "s")) {
+        learn_mode = learn_mode_t::simplest;
+      } else if (optarg_match(optarg, "resolution", "r")) {
+        learn_mode = learn_mode_t::explicit_resolution;
+      }
+      break;
+    case 'u':
+      if (optarg_match(optarg, "simplest", "s")) {
+        unit_prop_mode = unit_prop_mode_t::simplest;
+      } else if (optarg_match(optarg, "queue", "q")) {
+        unit_prop_mode = unit_prop_mode_t::queue;
+      } else if (optarg_match(optarg, "watched", "w")) {
+        unit_prop_mode = unit_prop_mode_t::watched;
+      }
+      break;
     }
   }
   // std::cerr << "Settings are: " << static_cast<int>(learn_mode) << " " <<
@@ -148,10 +141,10 @@ void process_flags(int argc, char* argv[]) {
 }
 
 // The real goal here is to find conflicts as fast as possible.
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   // Instantiate our CNF object
   cnf_t cnf = load_cnf(std::cin);
-  SAT_ASSERT(cnf.live_clause_count() > 0);  // make sure parsing worked.
+  SAT_ASSERT(cnf.live_clause_count() > 0); // make sure parsing worked.
 
   auto start = std::chrono::steady_clock::now();
   preprocess(cnf);

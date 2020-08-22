@@ -1,12 +1,13 @@
 #include "clause_learning.h"
+
 #include "lcm.h"
 #include "trace.h"
 
-//learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
+// learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
 learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
 
 // Debugging purposes
-bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
+bool verify_resolution_expected(const clause_t &c, const trail_t &actions) {
   if (!c.empty()) {
     // correctness checks:
     // reset our iterator
@@ -42,7 +43,7 @@ bool verify_resolution_expected(const clause_t& c, const trail_t& actions) {
   return true;
 }
 
-clause_t simplest_learning(const trail_t& actions) {
+clause_t simplest_learning(const trail_t &actions) {
   assert(0);
   std::vector<literal_t> new_clause;
   for (action_t a : actions) {
@@ -54,6 +55,7 @@ clause_t simplest_learning(const trail_t& actions) {
   return clause_t{new_clause};
 }
 
+#if 0
 clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
   assert(0);
   auto count_level_literals = [&actions](const clause_t& c) {
@@ -90,10 +92,11 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
   std::sort(std::begin(c), std::end(c));
   return c;
 }
+#endif
 
-clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
-                          lit_bitset_t& stamped) {
-  auto count_level_literals = [&actions](const clause_t& c) {
+clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
+                          lit_bitset_t &stamped) {
+  auto count_level_literals = [&actions](const clause_t &c) {
     return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {
       return actions.level(l) == actions.level();
     });
@@ -106,15 +109,16 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
   auto it = actions.rbegin();
 
   SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
-  const clause_t& c = cnf[it->get_clause()];
+  const clause_t &c = cnf[it->get_clause()];
   it++;
 
   // This is the amount of things we know we'll be resolving against.
   size_t counter = 0;
   for (literal_t l : c) {
-    if (actions.level(l) == actions.level()) counter++;
+    if (actions.level(l) == actions.level())
+      counter++;
   }
-  //int counter = count_level_literals(c);
+  // int counter = count_level_literals(c);
 
   for (literal_t l : c) {
     stamped.set(neg(l));
@@ -133,12 +137,13 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
     }
 
     // L *is* stamped, so we *can* resolve against it!
-    counter--;  // track the number of resolutions we're doing.
+    counter--; // track the number of resolutions we're doing.
 
-    const clause_t& d = cnf[it->get_clause()];
+    const clause_t &d = cnf[it->get_clause()];
 
     for (literal_t a : d) {
-      if (a == L) continue;
+      if (a == L)
+        continue;
       // We care about future resolutions, so we negate a
       if (!stamped.get(neg(a))) {
         stamped.set(neg(a));
@@ -151,7 +156,8 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
     }
   }
 
-  while (!stamped.get(it->get_literal())) it++;
+  while (!stamped.get(it->get_literal()))
+    it++;
 
   SAT_ASSERT(it->has_literal());
   C.push_back(neg(it->get_literal()));
@@ -166,9 +172,8 @@ clause_t stamp_resolution(const cnf_t& cnf, const trail_t& actions,
   return clause_t{C};
 }
 
-__attribute__((noinline)) clause_t learn_clause(const cnf_t& cnf,
-                                                const trail_t& actions,
-                                                lit_bitset_t& stamped) {
+__attribute__((noinline)) clause_t
+learn_clause(const cnf_t &cnf, const trail_t &actions, lit_bitset_t &stamped) {
   SAT_ASSERT(actions.rbegin()->action_kind ==
              action_t::action_kind_t::halt_conflict);
   return stamp_resolution(cnf, actions, stamped);

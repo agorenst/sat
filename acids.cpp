@@ -1,5 +1,5 @@
 #include "acids.h"
-acids_t::acids_t(const cnf_t& cnf, const trail_t& trail)
+acids_t::acids_t(const cnf_t &cnf, const trail_t &trail)
     : cnf(cnf), vr(cnf.var_range()), trail(trail) {
   conflict_index = 0;
   variable_t max_var = max_variable(cnf);
@@ -7,7 +7,7 @@ acids_t::acids_t(const cnf_t& cnf, const trail_t& trail)
   std::fill(std::begin(score), std::end(score), 0);
 }
 
-void acids_t::clause_learned(const clause_t& c) {
+void acids_t::clause_learned(const clause_t &c) {
   conflict_index++;
   for (literal_t l : c) {
     variable_t v = var(l);
@@ -22,7 +22,8 @@ literal_t acids_t::choose() {
   variable_t r = 0;
   for (variable_t v : vr) {
     literal_t l = lit(v);
-    if (!trail.literal_unassigned(l)) continue;
+    if (!trail.literal_unassigned(l))
+      continue;
     if (r == 0) {
       r = v;
       s = score[v];
@@ -33,6 +34,7 @@ literal_t acids_t::choose() {
       s = score[v];
     }
   }
-  if (!r) return 0;
+  if (!r)
+    return 0;
   return trail.previously_assigned_literal(r);
 }

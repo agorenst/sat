@@ -1,14 +1,14 @@
 #include <functional>
+
 #include "action.h"
 #include "cnf.h"
 #include "debug.h"
-#include "trail.h"
-
 #include "literal_incidence_map.h"
+#include "trail.h"
 
 // This approach, we "flood" the information of what depends
 // on a decision forward.
-void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
+void lcm(const cnf_t &cnf, clause_t &c, const trail_t &trail) {
   static lit_bitset_t decisions(cnf);
   decisions.clear();
 
@@ -18,7 +18,7 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
       decisions.set(a.get_literal());
     } else if (a.is_unit_prop()) {
       literal_t l = a.get_literal();
-      const clause_t& r = cnf[a.get_clause()];
+      const clause_t &r = cnf[a.get_clause()];
       for (auto m : r) {
         if (decisions.get(neg(m))) {
           decisions.set(l);
@@ -30,20 +30,23 @@ void lcm(const cnf_t& cnf, clause_t& c, const trail_t& trail) {
 
   auto et = std::remove_if(std::begin(c), std::end(c),
                            [&](literal_t l) { return !decisions.get(neg(l)); });
-      auto to_erase = std::distance(et, std::end(c));
-      for (auto i = 0; i < to_erase; i++) { c.pop_back(); }
-  //c.erase(et, std::end(c));
+  auto to_erase = std::distance(et, std::end(c));
+  for (auto i = 0; i < to_erase; i++) {
+    c.pop_back();
+  }
+  // c.erase(et, std::end(c));
   std::sort(std::begin(c), std::end(c));
 }
 
-void action_work_list_method(const cnf_t& cnf, clause_t& c,
-                             const trail_t& actions, lit_bitset_t& seen) {
+void action_work_list_method(const cnf_t &cnf, clause_t &c,
+                             const trail_t &actions, lit_bitset_t &seen) {
   for (size_t i = 0; i < c.size(); i++) {
     literal_t l = c[i];
 
     action_t a = actions.cause(neg(l));
 
-    if (a.is_decision()) continue;
+    if (a.is_decision())
+      continue;
 
     SAT_ASSERT(a.is_unit_prop());
 
@@ -56,15 +59,17 @@ void action_work_list_method(const cnf_t& cnf, clause_t& c,
       action_t a = work_list.back();
       work_list.pop_back();
       SAT_ASSERT(a.is_unit_prop());
-      const clause_t& d = cnf[a.get_clause()];
+      const clause_t &d = cnf[a.get_clause()];
       SAT_ASSERT(contains(d, a.get_literal()));
       for (literal_t p : d) {
-        if (a.get_literal() == p) continue;
+        if (a.get_literal() == p)
+          continue;
 
         // Yay, at least some paths up are dominated by a marked literal.
         // At least *this* antecedent literal, p, is already in c. So if we
         // resolve c against r, p won't be added to c (it's already in c...)
-        if (contains(c, p)) continue;
+        if (contains(c, p))
+          continue;
 
         // Our dominating set has a decision, we fail, quit.
         action_t a = actions.cause(neg(p));
@@ -76,7 +81,8 @@ void action_work_list_method(const cnf_t& cnf, clause_t& c,
         SAT_ASSERT(a.is_unit_prop());
         work_list.push_back(a);
       }
-      if (!is_removable) break;
+      if (!is_removable)
+        break;
     }
 
     if (is_removable) {
@@ -88,7 +94,7 @@ void action_work_list_method(const cnf_t& cnf, clause_t& c,
   std::sort(std::begin(c), std::end(c));
 }
 
-void lcm_cache_dfs(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
+void lcm_cache_dfs(const cnf_t &cnf, clause_t &c, const trail_t &actions) {
   static lit_bitset_t not_removable(cnf);
   static lit_bitset_t removable(cnf);
   static lit_bitset_t inclause(cnf);
@@ -112,7 +118,7 @@ void lcm_cache_dfs(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
     }
 
     // If we're already in c, we're done.
-    //if (contains(c, l)) {
+    // if (contains(c, l)) {
     if (inclause.get(l)) {
       removable.set(l);
       return true;
@@ -128,9 +134,10 @@ void lcm_cache_dfs(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
 
     // If we have a reason, we're removable
     // only if everything else is.
-    const clause_t& d = cnf[a.get_clause()];
+    const clause_t &d = cnf[a.get_clause()];
     for (literal_t p : d) {
-      if (p == neg(l)) continue;
+      if (p == neg(l))
+        continue;
       if (!explore(p)) {
         not_removable.set(l);
         return false;
@@ -157,9 +164,10 @@ void lcm_cache_dfs(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
 
     bool removable = true;
 
-    const clause_t& d = cnf[a.get_clause()];
+    const clause_t &d = cnf[a.get_clause()];
     for (literal_t p : d) {
-      if (p == neg(l)) continue;
+      if (p == neg(l))
+        continue;
       if (!explore(p)) {
         removable = false;
         break;
@@ -175,8 +183,8 @@ void lcm_cache_dfs(const cnf_t& cnf, clause_t& c, const trail_t& actions) {
   std::sort(std::begin(c), std::end(c));
 }
 
-void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
-                                 const trail_t& actions, lit_bitset_t& seen) {
+void learned_clause_minimization(const cnf_t &cnf, clause_t &c,
+                                 const trail_t &actions, lit_bitset_t &seen) {
   // Explicit search implementation
   // std::cout << "Minimizing " << c <<  " with trail " << std::endl << actions
   // << std::endl;
@@ -207,13 +215,14 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
     // subsuming resolvent (c, but without l). Moreover, for those r's not in
     // our clause, we can search backwards for /their/ implicants, to set up the
     // same, more advanced version of this.
-    const clause_t& r = cnf[a.get_clause()];
+    const clause_t &r = cnf[a.get_clause()];
 
     static std::vector<literal_t> work_list;
     work_list.clear();
     SAT_ASSERT(contains(r, neg(l)));
     for (literal_t p : r) {
-      if (p == neg(l)) continue;  // this is the resolvent, so skip it.
+      if (p == neg(l))
+        continue; // this is the resolvent, so skip it.
       work_list.push_back(p);
     }
 
@@ -253,10 +262,11 @@ void learned_clause_minimization(const cnf_t& cnf, clause_t& c,
       // if it's not a decision, it's unit-prop. Add its units.
       // I don't think order matters for correctness.;
       SAT_ASSERT(a.is_unit_prop());
-      const clause_t& pr = cnf[a.get_clause()];
+      const clause_t &pr = cnf[a.get_clause()];
       SAT_ASSERT(contains(pr, neg(p)));
       for (literal_t q : pr) {
-        if (q == neg(p)) continue;
+        if (q == neg(p))
+          continue;
         work_list.push_back(q);
       }
     }
