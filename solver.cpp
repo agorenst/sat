@@ -22,8 +22,6 @@ solver_t::solver_t(const cnf_t &CNF)
   install_literal_chooser();
 
   // this frees clauses, so wait until later...
-  remove_clause_set.add_listener(
-      [&](const clause_set_t &cs) { cnf.remove_clause_set(cs); });
   remove_clause.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
   // Optional.
   install_metrics_plugins();
@@ -65,14 +63,6 @@ void solver_t::install_complete_tracker() {
     const clause_t &c = cnf[cid];
     for (literal_t l : c) {
       literal_to_clauses_complete[l].push_back(cid);
-    }
-  });
-  remove_clause_set.add_listener([&](const clause_set_t &cs) {
-    for (auto cid : cs) {
-      // same loop as "remove clause"
-      for (literal_t l : cnf[cid]) {
-        literal_to_clauses_complete[l].remove(cid);
-      }
     }
   });
   // Invariatns:
@@ -192,13 +182,6 @@ void solver_t::install_watched_literals() {
   });
   remove_clause.add_listener([&](clause_id cid) { watch.remove_clause(cid); });
 
-  // No special optimization here.
-  remove_clause_set.add_listener([&](const clause_set_t &cs) {
-    for (clause_id cid : cs) {
-      watch.remove_clause(cid);
-    }
-  });
-
   clause_added.add_listener([&](clause_id cid) {
     const clause_t &c = cnf[cid];
     if (c.size() > 1)
@@ -281,20 +264,9 @@ void solver_t::install_lbm() {
       while (std::end(to_remove) != et)
         to_remove.pop_back();
 
-      // this is a plugin that supports large number of clause removals, which
-      // can be expensive otherwise.
-      remove_clause_set(to_remove);
-
-// Now let's vivify, baby.
-#if 0
-    bool VIV(cnf_t & cnf);
-      while (VIV(cnf));
-      watch.reset();
-      if (std::find_if(std::begin(cnf), std::end(cnf), [](clause_id cid) { return cnf[cid].size() == 0; }) != std::end(cnf)) {
-        // We've vivified things into unsat...
-      }
-      watch.construct(cnf);
-#endif
+      lbm.my_erasure = true;
+      for (auto cid : to_remove) remove_clause(cid);
+      lbm.my_erasure = false;
     }
   });
 
@@ -302,6 +274,7 @@ void solver_t::install_lbm() {
   // is in LBM, which removes this for us. I LIED! We do it in on-the-fly-ish
   // subsumption.
   remove_clause.add_listener([&](clause_id cid) {
+    if (lbm.my_erasure) return; // we know there's nothing here. TODO: assert
     auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
                            [cid](const lbm_entry &e) { return e.id == cid; });
     if (it != std::end(lbm.worklist)) {
@@ -351,7 +324,7 @@ solver_t::backtrack_subsumption(clause_t &c, action_t *a, action_t *e) {
         //counter++;
         // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
         // with " << c << std::endl;
-        remove_clause(a->get_clause());
+        remove_clause_f(a->get_clause());
       }
     }
   }
@@ -374,7 +347,7 @@ bool solver_t::solve() {
     // std::cerr << "Trail: " << trail << std::endl;
     switch (state) {
     case state_t::quiescent: {
-      before_decision(cnf);
+      before_decision_f(cnf);
 
       literal_t l;
       choose_literal(l);
@@ -392,7 +365,7 @@ bool solver_t::solve() {
 
       while (!unit_queue.empty()) {
         action_t a = unit_queue.pop();
-        apply_unit(a.get_literal(), a.get_clause());
+        apply_unit_f(a.get_literal(), a.get_clause());
         // if (trail.level() == 0) {
         // std::cerr << "Cleaning" << std::endl;
         // naive_cleaning();
@@ -416,7 +389,7 @@ bool solver_t::solve() {
 
       // Minimize, cache lbm score, etc.
       // Order matters (we want to minimize before LBM'ing)
-      learned_clause(c, trail);
+      learned_clause_f(c, trail);
 
       // early out in the unsat case.
       if (c.empty()) {
@@ -435,7 +408,7 @@ bool solver_t::solve() {
       clause_id cid = cnf.add_clause(std::move(c));
 
       // Commit the clause, the LBM score of that clause, and so on.
-      clause_added(cid);
+      clause_added_f(cid);
 
       SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
       literal_t u = trail.find_unassigned_literal(cnf[cid]);
@@ -474,9 +447,9 @@ void solver_t::before_decision_f(cnf_t &cnf) {
     while (std::end(to_remove) != et)
       to_remove.pop_back();
 
-    // this is a plugin that supports large number of clause removals, which
-    // can be expensive otherwise.
-    remove_clause_set_f(to_remove);
+    lbm.my_erasure = true;
+    for (auto cid : to_remove) remove_clause_f(cid);
+    lbm.my_erasure = false;
   }
 
   // Restart policy
@@ -494,22 +467,20 @@ __attribute__((noinline)) void solver_t::apply_decision_f(literal_t l) {
   watch.literal_falsed(l);
 }
 __attribute__((noinline)) void solver_t::remove_clause_f(clause_id cid) {
-  cnf.remove_clause(cid);
   watch.remove_clause(cid);
   // lbm
-  auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
-                         [cid](const lbm_entry &e) { return e.id == cid; });
-  if (it != std::end(lbm.worklist)) {
-    std::iter_swap(it, std::prev(std::end(lbm.worklist)));
-    lbm.worklist.pop_back();
+  if (!lbm.my_erasure)
+  {
+    auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
+                           [cid](const lbm_entry &e) { return e.id == cid; });
+    if (it != std::end(lbm.worklist))
+    {
+      std::iter_swap(it, std::prev(std::end(lbm.worklist)));
+      lbm.worklist.pop_back();
+    }
   }
-}
-__attribute__((noinline)) void solver_t::remove_clause_set_f(clause_set_t cs) {
-  cnf.remove_clause_set(cs);
 
-  for (clause_id cid : cs) {
-    watch.remove_clause(cid);
-  }
+  cnf.remove_clause(cid);
 }
 __attribute__((noinline)) void solver_t::clause_added_f(clause_id cid) {
   const clause_t &c = cnf[cid];

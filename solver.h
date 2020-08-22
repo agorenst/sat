@@ -57,7 +57,6 @@ struct solver_t {
   plugin<literal_t> apply_decision;
   plugin<literal_t, clause_id> apply_unit;
   plugin<clause_id> remove_clause;
-  plugin<clause_set_t> remove_clause_set;
   plugin<clause_id> clause_added;
   plugin<clause_t &, trail_t &> learned_clause;
   plugin<clause_id, literal_t> remove_literal;
@@ -74,7 +73,6 @@ struct solver_t {
   void apply_unit_f(literal_t, clause_id);
   void apply_decision_f(literal_t);
   void remove_clause_f(clause_id);
-  void remove_clause_set_f(clause_set_t);
   void clause_added_f(clause_id);
   void learned_clause_f(clause_t &, trail_t &);
   void remove_literal_f(clause_id, literal_t);

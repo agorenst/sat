@@ -309,22 +309,43 @@ struct clause_t {
 struct clause_t {
   std::unique_ptr<char[]> mem = nullptr;
   size_t *len = nullptr;
+  literal_t *lits = nullptr;
+  clause_t** left = nullptr;
+  clause_t** right = nullptr;
   size_t *sig = nullptr;
   bool *sig_computed = nullptr;
-  literal_t *lits = nullptr;
   // literal_t* zero = nullptr;
   clause_t(std::vector<literal_t> m) {
     size_t lits_size = (m.size() + 1) * sizeof(literal_t);
     size_t s = lits_size;
     s += sizeof(*len);          // length
+    s += sizeof(*left);          // doubly-linked list
+    s += sizeof(*right);          // doubly-linked list
     s += sizeof(*sig);          // signature
     s += sizeof(*sig_computed); // length
-    mem = std::make_unique<char[]>(s);
 
-    len = (size_t *)&mem[0];
-    lits = (literal_t *)&mem[sizeof(*len)];
-    sig = (size_t *)&mem[sizeof(*len) + lits_size];
-    sig_computed = (bool *)&mem[sizeof(*len) + lits_size + sizeof(*sig)];
+    // Get the raw bytes
+    mem = std::make_unique<char[]>(s);
+    size_t offset = 0;
+
+    len = (size_t *)&mem[offset];
+    offset += sizeof(*len);
+
+    lits = (literal_t *)&mem[offset];
+    offset += lits_size;
+
+    left = (clause_t **)&mem[offset];
+    offset += sizeof(*left);
+
+    right = (clause_t **)&mem[offset];
+    offset += sizeof(*right);
+
+    sig = (size_t *)&mem[offset];
+    offset += sizeof(*sig);
+
+    sig_computed = (bool *)&mem[offset];
+    assert(offset+sizeof(*sig_computed) == s);
+
     int i = 0;
     for (literal_t l : m) {
       lits[i++] = l;
@@ -333,6 +354,8 @@ struct clause_t {
     *len = m.size();
     *sig = 0;
     *sig_computed = false;
+    *left = nullptr;
+    *right = nullptr;
   }
 
 // no copy constructor
@@ -347,8 +370,10 @@ struct clause_t {
 #endif
   clause_t() {}
   clause_t(clause_t &&that)
-      : mem(std::move(that.mem)), len(that.len), sig(that.sig),
-        sig_computed(that.sig_computed), lits(that.lits) {}
+      : mem(std::move(that.mem)), len(that.len), lits(that.lits),
+      left(that.left), right(that.right),
+       sig(that.sig),
+        sig_computed(that.sig_computed) {}
 
   clause_t &operator=(clause_t &&that) {
     mem = std::move(that.mem);
@@ -356,6 +381,8 @@ struct clause_t {
     sig = that.sig;
     sig_computed = that.sig_computed;
     lits = that.lits;
+    left = that.left;
+    right = that.right;
     return *this;
   }
 

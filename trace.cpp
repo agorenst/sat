@@ -90,7 +90,7 @@ bool trace_t::clause_unsat(clause_id cid) const {
 
 auto trace_t::unsat_clause() const {
   return std::find_if(std::begin(cnf), std::end(cnf),
-                      [this](auto &c) { return this->clause_unsat(c); });
+                      [this](clause_id c) { return this->clause_unsat(*c); });
 }
 
 bool trace_t::cnf_unsat() const { return unsat_clause() != std::end(cnf); }
@@ -138,7 +138,7 @@ bool trace_t::unit_clause_exists() const {
 // Really, "no conflict found". That's why we don't have the counterpart.
 bool trace_t::cnf_sat() const {
   return std::all_of(std::begin(cnf), std::end(cnf),
-                     [this](auto &c) { return this->clause_sat(c); });
+                     [this](clause_id c) { return this->clause_sat(*c); });
 }
 
 // Note we *don't* push to the action queue, yet.

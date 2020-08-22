@@ -19,7 +19,6 @@ struct lbm_t {
   // Don't erase anything here!
   // std::priority_queue<lbm_entry> worklist;
   std::vector<lbm_entry> worklist;
-  clause_id last_original_key = nullptr;
 
   clause_map_t<size_t> lbm;
   size_t value_cache = 0;
@@ -27,6 +26,7 @@ struct lbm_t {
   size_t max_size = 0;
   float growth = 1.05;
   float start_growth = 1.2;
+  bool my_erasure = false;
 
   // We clean whenever we've since doubled in size.
   bool should_clean(const cnf_t &cnf);

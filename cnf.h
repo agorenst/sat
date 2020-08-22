@@ -87,59 +87,108 @@ template <typename C, typename V> void unsorted_remove(C &c, const V &v) {
 std::ostream &operator<<(std::ostream &o, const clause_t &c);
 struct cnf_t {
   // clause_t* is punned to clause_id
-  std::vector<clause_t*> mem;
+  clause_t* head = nullptr;
+  size_t live_count = 0;
+
+  struct clause_iterator {
+    clause_t* curr;
+    clause_id operator*() { return curr; }
+    clause_id operator->() { return curr; }
+    clause_iterator operator++() {
+      curr = *(curr->right);
+      return *this;
+    }
+    clause_iterator operator++(int) {
+      auto tmp = *this;
+      curr = *(curr->right);
+      return tmp;
+    }
+    clause_iterator operator--(int) {
+      auto tmp = *this;
+      curr = *(curr->left);
+      return tmp;
+    }
+    clause_iterator operator--() {
+      curr = *(curr->left);
+      return *this;
+    }
+    bool operator==(const clause_iterator& that) const {
+      return curr == that.curr;
+    }
+    bool operator!=(const clause_iterator& that) const {
+      return curr != that.curr;
+    }
+  };
+
+  auto begin() const {
+    clause_iterator ci;
+    ci.curr = head;
+    return ci;
+  }
+  auto end() const {
+    clause_iterator ci;
+    ci.curr = nullptr;
+    return ci;
+  }
+  auto begin() {
+    clause_iterator ci;
+    ci.curr = head;
+    return ci;
+  }
+  auto end() {
+    clause_iterator ci;
+    ci.curr = nullptr;
+    return ci;
+  }
 
   cnf_t() = default;
   cnf_t(const cnf_t &cnf) {
     std::vector<literal_t> tmp;
-    for (const auto c : cnf.mem) {
-      for (auto l : *c) {
+    for (clause_id cid : cnf) {
+      for (literal_t l : cnf[cid]) {
         tmp.push_back(l);
       }
       add_clause({tmp});
       tmp.clear();
     }
   }
-  size_t live_clause_count() const { return mem.size(); }
+
+  size_t live_clause_count() const { return live_count; }
   clause_t &operator[](clause_id cid) { return *cid; }
   const clause_t &operator[](clause_id cid) const { return *cid; }
-  clause_t &operator[](size_t i) { return *mem[i]; }
-  const clause_t &operator[](size_t i) const { return *mem[i]; }
 
   clause_id add_clause(clause_t c) {
+    live_count++;
     auto new_clause = new clause_t(std::move(c));
     clause_id ret = new_clause;
-    mem.emplace_back(new_clause);
+    if (!head) {
+      head = ret;
+    }
+    else {
+      *(head->left) = ret;
+      *(ret->right) = head;
+      head = ret;
+    }
     return ret;
   }
 
-  auto begin() const { return mem.begin(); }
-  auto end() const { return mem.end(); }
-  auto begin() { return mem.begin(); }
-  auto end() { return mem.end(); }
 
   void remove_clause_set(const clause_set_t &cs);
 
   void remove_clause(clause_id cid) {
-    // this is likely pretty expensive because we keep things in sorted order.
-    // Is that best?
-    //std::sort(std::begin(mem), std::end(mem));
-    SAT_ASSERT(std::count(std::begin(mem), std::end(mem), cid) ==
-               1);
-    SAT_ASSERT(std::is_sorted(std::begin(mem), std::end(mem)));
-#ifdef SAT_DEBUG_MODE
-    // auto et =
-    // std::remove(std::begin(mem), std::end(mem), cid);
-    // SAT_ASSERT(et == std::prev(std::end(mem)));
-    // mem.pop_back();
-#endif
-    //auto it =
-        //std::lower_bound(std::begin(mem), std::end(mem), cid);
-        auto it = std::find(std::begin(mem), std::end(mem), cid);
-    mem.erase(it);
-    SAT_ASSERT(std::count(std::begin(mem), std::end(mem), cid) ==
-               0);
-    SAT_ASSERT(std::is_sorted(std::begin(mem), std::end(mem)));
+    live_count--;
+    clause_t& c = *cid;
+    if (*(c.left)) {
+      clause_t& l = **(c.left);
+      *(l.right) = *(c.right);
+    }
+    if (*(c.right)) {
+      clause_t& r = **(c.right);
+      *(r.left) = *(c.left);
+    }
+    if (cid == head) {
+      head = *(c.right);
+    }
     delete cid;
   }
 
@@ -177,3 +226,13 @@ cnf_t load_cnf(std::istream &in);
 variable_t max_variable(const cnf_t &cnf);
 
 size_t signature(const clause_t &c);
+
+
+template <>
+struct std::iterator_traits<cnf_t::clause_iterator> {
+  typedef clause_id value_type;
+  typedef clause_id &reference_type;
+  typedef clause_id *pointer;
+  typedef int difference_type;
+  typedef std::bidirectional_iterator_tag iterator_category;
+};

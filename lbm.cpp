@@ -33,7 +33,6 @@ void lbm_t::flush_value(clause_id cid) {
 
 lbm_t::lbm_t(const cnf_t &cnf) : lbm(cnf.live_clause_count()) {
   max_size = cnf.live_clause_count() * start_growth;
-  last_original_key = *std::prev(std::end(cnf));
 }
 
 clause_set_t lbm_t::clean() {
