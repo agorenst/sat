@@ -300,8 +300,8 @@ bool watched_literals_t::validate_state() {
       SAT_ASSERT(!trail.clause_unsat(c));
     }
 
-    contains(literals_to_watcher[c[0]], std::make_pair(cid, c[1]));
-    contains(literals_to_watcher[c[1]], std::make_pair(cid, c[0]));
+    //SAT_ASSERT(contains(literals_to_watcher[c[0]], std::make_pair(cid, c[1])));
+    //SAT_ASSERT(contains(literals_to_watcher[c[1]], std::make_pair(cid, c[0])));
   }
 
   // The literals_to_watcher maps shouldn't have extra edges

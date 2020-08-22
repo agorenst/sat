@@ -167,15 +167,19 @@ variable_t max_variable(const cnf_t &cnf) {
 }
 
 void cnf_t::remove_clause_set(const clause_set_t &cs) {
-  SAT_ASSERT(std::is_sorted(std::begin(key_to_mem), std::end(key_to_mem)));
+  std::sort(std::begin(mem), std::end(mem));
+  SAT_ASSERT(std::is_sorted(std::begin(mem), std::end(mem)));
   SAT_ASSERT(std::is_sorted(std::begin(cs), std::end(cs)));
-  SAT_ASSERT(key_to_mem.size() > cs.size());
+  SAT_ASSERT(mem.size() > cs.size());
 
   // We can do this truly in-place, but for now let's see what happens.
-  std::vector<size_t> key_to_mem_2;
-  std::set_difference(std::begin(key_to_mem), std::end(key_to_mem),
+  std::vector<clause_t*> mem2;
+  std::set_difference(std::begin(mem), std::end(mem),
                       std::begin(cs), std::end(cs),
-                      std::back_inserter(key_to_mem_2));
-  std::swap(key_to_mem, key_to_mem_2);
-  SAT_ASSERT(key_to_mem.size() + cs.size() == key_to_mem_2.size());
+                      std::back_inserter(mem2));
+  std::swap(mem, mem2);
+  for (auto c : cs) {
+    delete c;
+  }
+  SAT_ASSERT(mem.size() + cs.size() == mem2.size());
 }

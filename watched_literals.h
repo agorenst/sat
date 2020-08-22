@@ -21,10 +21,10 @@
 struct trace_t;
 
 struct watched_literals_t {
-  cnf_t& cnf;
-  trail_t& trail;
-  unit_queue_t& units;
-  const literal_map_t<trail_t::v_state_t>& litstate;
+  cnf_t &cnf;
+  trail_t &trail;
+  unit_queue_t &units;
+  const literal_map_t<trail_t::v_state_t> &litstate;
   literal_map_t<std::vector<std::pair<clause_id, literal_t>>>
       literals_to_watcher;
 
@@ -35,7 +35,7 @@ struct watched_literals_t {
     return litstate[l] == trail_t::v_state_t::var_false;
   }
 
-  watched_literals_t(cnf_t& cnf, trail_t& t, unit_queue_t& q);
+  watched_literals_t(cnf_t &cnf, trail_t &t, unit_queue_t &q);
   void watch_clause(clause_id cid);
   void literal_falsed(literal_t l);
 
@@ -43,11 +43,11 @@ struct watched_literals_t {
 
   void remove_clause(clause_id cid);
 
-  literal_t find_first_watcher(const clause_t& c);
-  auto find_second_watcher(clause_t& c, literal_t o);
-  auto find_next_watcher(clause_t& c, literal_t o);
+  literal_t find_first_watcher(const clause_t &c);
+  auto find_second_watcher(clause_t &c, literal_t o);
+  auto find_next_watcher(clause_t &c, literal_t o);
   void print_watch_state();
   bool validate_state();
 };
 
-std::ostream& operator<<(std::ostream& o, const watched_literals_t& w);
+std::ostream &operator<<(std::ostream &o, const watched_literals_t &w);

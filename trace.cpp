@@ -222,7 +222,7 @@ literal_t trace_t::decide_literal() {
 std::pair<literal_t, clause_id> trace_t::prop_unit() {
   // Are we in a mode where we keep a queue of units?
   if (units.empty()) {
-    return std::make_pair(0, 0);
+    return std::make_pair(0, nullptr);
   }
 
   // Transfer the action from the queue into our trail.

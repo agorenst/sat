@@ -53,36 +53,35 @@ struct solver_t {
   // To keep things easy to experiment (and conceptually understand),
   // we have our core solver loop that, at certain major points, calls
   // into a sequence of handlers. These handlers are stored in these plugins.
-  plugin<cnf_t&> before_decision;
+  plugin<cnf_t &> before_decision;
   plugin<literal_t> apply_decision;
   plugin<literal_t, clause_id> apply_unit;
   plugin<clause_id> remove_clause;
   plugin<clause_set_t> remove_clause_set;
   plugin<clause_id> clause_added;
-  plugin<clause_t&, trail_t&> learned_clause;
+  plugin<clause_t &, trail_t &> learned_clause;
   plugin<clause_id, literal_t> remove_literal;
   plugin<> restart;
-  plugin<literal_t&> choose_literal;
+  plugin<literal_t &> choose_literal;
 
   plugin<> print_metrics_plugins;
-
 
   plugin<> start_solve;
   plugin<> end_solve;
 
   // And instead, let's try doing function stuff.
-  void before_decision_f(cnf_t&);
+  void before_decision_f(cnf_t &);
   void apply_unit_f(literal_t, clause_id);
   void apply_decision_f(literal_t);
   void remove_clause_f(clause_id);
   void remove_clause_set_f(clause_set_t);
   void clause_added_f(clause_id);
-  void learned_clause_f(clause_t&, trail_t&);
+  void learned_clause_f(clause_t &, trail_t &);
   void remove_literal_f(clause_id, literal_t);
   void restart_f();
-  void choose_literal_f(literal_t&);
+  void choose_literal_f(literal_t &);
 
-  void backtrack_subsumption(clause_t& c, action_t* a, action_t* e);
+  void backtrack_subsumption(clause_t &c, action_t *a, action_t *e);
 
   // These install the fundamental actions.
   void install_core_plugins();
@@ -99,7 +98,7 @@ struct solver_t {
   void install_metrics_plugins();
 
   // We create a local copy of the CNF.
-  solver_t(const cnf_t& cnf);
+  solver_t(const cnf_t &cnf);
   // This is the core method:
   bool solve();
 
@@ -150,23 +149,25 @@ struct solver_t {
       ema_slow = 0;
     }
     bool should_restart() const {
-      if (counter < 50) return false;
-      if (ema_fast > c * ema_slow) return true;
+      if (counter < 50)
+        return false;
+      if (ema_fast > c * ema_slow)
+        return true;
       return false;
     }
     void step(const size_t lbd) {
       // Update the emas
 
       if (alpha_incremental > alpha_fast) {
-        ema_fast = alpha_incremental * lbd +
-          (1.0 - alpha_incremental) * ema_fast;
+        ema_fast =
+            alpha_incremental * lbd + (1.0 - alpha_incremental) * ema_fast;
       } else {
         ema_fast = alpha_fast * lbd + (1.0 - alpha_fast) * ema_fast;
       }
 
       if (alpha_incremental > alpha_slow) {
-        ema_slow = alpha_incremental * lbd +
-          (1.0 - alpha_incremental) * ema_slow;
+        ema_slow =
+            alpha_incremental * lbd + (1.0 - alpha_incremental) * ema_slow;
       } else {
         ema_slow = alpha_slow * lbd + (1.0 - alpha_slow) * ema_slow;
       }

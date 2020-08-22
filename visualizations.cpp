@@ -87,20 +87,20 @@ std::map<size_t, std::set<std::string>> layers;
 bool operator<(const action_t &a, const action_t b) {
   assert(a.has_literal() || a.has_clause());
   assert(b.has_literal() || b.has_clause());
-  std::pair<clause_id, literal_t> ap = {100000, 0};
-  std::pair<clause_id, literal_t> bp = {100000, 0};
+  std::pair<clause_id, literal_t> ap = {nullptr, 0};
+  std::pair<clause_id, literal_t> bp = {nullptr, 0};
   if (a.has_literal()) {
-    ap.first = a.get_literal();
+    ap.second = a.get_literal();
   }
   if (a.has_clause()) {
-    ap.second = a.get_clause();
+    ap.first = a.get_clause();
   }
 
   if (b.has_literal()) {
-    bp.first = b.get_literal();
+    bp.second = b.get_literal();
   }
   if (a.has_clause()) {
-    bp.second = b.get_clause();
+    bp.first = b.get_clause();
   }
 
   return ap < bp;

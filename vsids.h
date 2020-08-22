@@ -3,9 +3,9 @@
 #include "trail.h"
 
 struct vsids_t {
-  vsids_t(const cnf_t& cnf, const trail_t& trail);
+  vsids_t(const cnf_t &cnf, const trail_t &trail);
   literal_t choose() const;
-  void clause_learned(const clause_t& c);
+  void clause_learned(const clause_t &c);
   float score(literal_t l) const;
 
   // const float alpha = 0.95;
@@ -17,5 +17,5 @@ struct vsids_t {
   var_map_t<float> activity;
   // literal_map_t<bool> polarity;
   variable_range vars;
-  const trail_t& trail;
+  const trail_t &trail;
 };

@@ -21,6 +21,10 @@ solver_t::solver_t(const cnf_t &CNF)
   install_restart();
   install_literal_chooser();
 
+  // this frees clauses, so wait until later...
+  remove_clause_set.add_listener(
+      [&](const clause_set_t &cs) { cnf.remove_clause_set(cs); });
+  remove_clause.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
   // Optional.
   install_metrics_plugins();
 }
@@ -96,10 +100,7 @@ void solver_t::install_core_plugins() {
   apply_unit.add_listener([&](literal_t l, clause_id cid) {
     trail.append(make_unit_prop(l, cid));
   });
-  remove_clause.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
 
-  remove_clause_set.add_listener(
-      [&](const clause_set_t &cs) { cnf.remove_clause_set(cs); });
 
   restart.add_listener([&]() {
 #if 0
