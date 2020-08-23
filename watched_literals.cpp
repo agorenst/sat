@@ -5,8 +5,8 @@
 
 watched_literals_t::watched_literals_t(cnf_t &cnf, trail_t &trail,
                                        unit_queue_t &units)
-    : cnf(cnf), trail(trail), litstate(trail.litstate),
-      literals_to_watcher(cnf), units(units) {}
+    : cnf(cnf), trail(trail), units(units), litstate(trail.litstate),
+      literals_to_watcher(cnf) {}
 
 auto watched_literals_t::find_second_watcher(clause_t &c, literal_t o) {
   auto it = std::begin(c);
@@ -17,31 +17,17 @@ auto watched_literals_t::find_second_watcher(clause_t &c, literal_t o) {
     if (!literal_false(l))
       return it;
   }
-  /*
-  for (auto jt = it; jt != std::end(c); jt++) {
-    literal_t l = *jt;
-    if (l == o) continue;
-    if (literal_true(l)) return jt;
-  }
-  */
   return it;
 }
 auto watched_literals_t::find_next_watcher(clause_t &c, literal_t o) {
   auto it = std::begin(c) + 2;
-  for (; it != std::end(c); it++) {
+  for (; *it != 0; it++) { // use the 0-end encoding of the clause...
     literal_t l = *it;
     if (l == o)
       continue;
     if (!literal_false(l))
       return it;
   }
-  /*
-  for (auto jt = it; jt != std::end(c); jt++) {
-    literal_t l = *jt;
-    if (l == o) continue;
-    if (literal_true(l)) return jt;
-  }
-  */
   return it;
 }
 
@@ -129,7 +115,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
 
     auto it = find_next_watcher(c, ol);
 
-    if (it != std::end(c)) {
+    if (*it) {
       // we do have a next watcher, "n", at location "it".
       literal_t n = *it;
       SAT_ASSERT(n != ul);
@@ -145,7 +131,6 @@ void watched_literals_t::literal_falsed(literal_t l) {
       SAT_ASSERT(!contains(watchers, std::make_pair(cid, ol)));
 
       // Do the swap
-      // LOCAL VERISON:
       c[1] = n;
       *it = ul;
 
@@ -183,7 +168,7 @@ literal_t watched_literals_t::find_first_watcher(const clause_t &c) {
   return 0;
 }
 
-__attribute__((noinline)) void
+INLINESTATE void
 watched_literals_t::remove_clause(clause_id cid) {
   if (!clause_watched(cid))
     return;
@@ -300,8 +285,9 @@ bool watched_literals_t::validate_state() {
       SAT_ASSERT(!trail.clause_unsat(c));
     }
 
-    //SAT_ASSERT(contains(literals_to_watcher[c[0]], std::make_pair(cid, c[1])));
-    //SAT_ASSERT(contains(literals_to_watcher[c[1]], std::make_pair(cid, c[0])));
+    // SAT_ASSERT(contains(literals_to_watcher[c[0]], std::make_pair(cid,
+    // c[1]))); SAT_ASSERT(contains(literals_to_watcher[c[1]],
+    // std::make_pair(cid, c[0])));
   }
 
   // The literals_to_watcher maps shouldn't have extra edges

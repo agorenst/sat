@@ -22,7 +22,7 @@ void vmtf_t::debug() {
       is_true = trail.literal_true(lit(v));
     }
     char c = is_assigned ? (is_true ? '1' : '0') : '_';
-    int total = fprintf(stderr, "%d#%d (%c) ", v, timestamp[v], c);
+    int total = fprintf(stderr, "%d#%ld (%c) ", v, timestamp[v], c);
     spaces.push_back(total);
   }
   std::cerr << std::endl;

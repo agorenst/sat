@@ -6,6 +6,7 @@
 #include "measurements.h"
 #include "subsumption.h"
 
+
 // We create a local copy of the CNF.
 solver_t::solver_t(const cnf_t &CNF)
     : cnf(CNF), literal_to_clauses_complete(cnf), stamped(cnf),
@@ -90,7 +91,6 @@ void solver_t::install_core_plugins() {
   apply_unit.add_listener([&](literal_t l, clause_id cid) {
     trail.append(make_unit_prop(l, cid));
   });
-
 
   restart.add_listener([&]() {
 #if 0
@@ -265,7 +265,8 @@ void solver_t::install_lbm() {
         to_remove.pop_back();
 
       lbm.my_erasure = true;
-      for (auto cid : to_remove) remove_clause(cid);
+      for (auto cid : to_remove)
+        remove_clause(cid);
       lbm.my_erasure = false;
     }
   });
@@ -274,7 +275,8 @@ void solver_t::install_lbm() {
   // is in LBM, which removes this for us. I LIED! We do it in on-the-fly-ish
   // subsumption.
   remove_clause.add_listener([&](clause_id cid) {
-    if (lbm.my_erasure) return; // we know there's nothing here. TODO: assert
+    if (lbm.my_erasure)
+      return; // we know there's nothing here. TODO: assert
     auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
                            [cid](const lbm_entry &e) { return e.id == cid; });
     if (it != std::end(lbm.worklist)) {
@@ -310,18 +312,20 @@ void solver_t::install_literal_chooser() {
 }
 
 // This is my poor-man's attempt at on-the-fly subsumption... to  be honest
-__attribute__((noinline)) void
+INLINESTATE void
 solver_t::backtrack_subsumption(clause_t &c, action_t *a, action_t *e) {
   // TODO: mesh this with on-the-fly subsumption?
-  //size_t counter = 0;
+  // size_t counter = 0;
   for (; a != e; a++) {
     if (a->has_clause()) {
-      const clause_t& d = cnf[a->get_clause()];
-      if (c.size() >= d.size()) continue;
-      if (!c.possibly_subsumes(d)) continue;
-      //if (subsumes(c, d)) {
+      const clause_t &d = cnf[a->get_clause()];
+      if (c.size() >= d.size())
+        continue;
+      if (!c.possibly_subsumes(d))
+        continue;
+      // if (subsumes(c, d)) {
       if (subsumes_and_sort(c, d)) {
-        //counter++;
+        // counter++;
         // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
         // with " << c << std::endl;
         remove_clause_f(a->get_clause());
@@ -448,7 +452,8 @@ void solver_t::before_decision_f(cnf_t &cnf) {
       to_remove.pop_back();
 
     lbm.my_erasure = true;
-    for (auto cid : to_remove) remove_clause_f(cid);
+    for (auto cid : to_remove)
+      remove_clause_f(cid);
     lbm.my_erasure = false;
   }
 
@@ -457,24 +462,22 @@ void solver_t::before_decision_f(cnf_t &cnf) {
     restart_f(); // this is calling the solver's "restart" plugin!
   }
 }
-__attribute__((noinline)) void solver_t::apply_unit_f(literal_t l,
+INLINESTATE void solver_t::apply_unit_f(literal_t l,
                                                       clause_id cid) {
   trail.append(make_unit_prop(l, cid));
   watch.literal_falsed(l);
 }
-__attribute__((noinline)) void solver_t::apply_decision_f(literal_t l) {
+INLINESTATE void solver_t::apply_decision_f(literal_t l) {
   trail.append(make_decision(l));
   watch.literal_falsed(l);
 }
-__attribute__((noinline)) void solver_t::remove_clause_f(clause_id cid) {
+INLINESTATE void solver_t::remove_clause_f(clause_id cid) {
   watch.remove_clause(cid);
   // lbm
-  if (!lbm.my_erasure)
-  {
+  if (!lbm.my_erasure) {
     auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
                            [cid](const lbm_entry &e) { return e.id == cid; });
-    if (it != std::end(lbm.worklist))
-    {
+    if (it != std::end(lbm.worklist)) {
       std::iter_swap(it, std::prev(std::end(lbm.worklist)));
       lbm.worklist.pop_back();
     }
@@ -482,7 +485,7 @@ __attribute__((noinline)) void solver_t::remove_clause_f(clause_id cid) {
 
   cnf.remove_clause(cid);
 }
-__attribute__((noinline)) void solver_t::clause_added_f(clause_id cid) {
+INLINESTATE void solver_t::clause_added_f(clause_id cid) {
   const clause_t &c = cnf[cid];
 
   if (c.size() > 1)
@@ -491,7 +494,7 @@ __attribute__((noinline)) void solver_t::clause_added_f(clause_id cid) {
 
   lbm.flush_value(cid);
 }
-__attribute__((noinline)) void solver_t::learned_clause_f(clause_t &c,
+INLINESTATE void solver_t::learned_clause_f(clause_t &c,
                                                           trail_t &trail) {
   learned_clause_minimization(cnf, c, trail, stamped);
 
@@ -503,19 +506,19 @@ __attribute__((noinline)) void solver_t::learned_clause_f(clause_t &c,
 
   vsids.clause_learned(c);
 }
-__attribute__((noinline)) void solver_t::remove_literal_f(clause_id cid,
+INLINESTATE void solver_t::remove_literal_f(clause_id cid,
                                                           literal_t l) {
   watch.remove_clause(cid);
   if (cnf[cid].size() > 1) {
     watch.watch_clause(cid);
   }
 }
-__attribute__((noinline)) void solver_t::restart_f() {
+INLINESTATE void solver_t::restart_f() {
   while (trail.level())
     trail.pop();
 
   ema_restart.reset();
 }
-__attribute__((noinline)) void solver_t::choose_literal_f(literal_t &l) {
+INLINESTATE void solver_t::choose_literal_f(literal_t &l) {
   l = vsids.choose();
 }

@@ -87,11 +87,11 @@ template <typename C, typename V> void unsorted_remove(C &c, const V &v) {
 std::ostream &operator<<(std::ostream &o, const clause_t &c);
 struct cnf_t {
   // clause_t* is punned to clause_id
-  clause_t* head = nullptr;
+  clause_t *head = nullptr;
   size_t live_count = 0;
 
   struct clause_iterator {
-    clause_t* curr;
+    clause_t *curr;
     clause_id operator*() { return curr; }
     clause_id operator->() { return curr; }
     clause_iterator operator++() {
@@ -112,10 +112,10 @@ struct cnf_t {
       curr = *(curr->left);
       return *this;
     }
-    bool operator==(const clause_iterator& that) const {
+    bool operator==(const clause_iterator &that) const {
       return curr == that.curr;
     }
-    bool operator!=(const clause_iterator& that) const {
+    bool operator!=(const clause_iterator &that) const {
       return curr != that.curr;
     }
   };
@@ -163,8 +163,7 @@ struct cnf_t {
     clause_id ret = new_clause;
     if (!head) {
       head = ret;
-    }
-    else {
+    } else {
       *(head->left) = ret;
       *(ret->right) = head;
       head = ret;
@@ -172,18 +171,17 @@ struct cnf_t {
     return ret;
   }
 
-
   void remove_clause_set(const clause_set_t &cs);
 
   void remove_clause(clause_id cid) {
     live_count--;
-    clause_t& c = *cid;
+    clause_t &c = *cid;
     if (*(c.left)) {
-      clause_t& l = **(c.left);
+      clause_t &l = **(c.left);
       *(l.right) = *(c.right);
     }
     if (*(c.right)) {
-      clause_t& r = **(c.right);
+      clause_t &r = **(c.right);
       *(r.left) = *(c.left);
     }
     if (cid == head) {
@@ -227,9 +225,7 @@ variable_t max_variable(const cnf_t &cnf);
 
 size_t signature(const clause_t &c);
 
-
-template <>
-struct std::iterator_traits<cnf_t::clause_iterator> {
+template <> struct std::iterator_traits<cnf_t::clause_iterator> {
   typedef clause_id value_type;
   typedef clause_id &reference_type;
   typedef clause_id *pointer;

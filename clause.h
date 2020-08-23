@@ -310,8 +310,8 @@ struct clause_t {
   std::unique_ptr<char[]> mem = nullptr;
   size_t *len = nullptr;
   literal_t *lits = nullptr;
-  clause_t** left = nullptr;
-  clause_t** right = nullptr;
+  clause_t **left = nullptr;
+  clause_t **right = nullptr;
   size_t *sig = nullptr;
   bool *sig_computed = nullptr;
   // literal_t* zero = nullptr;
@@ -319,8 +319,8 @@ struct clause_t {
     size_t lits_size = (m.size() + 1) * sizeof(literal_t);
     size_t s = lits_size;
     s += sizeof(*len);          // length
-    s += sizeof(*left);          // doubly-linked list
-    s += sizeof(*right);          // doubly-linked list
+    s += sizeof(*left);         // doubly-linked list
+    s += sizeof(*right);        // doubly-linked list
     s += sizeof(*sig);          // signature
     s += sizeof(*sig_computed); // length
 
@@ -344,7 +344,7 @@ struct clause_t {
     offset += sizeof(*sig);
 
     sig_computed = (bool *)&mem[offset];
-    assert(offset+sizeof(*sig_computed) == s);
+    assert(offset + sizeof(*sig_computed) == s);
 
     int i = 0;
     for (literal_t l : m) {
@@ -371,8 +371,7 @@ struct clause_t {
   clause_t() {}
   clause_t(clause_t &&that)
       : mem(std::move(that.mem)), len(that.len), lits(that.lits),
-      left(that.left), right(that.right),
-       sig(that.sig),
+        left(that.left), right(that.right), sig(that.sig),
         sig_computed(that.sig_computed) {}
 
   clause_t &operator=(clause_t &&that) {

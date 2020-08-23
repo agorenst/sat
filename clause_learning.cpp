@@ -96,11 +96,13 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
 
 clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
                           lit_bitset_t &stamped) {
+#ifdef SAT_DEBUG_MODE
   auto count_level_literals = [&actions](const clause_t &c) {
     return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {
       return actions.level(l) == actions.level();
     });
   };
+#endif
 
   stamped.clear();
 
@@ -118,7 +120,6 @@ clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
     if (actions.level(l) == actions.level())
       counter++;
   }
-  // int counter = count_level_literals(c);
 
   for (literal_t l : c) {
     stamped.set(neg(l));
@@ -172,7 +173,7 @@ clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
   return clause_t{C};
 }
 
-__attribute__((noinline)) clause_t
+INLINESTATE clause_t
 learn_clause(const cnf_t &cnf, const trail_t &actions, lit_bitset_t &stamped) {
   SAT_ASSERT(actions.rbegin()->action_kind ==
              action_t::action_kind_t::halt_conflict);

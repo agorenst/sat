@@ -39,11 +39,11 @@ void trace_t::reset() {
 }
 
 trace_t::trace_t(cnf_t &cnf)
-    : cnf(cnf), watch(cnf, actions, units),
-      // Actions is invalid at this point, but we don't read it
-      // until after it's constructed. We're really just taking a pointer
-      // to it.
-      vsids(cnf, actions) {
+    : vsids(cnf, actions), cnf(cnf), watch(cnf, actions, units)
+// Actions is invalid at this point, but we don't read it
+// until after it's constructed. We're really just taking a pointer
+// to it.
+{
   reset();
 }
 

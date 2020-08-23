@@ -54,6 +54,7 @@ literal_map_t<clause_set_t> build_incidence_map(const cnf_t &cnf) {
 
 bool check_incidence_map(const literal_map_t<clause_set_t> &m,
                          const cnf_t &cnf) {
+#ifdef SAT_DEBUG_MODE
   for (clause_id cid : cnf) {
     const clause_t &c = cnf[cid];
     for (literal_t l : c) {
@@ -71,6 +72,7 @@ bool check_incidence_map(const literal_map_t<clause_set_t> &m,
       }
     }
   }
+#endif
   return true;
 }
 
