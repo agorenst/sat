@@ -21,16 +21,9 @@ INLINESTATE
 literal_t vsids_t::choose() const {
   variable_t c = 0;
   float a = -1;
-  // std::cout << "[VSIDS][TRACE][VERBOSE] Activity: ";
-  // for (literal_t l = - activity.max_var; l <= activity.max_var; l++) {
-  // if (l == 0) continue;
-  // std::cout << l << ": " << activity[l] << "; ";
-  //}
-  // std::cout << std::endl;
   for (variable_t v : vars) {
     if (trail.varset.get(v))
       continue;
-    // std::cout << "[VSIDS][TRACE][VERBOSE] Trying " << l << std::endl;
     if (activity[v] >= a) {
       a = activity[v];
       c = v;

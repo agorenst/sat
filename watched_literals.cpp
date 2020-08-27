@@ -172,6 +172,8 @@ INLINESTATE void
 watched_literals_t::remove_clause(clause_id cid) {
   if (!clause_watched(cid))
     return;
+  if (!cid->is_alive)
+  return;
   const clause_t &c = cnf[cid];
 
   {

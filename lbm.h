@@ -32,6 +32,7 @@ struct lbm_t {
   bool should_clean(const cnf_t &cnf);
 
   clause_set_t clean();
+  void clean_worklist();
 
   size_t compute_value(const clause_t &c, const trail_t &trail) const;
 

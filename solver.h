@@ -78,6 +78,7 @@ struct solver_t {
   void remove_literal_f(clause_id, literal_t);
   void restart_f();
   void choose_literal_f(literal_t &);
+  void clean_clauses_f();
 
   void backtrack_subsumption(clause_t &c, action_t *a, action_t *e);
 

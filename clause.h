@@ -306,56 +306,37 @@ struct clause_t {
   }
 };
 #else
+
 struct clause_t {
-  std::unique_ptr<char[]> mem = nullptr;
-  size_t *len = nullptr;
-  literal_t *lits = nullptr;
-  clause_t **left = nullptr;
-  clause_t **right = nullptr;
-  size_t *sig = nullptr;
-  bool *sig_computed = nullptr;
-  // literal_t* zero = nullptr;
+
+  clause_t *left = nullptr;
+  clause_t *right = nullptr;
+  size_t len = 0;
+  mutable size_t sig = 0;
+  mutable bool sig_computed = false;
+  bool is_alive = true;
+  literal_t *literals;
+
+  void zero_headers()
+  {
+    left = nullptr;
+    right = nullptr;
+    len = 0;
+    sig = 0;
+    sig_computed = false;
+    is_alive = true;
+  }
+
   clause_t(std::vector<literal_t> m) {
-    size_t lits_size = (m.size() + 1) * sizeof(literal_t);
-    size_t s = lits_size;
-    s += sizeof(*len);          // length
-    s += sizeof(*left);         // doubly-linked list
-    s += sizeof(*right);        // doubly-linked list
-    s += sizeof(*sig);          // signature
-    s += sizeof(*sig_computed); // length
+    zero_headers();
 
-    // Get the raw bytes
-    mem = std::make_unique<char[]>(s);
-    size_t offset = 0;
+    literals = new literal_t[m.size() + 1];
 
-    len = (size_t *)&mem[offset];
-    offset += sizeof(*len);
+    size_t i = 0;
+    for (literal_t l : m) { literals[i++] = l; }
+    literals[i] = 0;
 
-    lits = (literal_t *)&mem[offset];
-    offset += lits_size;
-
-    left = (clause_t **)&mem[offset];
-    offset += sizeof(*left);
-
-    right = (clause_t **)&mem[offset];
-    offset += sizeof(*right);
-
-    sig = (size_t *)&mem[offset];
-    offset += sizeof(*sig);
-
-    sig_computed = (bool *)&mem[offset];
-    assert(offset + sizeof(*sig_computed) == s);
-
-    int i = 0;
-    for (literal_t l : m) {
-      lits[i++] = l;
-    }
-    lits[i] = 0;
-    *len = m.size();
-    *sig = 0;
-    *sig_computed = false;
-    *left = nullptr;
-    *right = nullptr;
+    len = m.size();
   }
 
 // no copy constructor
@@ -368,22 +349,9 @@ struct clause_t {
       }
    }
 #endif
-  clause_t() {}
-  clause_t(clause_t &&that)
-      : mem(std::move(that.mem)), len(that.len), lits(that.lits),
-        left(that.left), right(that.right), sig(that.sig),
-        sig_computed(that.sig_computed) {}
+  clause_t(clause_t &&that) = default;
 
-  clause_t &operator=(clause_t &&that) {
-    mem = std::move(that.mem);
-    len = that.len;
-    sig = that.sig;
-    sig_computed = that.sig_computed;
-    lits = that.lits;
-    left = that.left;
-    right = that.right;
-    return *this;
-  }
+  clause_t &operator=(clause_t &&that) = default;
 
   // clause_t() {}
   // void push_back(literal_t l) { mem.push_back(l); }
@@ -391,17 +359,17 @@ struct clause_t {
   // template<typename IT>
   // void erase(IT b, IT e) { mem.erase(b, e); }
   // void clear() { mem.clear(); }
-  auto begin() { return lits; }
-  auto begin() const { return lits; }
-  auto end() { return &lits[*len]; }
-  auto end() const { return &lits[*len]; }
+  auto begin() { return literals; }
+  auto begin() const { return literals; }
+  auto end() { return &literals[len]; }
+  auto end() const { return &literals[len]; }
   auto size() const { return std::distance(begin(), end()); }
-  auto empty() const { return *len == 0; }
-  auto &operator[](size_t i) { return lits[i]; }
-  auto &operator[](size_t i) const { return lits[i]; }
+  auto empty() const { return len == 0; }
+  auto &operator[](size_t i) { return literals[i]; }
+  auto &operator[](size_t i) const { return literals[i]; }
   void pop_back() {
-    (*len)--;
-    lits[*len] = 0; // update the end marker
+    len--;
+    literals[len] = 0; // update the end marker
   }
   bool operator==(const clause_t &that) const {
     return std::equal(begin(), end(), that.begin(), that.end());
@@ -413,14 +381,14 @@ struct clause_t {
   // this should be embedded in the array as well...
   // For easier subsumption. This is its hash, really
   size_t signature() const {
-    if (*sig_computed) {
-      return *sig;
+    if (sig_computed) {
+      return sig;
     }
-    *sig_computed = true;
+    sig_computed = true;
     auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
     auto addhash = [&h](literal_t a, literal_t b) { return h(a) | h(b); };
-    *sig = std::accumulate(begin(), end(), 0, addhash);
-    return *sig;
+    sig = std::accumulate(begin(), end(), 0, addhash);
+    return sig;
   }
 
   bool possibly_subsumes(const clause_t &that) const {

@@ -36,6 +36,7 @@ lbm_t::lbm_t(const cnf_t &cnf) : lbm(cnf.live_clause_count()) {
 }
 
 clause_set_t lbm_t::clean() {
+  clean_worklist();
   size_t target_size = worklist.size() / 2;
 
   std::sort(std::begin(worklist), std::end(worklist), entry_cmp);
@@ -47,4 +48,10 @@ clause_set_t lbm_t::clean() {
   worklist.erase(std::begin(worklist) + target_size, std::end(worklist));
   max_size *= growth;
   return to_remove;
+}
+
+void lbm_t::clean_worklist() {
+  auto new_end = std::remove_if(std::begin(worklist), std::end(worklist),
+                             [](const lbm_entry& p) { return !p.id->is_alive; });
+  worklist.erase(new_end, std::end(worklist));
 }

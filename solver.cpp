@@ -354,7 +354,7 @@ bool solver_t::solve() {
       before_decision_f(cnf);
 
       literal_t l;
-      choose_literal(l);
+      choose_literal_f(l);
 
       if (l == 0) {
         state = state_t::sat;
@@ -440,6 +440,7 @@ bool solver_t::solve() {
 // overhead there is.
 void solver_t::before_decision_f(cnf_t &cnf) {
   // Do LBM cleaning
+  bool did_lbm = false;
   if (lbm.should_clean(cnf)) {
     auto to_remove = lbm.clean();
     // don't remove things on the trail
@@ -455,11 +456,16 @@ void solver_t::before_decision_f(cnf_t &cnf) {
     for (auto cid : to_remove)
       remove_clause_f(cid);
     lbm.my_erasure = false;
+    did_lbm = true;
   }
 
   // Restart policy
   if (ema_restart.should_restart()) {
     restart_f(); // this is calling the solver's "restart" plugin!
+  }
+
+  if (did_lbm) {
+    clean_clauses_f();
   }
 }
 INLINESTATE void solver_t::apply_unit_f(literal_t l,
@@ -473,17 +479,11 @@ INLINESTATE void solver_t::apply_decision_f(literal_t l) {
 }
 INLINESTATE void solver_t::remove_clause_f(clause_id cid) {
   watch.remove_clause(cid);
-  // lbm
-  if (!lbm.my_erasure) {
-    auto it = std::find_if(std::begin(lbm.worklist), std::end(lbm.worklist),
-                           [cid](const lbm_entry &e) { return e.id == cid; });
-    if (it != std::end(lbm.worklist)) {
-      std::iter_swap(it, std::prev(std::end(lbm.worklist)));
-      lbm.worklist.pop_back();
-    }
-  }
-
   cnf.remove_clause(cid);
+}
+INLINESTATE void solver_t::clean_clauses_f() {
+  lbm.clean_worklist();
+  cnf.clean_clauses();
 }
 INLINESTATE void solver_t::clause_added_f(clause_id cid) {
   const clause_t &c = cnf[cid];

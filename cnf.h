@@ -89,27 +89,32 @@ struct cnf_t {
   // clause_t* is punned to clause_id
   clause_t *head = nullptr;
   size_t live_count = 0;
+  std::vector<clause_id> to_erase;
 
   struct clause_iterator {
     clause_t *curr;
     clause_id operator*() { return curr; }
     clause_id operator->() { return curr; }
     clause_iterator operator++() {
-      curr = *(curr->right);
+      curr = curr->right;
+      while (curr && !curr->is_alive) curr = curr->right;
       return *this;
     }
     clause_iterator operator++(int) {
       auto tmp = *this;
-      curr = *(curr->right);
+      curr = curr->right;
+      while (curr && !curr->is_alive) curr = curr->right;
       return tmp;
     }
     clause_iterator operator--(int) {
       auto tmp = *this;
-      curr = *(curr->left);
+      curr = curr->left;
+      while (curr && !curr->is_alive) curr = curr->left;
       return tmp;
     }
     clause_iterator operator--() {
-      curr = *(curr->left);
+      curr = curr->left;
+      while (curr && !curr->is_alive) curr = curr->left;
       return *this;
     }
     bool operator==(const clause_iterator &that) const {
@@ -157,38 +162,10 @@ struct cnf_t {
   clause_t &operator[](clause_id cid) { return *cid; }
   const clause_t &operator[](clause_id cid) const { return *cid; }
 
-  clause_id add_clause(clause_t c) {
-    live_count++;
-    auto new_clause = new clause_t(std::move(c));
-    clause_id ret = new_clause;
-    if (!head) {
-      head = ret;
-    } else {
-      *(head->left) = ret;
-      *(ret->right) = head;
-      head = ret;
-    }
-    return ret;
-  }
-
+  clause_id add_clause(clause_t c);
   void remove_clause_set(const clause_set_t &cs);
-
-  void remove_clause(clause_id cid) {
-    live_count--;
-    clause_t &c = *cid;
-    if (*(c.left)) {
-      clause_t &l = **(c.left);
-      *(l.right) = *(c.right);
-    }
-    if (*(c.right)) {
-      clause_t &r = **(c.right);
-      *(r.left) = *(c.left);
-    }
-    if (cid == head) {
-      head = *(c.right);
-    }
-    delete cid;
-  }
+  void remove_clause(clause_id cid);
+  void clean_clauses();
 
   literal_range lit_range() const {
     variable_t max_variable(const cnf_t &cnf);
