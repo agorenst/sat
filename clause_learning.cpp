@@ -173,8 +173,8 @@ clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
   return clause_t{C};
 }
 
-INLINESTATE clause_t
-learn_clause(const cnf_t &cnf, const trail_t &actions, lit_bitset_t &stamped) {
+INLINESTATE clause_t learn_clause(const cnf_t &cnf, const trail_t &actions,
+                                  lit_bitset_t &stamped) {
   SAT_ASSERT(actions.rbegin()->action_kind ==
              action_t::action_kind_t::halt_conflict);
   return stamp_resolution(cnf, actions, stamped);

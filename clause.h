@@ -167,40 +167,28 @@ template <typename T, size_t B> struct cache_storage {
 
   void clear() { len = 0; }
 
-  cache_storage(const std::vector<T> &to_copy) {
-    this->len = to_copy.size();
-    if (this->len >= B) {
-      cold = std::make_unique<T[]>(this->len - B);
+  template <typename C> void construct(const C &container) {
+    this->len = container.size();
+    size_t with_padding = this->len + 1;
+    if (with_padding >= B) {
+      cold = std::make_unique<T[]>((with_padding - B));
     }
-    for (size_t i = 0; i < to_copy.size(); i++) {
-      (*this)[i] = to_copy[i];
+    size_t i = 0;
+    for (; i < container.size(); i++) {
+      (*this)[i] = container[i];
     }
+    (*this)[i] = 0;
   }
 
+  cache_storage(const std::vector<T> &to_copy) { construct(to_copy); }
+
   // TODO: erase this...
-  cache_storage(const cache_storage &that) {
-    this->len = that.size();
-    if (this->len >= B) {
-      cold = std::make_unique<T[]>(this->len - B);
-    }
-    for (size_t i = 0; i < that.size(); i++) {
-      (*this)[i] = that[i];
-    }
-  }
+  cache_storage(const cache_storage &that) { construct(that); }
   // cache_storage(cache_storage&& that): len(that.len) {
   // cold = std::move(that.cold);
   // hot = std::move(that.hot);
   //}
-  cache_storage &operator=(const cache_storage &that) {
-    this->len = that.size();
-    if (this->len >= B) {
-      cold = std::make_unique<T[]>(this->len - B);
-    }
-    for (size_t i = 0; i < that.size(); i++) {
-      (*this)[i] = that[i];
-    }
-    return *this;
-  }
+  cache_storage &operator=(const cache_storage &that) { construct(that); }
 
   auto size() const { return len; }
   auto empty() const { return len == 0; }
@@ -255,25 +243,24 @@ struct std::iterator_traits<cache_storage<literal_t, 16>::const_iterator> {
   typedef std::random_access_iterator_tag iterator_category;
 };
 
-#if 0
+#if 1
 struct clause_t {
   cache_storage<literal_t, 16> mem;
   clause_t(std::vector<literal_t> m) : mem(m) {}
 
   // no copy constructor
-  clause_t(const clause_t& that): mem(that.mem) {}
-  clause_t(clause_t&& that): mem(std::move(that.mem)) {}
-  clause_t& operator=(clause_t&& that) {
-    mem = std::move(that.mem);
-    return *this;
-  }
+  clause_t(clause_t &&that) = default;
+  clause_t &operator=(clause_t &&that) = default;
 
-  //clause_t() {}
-  //void push_back(literal_t l) { mem.push_back(l); }
+  clause_t *left = nullptr;
+  clause_t *right = nullptr;
+  bool is_alive = true;
 
+  // clause_t() {}
+  // void push_back(literal_t l) { mem.push_back(l); }
 
-  //template<typename IT>
-  //void erase(IT b, IT e) { mem.erase(b, e); }
+  // template<typename IT>
+  // void erase(IT b, IT e) { mem.erase(b, e); }
   void clear() { mem.clear(); }
   auto begin() { return mem.begin(); }
   auto begin() const { return mem.begin(); }
@@ -281,11 +268,11 @@ struct clause_t {
   auto end() const { return mem.end(); }
   auto size() const { return mem.size(); }
   auto empty() const { return mem.empty(); }
-  auto& operator[](size_t i) { return mem[i]; }
-  auto& operator[](size_t i) const { return mem[i]; }
+  auto &operator[](size_t i) { return mem[i]; }
+  auto &operator[](size_t i) const { return mem[i]; }
   void pop_back() { mem.pop_back(); }
-  bool operator==(const clause_t& that) const { return mem == that.mem; }
-  bool operator!=(const clause_t& that) const { return mem != that.mem; }
+  bool operator==(const clause_t &that) const { return mem == that.mem; }
+  bool operator!=(const clause_t &that) const { return mem != that.mem; }
 
   mutable size_t sig;
   mutable bool sig_computed = false;
@@ -301,7 +288,7 @@ struct clause_t {
     return sig;
   }
 
-  bool possibly_subsumes(const clause_t& that) const {
+  bool possibly_subsumes(const clause_t &that) const {
     return (this->signature() & that.signature()) == this->signature();
   }
 };
@@ -317,8 +304,7 @@ struct clause_t {
   bool is_alive = true;
   literal_t *literals;
 
-  void zero_headers()
-  {
+  void zero_headers() {
     left = nullptr;
     right = nullptr;
     len = 0;
@@ -333,7 +319,9 @@ struct clause_t {
     literals = new literal_t[m.size() + 1];
 
     size_t i = 0;
-    for (literal_t l : m) { literals[i++] = l; }
+    for (literal_t l : m) {
+      literals[i++] = l;
+    }
     literals[i] = 0;
 
     len = m.size();

@@ -10,7 +10,8 @@ watched_literals_t::watched_literals_t(cnf_t &cnf, trail_t &trail,
 
 auto watched_literals_t::find_second_watcher(clause_t &c, literal_t o) {
   auto it = std::begin(c);
-  for (; it != std::end(c); it++) {
+  // for (; it != std::end(c); it++) {
+  for (; *it != 0; it++) {
     literal_t l = *it;
     if (l == o)
       continue;
@@ -21,6 +22,7 @@ auto watched_literals_t::find_second_watcher(clause_t &c, literal_t o) {
 }
 auto watched_literals_t::find_next_watcher(clause_t &c, literal_t o) {
   auto it = std::begin(c) + 2;
+  // for (; it != std::end(c); it++) { // use the iterator
   for (; *it != 0; it++) { // use the 0-end encoding of the clause...
     literal_t l = *it;
     if (l == o)
@@ -50,7 +52,8 @@ void watched_literals_t::watch_clause(clause_id cid) {
 
   // We may already be a unit. If so, to maintain backtracking
   // we want to have our other watcher be the last-falsified thing
-  if (it2 == std::end(c)) {
+  // if (it2 == std::end(c)) {
+  if (!*it2) {
     literal_t l = trail.find_last_falsified(cnf[cid]);
     l2 = l;
   } else {
@@ -74,24 +77,24 @@ void watched_literals_t::watch_clause(clause_id cid) {
 }
 
 void watched_literals_t::literal_falsed(literal_t l) {
-  // timer t(timer::action::literal_falsed);
-  // ul is the literal that is now unsat.
+
   literal_t ul = neg(l);
-  SAT_ASSERT(
-      trail.literal_false(ul)); // that's the whole point of this function
-  // std::cerr << "literal_falsed: " << ul << std::endl;
+  SAT_ASSERT(trail.literal_false(ul));
+
   auto &watchers = literals_to_watcher[ul];
 
   int s = watchers.size();
-  for (int i = 0; i < s; i++) {
+  int i = 0;
+  int j = 0;
+  while (i < s) {
     clause_id cid = watchers[i].first;
     // other literal
-    // std::cerr << "Reviewing clause: " << cnf[cid] << std::endl;
     literal_t ol = watchers[i].second;
 
-    // Can we immediately conclude things?
-    if (literal_true(ol))
+    if (literal_true(ol)) {
+      watchers[j++] = watchers[i++];
       continue;
+    }
 
     // The first two literals in the clause are always the "live" watcher.
     // What if we're not live?
@@ -100,12 +103,14 @@ void watched_literals_t::literal_falsed(literal_t l) {
       std::swap(c[0], c[1]);
 
     // Update our information
-    watchers[i].second = c[0];
-    ol = watchers[i].second;
+    ol = c[0];
+    watchers[i].second = ol;
 
     // Check the updated information
-    if (literal_true(ol))
+    if (literal_true(ol)) {
+      watchers[j++] = watchers[i++];
       continue;
+    }
 
     SAT_ASSERT(c[0] == ol);
     SAT_ASSERT(c[1] == ul);
@@ -125,11 +130,6 @@ void watched_literals_t::literal_falsed(literal_t l) {
       // Watch in the new clause
       new_set.emplace_back(std::make_pair(cid, ol));
 
-      // Remove from the old set
-      std::swap(watchers[i], watchers[watchers.size() - 1]);
-      watchers.pop_back();
-      SAT_ASSERT(!contains(watchers, std::make_pair(cid, ol)));
-
       // Do the swap
       c[1] = n;
       *it = ul;
@@ -137,8 +137,8 @@ void watched_literals_t::literal_falsed(literal_t l) {
       SAT_ASSERT(c[0] == ol);
       SAT_ASSERT(c[1] == n);
 
-      i--; // don't skip the thing we just swapped.
-      s--;
+      // Explicitly don't copy this thing
+      i++;
     } else {
       if (literal_false(ol)) {
         SAT_ASSERT(trail.clause_unsat(cnf[cid]));
@@ -149,11 +149,17 @@ void watched_literals_t::literal_falsed(literal_t l) {
         SAT_ASSERT(trail.count_unassigned_literals(c) == 1);
         SAT_ASSERT(trail.find_unassigned_literal(c) == ol);
         units.push(make_unit_prop(ol, cid));
+        watchers[j++] = watchers[i++];
       }
     }
   }
-
-  // SAT_ASSERT(trace.halted() || validate_state());
+  while (i < s) {
+    watchers[j++] = watchers[i++];
+  }
+  while (j < s) {
+    watchers.pop_back();
+    s--;
+  }
 }
 
 literal_t watched_literals_t::find_first_watcher(const clause_t &c) {
@@ -168,12 +174,11 @@ literal_t watched_literals_t::find_first_watcher(const clause_t &c) {
   return 0;
 }
 
-INLINESTATE void
-watched_literals_t::remove_clause(clause_id cid) {
+INLINESTATE void watched_literals_t::remove_clause(clause_id cid) {
   if (!clause_watched(cid))
     return;
   if (!cid->is_alive)
-  return;
+    return;
   const clause_t &c = cnf[cid];
 
   {

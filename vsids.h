@@ -16,6 +16,7 @@ struct vsids_t {
   // (Right now we're obliged to do a lot of linear scans, not great.)
   var_map_t<float> activity;
   // literal_map_t<bool> polarity;
+  std::vector<variable_t> heap;
   variable_range vars;
   const trail_t &trail;
 };

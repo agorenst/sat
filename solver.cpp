@@ -6,7 +6,6 @@
 #include "measurements.h"
 #include "subsumption.h"
 
-
 // We create a local copy of the CNF.
 solver_t::solver_t(const cnf_t &CNF)
     : cnf(CNF), literal_to_clauses_complete(cnf), stamped(cnf),
@@ -312,8 +311,8 @@ void solver_t::install_literal_chooser() {
 }
 
 // This is my poor-man's attempt at on-the-fly subsumption... to  be honest
-INLINESTATE void
-solver_t::backtrack_subsumption(clause_t &c, action_t *a, action_t *e) {
+INLINESTATE void solver_t::backtrack_subsumption(clause_t &c, action_t *a,
+                                                 action_t *e) {
   // TODO: mesh this with on-the-fly subsumption?
   // size_t counter = 0;
   for (; a != e; a++) {
@@ -359,7 +358,7 @@ bool solver_t::solve() {
       if (l == 0) {
         state = state_t::sat;
       } else {
-        apply_decision(l);
+        apply_decision_f(l);
         state = state_t::check_units;
       }
       break;
@@ -468,8 +467,7 @@ void solver_t::before_decision_f(cnf_t &cnf) {
     clean_clauses_f();
   }
 }
-INLINESTATE void solver_t::apply_unit_f(literal_t l,
-                                                      clause_id cid) {
+INLINESTATE void solver_t::apply_unit_f(literal_t l, clause_id cid) {
   trail.append(make_unit_prop(l, cid));
   watch.literal_falsed(l);
 }
@@ -494,8 +492,7 @@ INLINESTATE void solver_t::clause_added_f(clause_id cid) {
 
   lbm.flush_value(cid);
 }
-INLINESTATE void solver_t::learned_clause_f(clause_t &c,
-                                                          trail_t &trail) {
+INLINESTATE void solver_t::learned_clause_f(clause_t &c, trail_t &trail) {
   learned_clause_minimization(cnf, c, trail, stamped);
 
   lbm.push_value(c, trail);
@@ -506,8 +503,7 @@ INLINESTATE void solver_t::learned_clause_f(clause_t &c,
 
   vsids.clause_learned(c);
 }
-INLINESTATE void solver_t::remove_literal_f(clause_id cid,
-                                                          literal_t l) {
+INLINESTATE void solver_t::remove_literal_f(clause_id cid, literal_t l) {
   watch.remove_clause(cid);
   if (cnf[cid].size() > 1) {
     watch.watch_clause(cid);

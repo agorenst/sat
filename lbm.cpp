@@ -51,7 +51,8 @@ clause_set_t lbm_t::clean() {
 }
 
 void lbm_t::clean_worklist() {
-  auto new_end = std::remove_if(std::begin(worklist), std::end(worklist),
-                             [](const lbm_entry& p) { return !p.id->is_alive; });
+  auto new_end =
+      std::remove_if(std::begin(worklist), std::end(worklist),
+                     [](const lbm_entry &p) { return !p.id->is_alive; });
   worklist.erase(new_end, std::end(worklist));
 }

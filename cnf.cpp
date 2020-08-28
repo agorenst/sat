@@ -167,7 +167,9 @@ variable_t max_variable(const cnf_t &cnf) {
 }
 
 clause_id cnf_t::add_clause(clause_t c) {
-    live_count++;
+  live_count++;
+
+#if 0
     std::vector<literal_t> lits;
     for (auto l : c) { lits.push_back(l); }
 
@@ -204,7 +206,17 @@ clause_id cnf_t::add_clause(clause_t c) {
       ret->right = head;
       head = ret;
     }
-    return ret;
+#else
+  auto ret = new clause_t(std::move(c));
+#endif
+  if (!head) {
+    head = ret;
+  } else {
+    head->left = ret;
+    ret->right = head;
+    head = ret;
+  }
+  return ret;
 }
 
 void cnf_t::remove_clause_set(const clause_set_t &cs) {
@@ -214,25 +226,22 @@ void cnf_t::remove_clause_set(const clause_set_t &cs) {
 }
 
 void cnf_t::remove_clause(clause_id cid) {
-    live_count--;
-    //if (cid->literals) delete cid->literals;
-    //delete cid;
-    if (cid->is_alive) {
-      cid->is_alive = false;
-      if (cid->left)
-      {
-        cid->left->right = cid->right;
-      }
-      if (cid->right)
-      {
-        cid->right->left = cid->left;
-      }
-      if (cid == head)
-      {
-        head = cid->right;
-      }
-      to_erase.push_back(cid);
+  live_count--;
+  // if (cid->literals) delete cid->literals;
+  // delete cid;
+  if (cid->is_alive) {
+    cid->is_alive = false;
+    if (cid->left) {
+      cid->left->right = cid->right;
     }
+    if (cid->right) {
+      cid->right->left = cid->left;
+    }
+    if (cid == head) {
+      head = cid->right;
+    }
+    to_erase.push_back(cid);
+  }
 }
 
 void cnf_t::clean_clauses() {

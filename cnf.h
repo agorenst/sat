@@ -97,24 +97,28 @@ struct cnf_t {
     clause_id operator->() { return curr; }
     clause_iterator operator++() {
       curr = curr->right;
-      while (curr && !curr->is_alive) curr = curr->right;
+      while (curr && !curr->is_alive)
+        curr = curr->right;
       return *this;
     }
     clause_iterator operator++(int) {
       auto tmp = *this;
       curr = curr->right;
-      while (curr && !curr->is_alive) curr = curr->right;
+      while (curr && !curr->is_alive)
+        curr = curr->right;
       return tmp;
     }
     clause_iterator operator--(int) {
       auto tmp = *this;
       curr = curr->left;
-      while (curr && !curr->is_alive) curr = curr->left;
+      while (curr && !curr->is_alive)
+        curr = curr->left;
       return tmp;
     }
     clause_iterator operator--() {
       curr = curr->left;
-      while (curr && !curr->is_alive) curr = curr->left;
+      while (curr && !curr->is_alive)
+        curr = curr->left;
       return *this;
     }
     bool operator==(const clause_iterator &that) const {
@@ -208,4 +212,12 @@ template <> struct std::iterator_traits<cnf_t::clause_iterator> {
   typedef clause_id *pointer;
   typedef int difference_type;
   typedef std::bidirectional_iterator_tag iterator_category;
+};
+
+template <> struct std::iterator_traits<variable_range::iterator> {
+  typedef variable_t value_type;
+  typedef variable_t &reference_type;
+  typedef variable_t *pointer;
+  typedef int difference_type;
+  typedef std::random_access_iterator_tag iterator_category;
 };
