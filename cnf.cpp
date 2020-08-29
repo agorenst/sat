@@ -210,10 +210,10 @@ void cnf_t::remove_clause_set(const clause_set_t &cs) {
 }
 
 void cnf_t::remove_clause(clause_id cid) {
-  live_count--;
   // if (cid->literals) delete cid->literals;
   // delete cid;
   if (cid->is_alive) {
+    live_count--;
     cid->is_alive = false;
     if (cid->left) {
       cid->left->right = cid->right;

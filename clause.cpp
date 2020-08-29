@@ -1,7 +1,6 @@
 #include "clause.h"
 #include <iterator>
 
-
 // Really a "clause set", we don't promise anything about order.
 
 clause_set_t::clause_set_t() {

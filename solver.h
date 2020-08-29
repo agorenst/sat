@@ -63,32 +63,33 @@ struct solver_t {
   // To keep things easy to experiment (and conceptually understand),
   // we have our core solver loop that, at certain major points, calls
   // into a sequence of handlers. These handlers are stored in these plugins.
-  plugin<cnf_t &> before_decision;
-  plugin<literal_t> apply_decision;
-  plugin<literal_t, clause_id> apply_unit;
-  plugin<clause_id> remove_clause;
-  plugin<clause_id> clause_added;
-  plugin<clause_t &, trail_t &> learned_clause;
-  plugin<clause_id, literal_t> remove_literal;
-  plugin<> restart;
-  plugin<literal_t &> choose_literal;
+  static const bool use_plugins = false;
+  plugin<cnf_t &> before_decision_p;
+  plugin<literal_t> apply_decision_p;
+  plugin<literal_t, clause_id> apply_unit_p;
+  plugin<clause_id> remove_clause_p;
+  plugin<clause_id> clause_added_p;
+  plugin<clause_t &, trail_t &> learned_clause_p;
+  plugin<clause_id, literal_t> remove_literal_p;
+  plugin<> restart_p;
+  plugin<literal_t &> choose_literal_p;
+  plugin<> start_solve_p;
+  plugin<> end_solve_p;
 
-  plugin<> print_metrics_plugins;
-
-  plugin<> start_solve;
-  plugin<> end_solve;
+  plugin<> print_metrics_plugins_p;
 
   // And instead, let's try doing function stuff.
-  void before_decision_f(cnf_t &);
-  void apply_unit_f(literal_t, clause_id);
-  void apply_decision_f(literal_t);
-  void remove_clause_f(clause_id);
-  void clause_added_f(clause_id);
-  void learned_clause_f(clause_t &, trail_t &);
-  void remove_literal_f(clause_id, literal_t);
-  void restart_f();
-  void choose_literal_f(literal_t &);
-  void clean_clauses_f();
+  void before_decision(cnf_t &);
+  void apply_unit(literal_t, clause_id);
+  void apply_decision(literal_t);
+  void remove_clause(clause_id);
+  void clause_added(clause_id);
+  void learned_clause(clause_t &, trail_t &);
+  void remove_literal(clause_id, literal_t);
+  void restart();
+  void choose_literal(literal_t &);
+  void start_solve();
+  void end_solve();
 
   void backtrack_subsumption(clause_t &c, action_t *a, action_t *e);
 
