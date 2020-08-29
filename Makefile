@@ -25,7 +25,7 @@ uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-106
 uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
 uuf250-1065-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/uuf250-01*.cnf)))
 
-sat: cnf.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o circuit.o clause_set.o lbm.o solver.o measurements.o vmtf.o acids.o
+sat: variable.o clause.o cnf.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o literal_incidence_map.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o circuit.o clause_set.o lbm.o solver.o measurements.o vmtf.o acids.o
 
 # to test learning, e.g.: ./test_learning < tests/clause_learning/t3.learninglog
 test_learning: clause_learning.o trail.o cnf.o action.o lcm.o literal_incidence_map.o visualizations.o

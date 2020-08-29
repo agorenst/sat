@@ -4,7 +4,8 @@
 #define OLD_UNITS
 
 void unit_queue_t::push(action_t a) {
-  SAT_ASSERT(std::find_if(begin(), end(), [a](action_t b) { return b.l == a.l; }) == end());
+  SAT_ASSERT(std::find_if(begin(), end(),
+                          [a](action_t b) { return b.l == a.l; }) == end());
 #ifdef OLD_UNITS
   queue.push_back(a);
 #else

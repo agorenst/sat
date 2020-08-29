@@ -12,7 +12,7 @@ struct new_trail_t {
 
 void new_trail_t::construct(size_t max_var) {
   level = 0;
-  size = max_var+1;
+  size = max_var + 1;
 
   mem.resize(size);
   data.resize(size);

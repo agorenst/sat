@@ -93,4 +93,4 @@ template struct literal_map_t<trail_t::v_state_t>;
 template struct literal_map_t<size_t>;
 template struct literal_map_t<char>;
 template struct literal_map_t<std::vector<clause_id>>;
-template struct literal_map_t<action_t*>;
+template struct literal_map_t<action_t *>;

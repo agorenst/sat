@@ -3,22 +3,20 @@
 #include "literal_incidence_map.h"
 #include <memory>
 
-
 struct var_data_t {
   size_t level = 0;
-  action_t* cause = nullptr;
+  action_t *cause = nullptr;
   size_t dimacs = 0;
   bool is_set = false;
   bool is_true = false;
 };
-
 
 // This data structure captures the actual state our partial assignment.
 struct trail_t {
   enum class v_state_t { unassigned, var_true, var_false };
   literal_map_t<v_state_t> litstate;
   literal_map_t<v_state_t> oldlitstate;
-  literal_map_t<action_t*> lit_to_action;
+  literal_map_t<action_t *> lit_to_action;
   std::vector<action_t> mem;
   var_map_t<size_t> varlevel;
   var_bitset_t varset;

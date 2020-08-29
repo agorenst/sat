@@ -13,7 +13,7 @@ void lcm(const cnf_t &cnf, clause_t &c, const trail_t &trail) {
   decisions.clear();
 
   // populate the decisions set.
-  for (const action_t& a : trail) {
+  for (const action_t &a : trail) {
     if (a.is_decision()) {
       decisions.set(a.get_literal());
     } else if (a.is_unit_prop()) {
