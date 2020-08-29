@@ -3,7 +3,6 @@
 #include <map>
 #include <vector>
 
-#include "clause_key_map.h"
 #include "cnf.h"
 #include "debug.h"
 #include "trail.h"

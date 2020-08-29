@@ -1,5 +1,4 @@
 #pragma once
-#include "clause_key_map.h"
 #include "cnf.h"
 #include "trail.h"
 #include <algorithm>

@@ -7,7 +7,6 @@
 #include <queue>
 #include <vector>
 
-#include "clause_set.h"
 #include "debug.h"
 
 #include "clause.h"
