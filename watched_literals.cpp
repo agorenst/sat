@@ -118,7 +118,12 @@ void watched_literals_t::literal_falsed(literal_t l) {
     SAT_ASSERT(contains(cnf[cid], ul));
     SAT_ASSERT(contains(cnf[cid], ol));
 
-    auto it = find_next_watcher(c, ol);
+    auto it = std::begin(c) + 2;
+    for (; *it; it++) {
+      if (!literal_false(*it)) {
+        break;
+      }
+    }
 
     if (*it) {
       // we do have a next watcher, "n", at location "it".
@@ -143,7 +148,9 @@ void watched_literals_t::literal_falsed(literal_t l) {
       if (literal_false(ol)) {
         SAT_ASSERT(trail.clause_unsat(cnf[cid]));
         trail.append(make_conflict(cid));
-        break;
+        while (i < s) {
+          watchers[j++] = watchers[i++];
+        }
       } else {
         SAT_ASSERT(trail.literal_unassigned(ol));
         SAT_ASSERT(trail.count_unassigned_literals(c) == 1);
@@ -153,13 +160,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
       }
     }
   }
-  while (i < s) {
-    watchers[j++] = watchers[i++];
-  }
-  while (j < s) {
-    watchers.pop_back();
-    s--;
-  }
+  watchers.resize(j);
 }
 
 literal_t watched_literals_t::find_first_watcher(const clause_t &c) {

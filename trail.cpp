@@ -2,9 +2,24 @@
 
 #include <iostream>
 
+struct new_trail_t {
+  size_t level;
+  size_t size;
+  std::vector<action_t> mem;
+  std::vector<var_data_t> data;
+  void construct(size_t max_var);
+};
+
+void new_trail_t::construct(size_t max_var) {
+  level = 0;
+  size = max_var+1;
+
+  mem.resize(size);
+  data.resize(size);
+}
+
 void trail_t::construct(size_t m) {
-  max_var = m;
-  size = max_var + 1;
+  size = m + 1;
   next_index = 0;
   dlevel = 0;
 
@@ -36,7 +51,7 @@ bool trail_t::literal_unassigned(const literal_t l) const {
 action_t trail_t::cause(literal_t l) const {
   SAT_ASSERT(literal_true(l));
   SAT_ASSERT(varset.get(var(l)));
-  return mem[lit_to_action[l]];
+  return *lit_to_action[l];
 }
 
 void trail_t::append(action_t a) {
@@ -60,7 +75,7 @@ void trail_t::append(action_t a) {
     oldlitstate[neg(l)] = v_state_t::var_false;
 
     // We never bother cleaning this. Mistake?
-    lit_to_action[l] = next_index;
+    lit_to_action[l] = &mem[next_index];
   }
   // if (next_index == size) {
   // std::cout << "[DBG][ERR] No room for " << a << " in trail" << std::endl;
