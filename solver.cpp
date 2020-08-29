@@ -15,9 +15,9 @@ variable_choice_mode_t variable_choice_mode =
 
 // We create a local copy of the CNF.
 solver_t::solver_t(const cnf_t &CNF)
-    : cnf(CNF), literal_to_clauses_complete(cnf), stamped(cnf),
-      watch(cnf, trail, unit_queue), vsids(cnf, trail), vmtf(cnf, trail),
-      acids(cnf, trail), lbm(cnf) {
+    : cnf(CNF), literal_to_clauses_complete(max_variable(cnf)),
+      stamped(max_variable(cnf)), watch(cnf, trail, unit_queue),
+      vsids(cnf, trail), vmtf(cnf, trail), acids(cnf, trail), lbm(cnf) {
   variable_t max_var = max_variable(cnf);
   trail.construct(max_var);
 
@@ -213,7 +213,7 @@ void solver_t::install_lcm() {
 }
 
 void solver_t::naive_cleaning() {
-  static lit_bitset_t seen(cnf);
+  static lit_bitset_t seen(max_variable(cnf));
   for (action_t a : trail) {
     if (trail.level(a))
       break;

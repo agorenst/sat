@@ -1,5 +1,4 @@
 #pragma once
-#include "literal_incidence_map.h"
 #include "trail.h"
 
 struct vsids_t {

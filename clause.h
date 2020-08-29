@@ -208,7 +208,8 @@ struct clause_t {
 typedef clause_t *clause_id;
 
 template <>
-struct std::iterator_traits<cache_storage<literal_t, 16>::iterator_actual<literal_t>> {
+struct std::iterator_traits<
+    cache_storage<literal_t, 16>::iterator_actual<literal_t>> {
   typedef literal_t value_type;
   typedef literal_t &reference_type;
   typedef literal_t *pointer;
@@ -217,7 +218,8 @@ struct std::iterator_traits<cache_storage<literal_t, 16>::iterator_actual<litera
 };
 
 template <>
-struct std::iterator_traits<cache_storage<literal_t, 16>::iterator_actual<const literal_t>> {
+struct std::iterator_traits<
+    cache_storage<literal_t, 16>::iterator_actual<const literal_t>> {
   typedef literal_t value_type;
   typedef const literal_t &reference_type;
   typedef const literal_t *pointer;

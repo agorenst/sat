@@ -6,7 +6,6 @@
 #include "clause_key_map.h"
 #include "cnf.h"
 #include "debug.h"
-#include "literal_incidence_map.h"
 #include "trail.h"
 #include "unit_queue.h"
 

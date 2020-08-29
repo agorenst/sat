@@ -3,13 +3,12 @@
 #include "action.h"
 #include "cnf.h"
 #include "debug.h"
-#include "literal_incidence_map.h"
 #include "trail.h"
 
 // This approach, we "flood" the information of what depends
 // on a decision forward.
 void lcm(const cnf_t &cnf, clause_t &c, const trail_t &trail) {
-  static lit_bitset_t decisions(cnf);
+  static lit_bitset_t decisions(max_variable(cnf));
   decisions.clear();
 
   // populate the decisions set.
@@ -95,9 +94,9 @@ void action_work_list_method(const cnf_t &cnf, clause_t &c,
 }
 
 void lcm_cache_dfs(const cnf_t &cnf, clause_t &c, const trail_t &actions) {
-  static lit_bitset_t not_removable(cnf);
-  static lit_bitset_t removable(cnf);
-  static lit_bitset_t inclause(cnf);
+  static lit_bitset_t not_removable(max_variable(cnf));
+  static lit_bitset_t removable(max_variable(cnf));
+  static lit_bitset_t inclause(max_variable(cnf));
   not_removable.clear();
   removable.clear();
   inclause.clear();

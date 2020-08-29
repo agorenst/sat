@@ -1,6 +1,5 @@
 
 #include "cnf.h"
-#include "literal_incidence_map.h"
 #include "trail.h"
 #include <list>
 

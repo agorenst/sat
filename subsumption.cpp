@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "cnf.h"
-#include "literal_incidence_map.h"
 
 std::unique_ptr<literal_map_t<clause_set_t>> literal_to_clause;
 

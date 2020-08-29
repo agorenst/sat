@@ -5,7 +5,7 @@
 watched_literals_t::watched_literals_t(cnf_t &cnf, trail_t &trail,
                                        unit_queue_t &units)
     : cnf(cnf), trail(trail), units(units), litstate(trail.litstate),
-      literals_to_watcher(cnf) {}
+      literals_to_watcher(max_variable(cnf)) {}
 
 auto watched_literals_t::find_second_watcher(clause_t &c, literal_t o) {
   auto it = std::begin(c);

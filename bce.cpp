@@ -3,7 +3,6 @@
 
 #include "cnf.h"
 #include "debug.h"
-#include "literal_incidence_map.h"
 // Blocked clause elimination
 
 bool resolve_taut(const clause_t &c, const clause_t &d, literal_t l) {
@@ -57,7 +56,7 @@ std::vector<clause_id> BCE(cnf_t &cnf) {
 #if 0
   std::cout << cnf << std::endl;
 #endif
-  literal_map_t<clause_set_t> literal_to_clauses(cnf);
+  literal_map_t<clause_set_t> literal_to_clauses(max_variable(cnf));
   for (clause_id cid : cnf) {
     const clause_t &c = cnf[cid];
     for (literal_t l : c) {

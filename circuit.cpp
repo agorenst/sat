@@ -1,5 +1,4 @@
 #include "cnf.h"
-#include "literal_incidence_map.h"
 // Experiments finding a circuit.
 
 // Given a CNF, find all candidates that can lead to a binary clause

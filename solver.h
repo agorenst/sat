@@ -1,7 +1,6 @@
 #include "acids.h"
 #include "cnf.h"
 #include "lbm.h"
-#include "literal_incidence_map.h"
 #include "plugins.h"
 #include "unit_queue.h"
 #include "vmtf.h"

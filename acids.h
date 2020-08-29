@@ -1,5 +1,4 @@
 #include "cnf.h"
-#include "literal_incidence_map.h"
 #include "trail.h"
 struct acids_t {
   const cnf_t &cnf;

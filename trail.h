@@ -1,6 +1,5 @@
 #pragma once
 #include "action.h"
-#include "literal_incidence_map.h"
 #include <memory>
 
 struct var_data_t {

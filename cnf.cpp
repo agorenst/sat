@@ -234,3 +234,38 @@ void cnf_t::clean_clauses() {
   }
   to_erase.clear();
 }
+
+literal_map_t<clause_set_t> build_incidence_map(const cnf_t &cnf) {
+  literal_map_t<clause_set_t> literal_to_clause(max_variable(cnf));
+  for (clause_id cid : cnf) {
+    const clause_t &c = cnf[cid];
+    for (literal_t l : c) {
+      literal_to_clause[l].push_back(cid);
+    }
+  }
+  return literal_to_clause;
+}
+
+bool check_incidence_map(const literal_map_t<clause_set_t> &m,
+                         const cnf_t &cnf) {
+#ifdef SAT_DEBUG_MODE
+  for (clause_id cid : cnf) {
+    const clause_t &c = cnf[cid];
+    for (literal_t l : c) {
+      SAT_ASSERT(contains(m[l], cid));
+    }
+  }
+  for (literal_t l : cnf.lit_range()) {
+    const auto cl = m[l];
+    for (auto cid : cl) {
+      SAT_ASSERT(contains(cnf[cid], l));
+    }
+    for (auto it = std::begin(cl); it != std::end(cl); it++) {
+      for (auto jt = std::next(it); jt != std::end(cl); jt++) {
+        SAT_ASSERT(*it != *jt);
+      }
+    }
+  }
+#endif
+  return true;
+}

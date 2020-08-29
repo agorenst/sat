@@ -11,63 +11,7 @@
 #include "debug.h"
 
 #include "clause.h"
-
-typedef int32_t literal_t;
-// Really, we can be clever and use unsigned, but come on.
-typedef int32_t variable_t;
-
-variable_t var(literal_t l);
-literal_t lit(variable_t l);
-literal_t neg(literal_t l);
-bool ispos(literal_t l);
-literal_t dimacs_to_lit(int x);
-
-struct variable_range {
-  const variable_t max_var;
-  variable_range(const variable_t max_var) : max_var(max_var) {}
-  struct iterator {
-    const variable_t after_last_var;
-    variable_t v;
-
-    iterator &operator++() {
-      v++;
-      return *this;
-    }
-
-    literal_t operator*() { return v; }
-
-    bool operator==(const iterator &that) const { return this->v == that.v; }
-    bool operator!=(const iterator &that) const { return this->v != that.v; }
-  };
-  iterator begin() const { return iterator{max_var + 1, 1}; }
-  iterator end() const { return iterator{max_var + 1, max_var + 1}; }
-};
-struct literal_range {
-  const variable_t max_var;
-  literal_range(const variable_t max_var) : max_var(max_var) {}
-  struct iterator {
-    const literal_t after_last_literal;
-    literal_t l;
-
-    iterator &operator++() {
-      l++;
-      SAT_ASSERT(l >= 2);
-      return *this;
-    }
-
-    literal_t operator*() { return l; }
-
-    bool operator==(const iterator &that) const { return this->l == that.l; }
-    bool operator!=(const iterator &that) const { return this->l != that.l; }
-  };
-  iterator begin() const {
-    // return iterator{max_var, -max_var};
-    return iterator{(2 * max_var) + 2, 2};
-  }
-  iterator end() const {
-    return iterator{(2 * max_var) + 2, (2 * max_var) + 2};
-  }
-};
+#include "variable.h"
 
 template <typename C, typename V> bool contains(const C &c, const V &v) {
   return std::find(std::begin(c), std::end(c), v) != std::end(c);
@@ -221,3 +165,7 @@ template <> struct std::iterator_traits<variable_range::iterator> {
   typedef int difference_type;
   typedef std::random_access_iterator_tag iterator_category;
 };
+
+literal_map_t<clause_set_t> build_incidence_map(const cnf_t &cnf);
+bool check_incidence_map(const literal_map_t<clause_set_t> &m,
+                         const cnf_t &cnf);
