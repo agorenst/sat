@@ -6,6 +6,13 @@
 #include "measurements.h"
 #include "subsumption.h"
 
+// Defaults: fast and working...
+backtrack_mode_t backtrack_mode = backtrack_mode_t::nonchron;
+// unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::queue;
+unit_prop_mode_t unit_prop_mode = unit_prop_mode_t::watched;
+variable_choice_mode_t variable_choice_mode =
+    variable_choice_mode_t::nextclause;
+
 // We create a local copy of the CNF.
 solver_t::solver_t(const cnf_t &CNF)
     : cnf(CNF), literal_to_clauses_complete(cnf), stamped(cnf),

@@ -18,18 +18,18 @@ void new_trail_t::construct(size_t max_var) {
   data.resize(size);
 }
 
-void trail_t::construct(size_t m) {
-  size = m + 1;
+void trail_t::construct(size_t max_var) {
+  size = max_var + 1;
   next_index = 0;
   dlevel = 0;
 
-  litstate.construct(m);
-  oldlitstate.construct(m);
-  varset.construct(m);
-  varlevel.construct(m);
-  lit_to_action.construct(m);
+  litstate.construct(max_var);
+  oldlitstate.construct(max_var);
+  varset.construct(max_var);
+  varlevel.construct(max_var);
+  lit_to_action.construct(max_var);
 
-  mem = new action_t[size];
+  mem.resize(size);
 
   varset.clear();
   std::fill(std::begin(litstate), std::end(litstate), v_state_t::unassigned);
@@ -180,7 +180,7 @@ literal_t trail_t::find_last_falsified(const clause_t &c) const {
 }
 
 bool trail_t::uses_clause(const clause_id cid) const {
-  for (action_t &a : *this) {
+  for (const action_t &a : *this) {
     if (a.has_clause() && a.get_clause() == cid) {
       return true;
     }

@@ -19,7 +19,7 @@ struct trail_t {
   literal_map_t<v_state_t> litstate;
   literal_map_t<v_state_t> oldlitstate;
   literal_map_t<action_t*> lit_to_action;
-  action_t *mem = nullptr;
+  std::vector<action_t> mem;
   var_map_t<size_t> varlevel;
   var_bitset_t varset;
 
@@ -29,21 +29,21 @@ struct trail_t {
 
   trail_t(const trail_t &t) = delete;
   trail_t() : litstate(0), oldlitstate(0), lit_to_action(0) {}
-  void construct(size_t _max_var);
+  void construct(size_t max_var);
 
-  action_t *cbegin() const { return &(mem[0]); }
-  action_t *cend() const { return &(mem[next_index]); }
+  const action_t *cbegin() const { return &(mem[0]); }
+  const action_t *cend() const { return &(mem[next_index]); }
   action_t *begin() { return &(mem[0]); }
   action_t *end() { return &(mem[next_index]); }
-  action_t *begin() const { return &(mem[0]); }
-  action_t *end() const { return &(mem[next_index]); }
+  const action_t *begin() const { return &(mem[0]); }
+  const action_t *end() const { return &(mem[next_index]); }
 
   auto rbegin() { return std::make_reverse_iterator(end()); }
   auto rend() { return std::make_reverse_iterator(begin()); }
-  auto rbegin() const { return std::make_reverse_iterator(end()); }
-  auto rend() const { return std::make_reverse_iterator(begin()); }
   auto crbegin() const { return std::make_reverse_iterator(cend()); }
   auto crend() const { return std::make_reverse_iterator(cbegin()); }
+  const auto rbegin() const { return std::make_reverse_iterator(end()); }
+  const auto rend() const { return std::make_reverse_iterator(begin()); }
 
   bool empty() const { return next_index == 0; }
 

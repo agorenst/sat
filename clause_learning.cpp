@@ -1,7 +1,6 @@
 #include "clause_learning.h"
 
 #include "lcm.h"
-#include "trace.h"
 
 // learn_mode_t learn_mode = learn_mode_t::explicit_resolution;
 learn_mode_t learn_mode = learn_mode_t::explicit_resolution;

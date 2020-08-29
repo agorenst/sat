@@ -21,7 +21,6 @@
 #include "lcm.h"
 #include "preprocess.h"
 #include "subsumption.h"
-#include "trace.h"
 #include "watched_literals.h"
 
 // Help with control flow and such...

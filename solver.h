@@ -8,6 +8,17 @@
 #include "vsids.h"
 #include "watched_literals.h"
 
+enum class backtrack_mode_t {
+  simplest,
+  nonchron,
+};
+enum class unit_prop_mode_t { simplest, queue, watched };
+enum class variable_choice_mode_t { nextliteral, nextclause };
+
+extern backtrack_mode_t backtrack_mode;
+extern unit_prop_mode_t unit_prop_mode;
+extern variable_choice_mode_t variable_choice_mode;
+
 struct solver_t {
   // The root data structure, the "true" CNF.
   // Currently we'll add learned clauses directly to this.

@@ -1,6 +1,5 @@
 #include "backtrack.h"
-
-#include "trace.h" // for flag modes
+#include "solver.h"
 
 // return the level to which we backtrack.
 action_t *backtrack(const clause_t &c, trail_t &actions) {

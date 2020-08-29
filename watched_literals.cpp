@@ -1,7 +1,6 @@
 #include "watched_literals.h"
 
 #include "measurements.h"
-#include "trace.h"
 
 watched_literals_t::watched_literals_t(cnf_t &cnf, trail_t &trail,
                                        unit_queue_t &units)
