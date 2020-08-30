@@ -28,6 +28,7 @@ solver_t::solver_t(const cnf_t &CNF)
   install_restart();
   install_literal_chooser();
 
+  remove_clause_p.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
   // Optional.
   //install_metrics_plugins();
 }
@@ -95,7 +96,6 @@ void solver_t::install_core_plugins() {
   apply_unit_p.add_listener([&](literal_t l, clause_id cid) {
     trail.append(make_unit_prop(l, cid));
   });
-  remove_clause_p.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
 
   restart_p.add_listener([&]() {
 #if 0
