@@ -226,6 +226,56 @@ INLINESTATE void watched_literals_t::remove_clause(clause_id cid) {
   }
 }
 
+void watched_literals_t::remove_literal(clause_id cid, literal_t l) {
+  // TODO: This has never been used. See how remove_literal simply removes and re-adds
+  // the clause. That seems to be good enough, for our purposes.
+  assert(0);
+  if (!clause_watched(cid))
+    return;
+  if (!cid->is_alive)
+    return;
+  const clause_t &c = cnf[cid];
+
+  // We won't be watching this, anyways.
+  if (c.size() == 2) {
+    return;
+  }
+
+  auto it = std::find(std::begin(c), std::end(c), l);
+
+  // The literal we're removing isn't watching this clause -- great.
+  SAT_ASSERT(it != std::end(c));
+  if (std::next(std::begin(c)) < it) {
+    return;
+  }
+
+  // Otherwise, we need to find a jt to swap with that it.
+  auto jt = std::begin(c) + 2;
+
+  // let's try to find a non-falsed literal:
+  for (; *jt; jt++) {
+    if (!literal_false(*jt)) {
+      break;
+    }
+  }
+
+  // we failed to find a non-falsed literal,
+  // find the falsed literal with the highest level.
+  if (jt == std::end(c)) {
+    jt = std::max_element(std::begin(c)+2, std::end(c),
+    [&](literal_t a, literal_t b) {
+      SAT_ASSERT(a != l && b != l);
+      return this->trail.level(a) < this->trail.level(b);
+    });
+  }
+
+  SAT_ASSERT(jt != std::end(c));
+
+  // No matter what, now, we have jt which is not watching
+  // this clause, and it that is. Swap them.
+
+}
+
 #ifdef SAT_DEBUG_MODE
 void watched_literals_t::print_watch_state() {
   for (auto cid : cnf) {

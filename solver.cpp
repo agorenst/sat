@@ -540,11 +540,46 @@ bool solver_t::solve() {
       // // the clause is unique
       // // the clause contains no literals that are level 0 (proven-fixed)
 
+#if 0
+      if (c.size() == 1) {
+        auto l = c[0];
+
+        // weird heurstic: what about just what we're currently watching?
+        // Doesn't seem to hurt or help.
+        for (auto&& [did, ol] : watch.literals_to_watcher[l]) {
+          remove_clause(did);
+        }
+        for (auto&& [did, ol] : watch.literals_to_watcher[neg(l)]) {
+          remove_literal(did, neg(l));
+        }
+#if 0
+        auto n = neg(l);
+        for (auto did : cnf) {
+          if (trail.contains_clause(did))
+            continue;
+
+          const clause_t& d = cnf[did];
+          if (contains(d, n)) {
+            remove_literal(did, n);
+            // todo: what if this induces a unit?
+            if (cnf[did].size() == 1) {
+              std::cerr << "KNOCK-ON-UNIT" << std::endl;
+            }
+          }
+          if (contains(d, l)) {
+            remove_clause(did);
+          }
+        }
+#endif
+      }
+#endif
+
       // Core action -- we decide to commit the clause.
       clause_id cid = cnf.add_clause(std::move(c));
 
       // Commit the clause, the LBM score of that clause, and so on.
       clause_added(cid);
+
 
       SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
       literal_t u = trail.find_unassigned_literal(cnf[cid]);

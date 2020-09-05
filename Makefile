@@ -69,30 +69,8 @@ unit: sat
 
 %.unsatresult : %.cnf sat
 	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b n | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b s | tail -n 1 | diff - UNSAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - UNSAT
 %.satresult : %.cnf sat
 	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l r -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u s -l s -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l s -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b n | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l r -b s | tail -n 1 | diff - SAT
-#	cat $< | sed s/%// | sed s/^0// | ./sat -u q -l s -b s | tail -n 1 | diff - SAT
 
 
 # a sequence of basic tests, really trivial CNFs
