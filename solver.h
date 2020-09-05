@@ -63,7 +63,7 @@ struct solver_t {
   // To keep things easy to experiment (and conceptually understand),
   // we have our core solver loop that, at certain major points, calls
   // into a sequence of handlers. These handlers are stored in these plugins.
-  static const bool use_plugins = true;
+  static const bool use_plugins = false;
   plugin<cnf_t &> before_decision_p;
   plugin<literal_t> apply_decision_p;
   plugin<literal_t, clause_id> apply_unit_p;

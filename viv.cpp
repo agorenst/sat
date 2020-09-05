@@ -42,8 +42,13 @@ struct vivifier_t {
     bool did_work = false;
     while (!unit_queue.empty()) {
       did_work = true;
-      action_t a = unit_queue.pop();
-      apply_unit(a.get_literal(), a.get_clause());
+      //action_t a = unit_queue.pop();
+      //literal_t l = a.get_literal();
+      //clause_id c = a.get_clause;
+      auto e = unit_queue.pop();
+      literal_t l = e.l;
+      clause_id c = e.c;
+      apply_unit(l, c);
       if (halted()) {
         break;
       }

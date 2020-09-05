@@ -189,20 +189,8 @@ struct clause_t {
   mutable size_t sig;
   mutable bool sig_computed = false;
   // For easier subsumption. This is its hash, really
-  size_t signature() const {
-    if (sig_computed) {
-      return sig;
-    }
-    sig_computed = true;
-    auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
-    auto addhash = [&h](literal_t a, literal_t b) { return h(a) | h(b); };
-    sig = std::accumulate(begin(), end(), 0, addhash);
-    return sig;
-  }
-
-  bool possibly_subsumes(const clause_t &that) const {
-    return (this->signature() & that.signature()) == this->signature();
-  }
+  size_t signature() const;
+  bool possibly_subsumes(const clause_t &that) const;
 };
 
 typedef clause_t *clause_id;
@@ -277,3 +265,5 @@ struct clause_set_t {
   void pop_back() { mem.pop_back(); }
   clause_id back() const { return mem.back(); }
 };
+
+bool clauses_equal(const clause_t& a, const clause_t& b);

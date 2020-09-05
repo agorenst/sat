@@ -61,6 +61,7 @@ struct trail_t {
   bool clause_sat(const clause_t &c) const;
 
   size_t count_true_literals(const clause_t &c) const;
+  size_t count_false_literals(const clause_t &c) const;
   size_t count_unassigned_literals(const clause_t &c) const;
   literal_t find_unassigned_literal(const clause_t &c) const;
   literal_t find_last_falsified(const clause_t &c) const;

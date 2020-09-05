@@ -328,105 +328,6 @@ INLINESTATE void solver_t::backtrack_subsumption(clause_t &c, action_t *a,
 }
 
 // This is the core method:
-bool solver_t::solve() {
-  SAT_ASSERT(state == state_t::quiescent);
-
-  start_solve();
-
-  timer::initialize();
-
-  // for (auto cid : cnf) { assert(std::is_sorted(std::begin(cnf[cid]),
-  // std::end(cnf[cid]))); }
-
-  for (;;) {
-    // std::cerr << "State: " << static_cast<int>(state) << std::endl;
-    // std::cerr << "Trail: " << trail << std::endl;
-    switch (state) {
-    case state_t::quiescent: {
-      before_decision(cnf);
-
-      literal_t l;
-      choose_literal(l);
-
-      if (l == 0) {
-        state = state_t::sat;
-      } else {
-        apply_decision(l);
-        state = state_t::check_units;
-      }
-      break;
-    }
-
-    case state_t::check_units:
-
-      while (!unit_queue.empty()) {
-        action_t a = unit_queue.pop();
-        apply_unit(a.get_literal(), a.get_clause());
-        // if (trail.level() == 0) {
-        // std::cerr << "Cleaning" << std::endl;
-        // naive_cleaning();
-        //}
-        if (halted()) {
-          break;
-        }
-      }
-
-      if (halted()) {
-        state = state_t::conflict;
-      } else {
-        state = state_t::quiescent;
-      }
-
-      break;
-
-    case state_t::conflict: {
-      // TODO: how handle on-the-fly subsumption?
-      clause_t c = learn_clause(cnf, trail, stamped);
-
-      // Minimize, cache lbm score, etc.
-      // Order matters (we want to minimize before LBM'ing)
-      learned_clause(c, trail);
-
-      // early out in the unsat case.
-      if (c.empty()) {
-        state = state_t::unsat;
-        break;
-      }
-
-      action_t *target = backtrack(c, trail);
-
-      backtrack_subsumption(c, target, std::end(trail));
-      trail.drop_from(target);
-
-      unit_queue.clear(); // ???
-
-      // Core action -- we decide to commit the clause.
-      clause_id cid = cnf.add_clause(std::move(c));
-
-      // Commit the clause, the LBM score of that clause, and so on.
-      clause_added(cid);
-
-      SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
-      literal_t u = trail.find_unassigned_literal(cnf[cid]);
-      // SAT_ASSERT(trail.literal_unassigned(cnf[cid][0]));
-
-      // Add it as a unit... this is dependent on certain backtracking, I
-      // think.
-      unit_queue.push(make_unit_prop(u, cid));
-
-      state = state_t::check_units;
-      break;
-    }
-
-    case state_t::sat:
-      end_solve();
-      return true;
-    case state_t::unsat:
-      end_solve();
-      return false;
-    }
-  }
-}
 
 // These are the "function" versions of the plugins. Trying to measure how much
 // overhead there is.
@@ -443,13 +344,14 @@ void solver_t::before_decision(cnf_t &cnf) {
     auto et =
         std::remove_if(std::begin(to_remove), std::end(to_remove),
                        [&](clause_id cid) { return trail.uses_clause(cid); });
-
-    // erase those
-    while (std::end(to_remove) != et)
+    while (std::end(to_remove) != et) {
       to_remove.pop_back();
+    }
 
-    for (auto cid : to_remove)
+    for (auto cid : to_remove) {
+      assert(cnf[cid].size() > 2);
       remove_clause(cid);
+    }
 
     cnf.clean_clauses();
   }
@@ -548,5 +450,120 @@ INLINESTATE void solver_t::end_solve() {
   if (use_plugins) {
     end_solve_p();
     return;
+  }
+  #if 0
+  std::cerr << watch.metrics.rewatch_count << std::endl;
+  std::cerr << watch.metrics.rewatch_iterations << std::endl;
+  std::cerr << ((double)watch.metrics.rewatch_iterations)/((double)(watch.metrics.rewatch_count)) << std::endl;
+  #endif
+}
+
+
+bool solver_t::solve() {
+  SAT_ASSERT(state == state_t::quiescent);
+
+  start_solve();
+
+  timer::initialize();
+
+  // for (auto cid : cnf) { assert(std::is_sorted(std::begin(cnf[cid]),
+  // std::end(cnf[cid]))); }
+
+  for (;;) {
+    // std::cerr << "State: " << static_cast<int>(state) << std::endl;
+    // std::cerr << "Trail: " << trail << std::endl;
+    switch (state) {
+    case state_t::quiescent: {
+      before_decision(cnf);
+
+      literal_t l;
+      choose_literal(l);
+
+      if (l == 0) {
+        state = state_t::sat;
+      } else {
+        apply_decision(l);
+        state = state_t::check_units;
+      }
+      break;
+    }
+
+    case state_t::check_units:
+
+      while (!unit_queue.empty()) {
+
+        auto e = unit_queue.pop();
+        literal_t l = e.l;
+        clause_id c = e.c;
+        SAT_ASSERT(trail.literal_unassigned(l));
+        if (trail.literal_unassigned(l)) {
+          apply_unit(l, c);
+        }
+
+        if (halted()) {
+          break;
+        }
+      }
+
+      if (halted()) {
+        state = state_t::conflict;
+      } else {
+        state = state_t::quiescent;
+      }
+
+      break;
+
+    case state_t::conflict: {
+      // TODO: how handle on-the-fly subsumption?
+      clause_t c = learn_clause(cnf, trail, stamped);
+
+      // Minimize, cache lbm score, etc.
+      // Order matters (we want to minimize before LBM'ing)
+      learned_clause(c, trail);
+
+      // early out in the unsat case.
+      if (c.empty()) {
+        state = state_t::unsat;
+        break;
+      }
+
+      action_t *target = backtrack(c, trail);
+
+      backtrack_subsumption(c, target, std::end(trail));
+      trail.drop_from(target);
+
+      // Experimentally validated that there are no "leftover" units
+      // we're missing out on.
+      unit_queue.clear();
+
+      // High-level assert:
+      // // the clause is unique
+      // // the clause contains no literals that are level 0 (proven-fixed)
+
+      // Core action -- we decide to commit the clause.
+      clause_id cid = cnf.add_clause(std::move(c));
+
+      // Commit the clause, the LBM score of that clause, and so on.
+      clause_added(cid);
+
+      SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
+      literal_t u = trail.find_unassigned_literal(cnf[cid]);
+      // SAT_ASSERT(trail.literal_unassigned(cnf[cid][0]));
+
+      // Add it as a unit... this is dependent on certain backtracking, I
+      // think.
+      unit_queue.push({u, cid});
+
+      state = state_t::check_units;
+      break;
+    }
+
+    case state_t::sat:
+      end_solve();
+      return true;
+    case state_t::unsat:
+      end_solve();
+      return false;
+    }
   }
 }

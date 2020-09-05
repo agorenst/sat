@@ -1,3 +1,4 @@
+#include "subsumption.h"
 #include "watched_literals.h"
 
 #include "measurements.h"
@@ -118,10 +119,12 @@ void watched_literals_t::literal_falsed(literal_t l) {
     SAT_ASSERT(contains(cnf[cid], ol));
 
     auto it = std::begin(c) + 2;
+    //metrics.rewatch_count++;
     for (; *it; it++) {
       if (!literal_false(*it)) {
         break;
       }
+      //metrics.rewatch_iterations++;
     }
 
     if (*it) {
@@ -154,7 +157,24 @@ void watched_literals_t::literal_falsed(literal_t l) {
         SAT_ASSERT(trail.literal_unassigned(ol));
         SAT_ASSERT(trail.count_unassigned_literals(c) == 1);
         SAT_ASSERT(trail.find_unassigned_literal(c) == ol);
-        units.push(make_unit_prop(ol, cid));
+        /*
+        for (auto e : units) {
+          if (e.l == ol) {
+            auto did = e.c;
+            const auto& d = cnf[did];
+            if (cid == e.c) continue;
+            if (subsumes_and_sort(c, d)) {
+              std::cerr << "c, d case: " << c << " " << d << std::endl;
+              remove_clause(did);
+            }
+            else if (subsumes_and_sort(d, c)) {
+              std::cerr << "d, c case: " << d << " " << c << std::endl;
+              remove_clause(cid);
+            }
+          }
+        }
+        */
+        units.push({ol, cid});
         watchers[j++] = watchers[i++];
       }
     }

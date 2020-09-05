@@ -3,35 +3,37 @@
 #include "debug.h"
 #define OLD_UNITS
 
-void unit_queue_t::push(action_t a) {
-  SAT_ASSERT(std::find_if(begin(), end(),
-                          [a](action_t b) { return b.l == a.l; }) == end());
-#ifdef OLD_UNITS
-  queue.push_back(a);
-#else
-  if (e == queue.size()) {
+  unit_queue_t::iterator unit_queue_t::begin() {
+    return queue.begin() + b;
+    }
+  unit_queue_t::iterator unit_queue_t::end() {
+    return queue.end() + e;
+    }
+
+void unit_queue_t::push(entry_t a) {
+  //auto it = std::find_if(begin(), end(), [a](entry_t b) { return b.l == a.l; });
+
+  // already in the queue
+  //if (it == end()) {
     queue.push_back(a);
-    e++;
-  } else {
-    SAT_ASSERT(queue.size() > e);
-    queue[e] = a;
-    e++;
-  }
-#endif
+    //return;
+  //}
+
+  //if (it->s > a.s) {
+    // This seems to induce a perf *loss*. Not sure why, yet.
+    //*it = a;
+    //it->c = a.c;
+    //it->s = a.s;
+  //}
 }
 
-action_t unit_queue_t::pop() {
-#ifdef OLD_UNITS
-  action_t a = queue[b++];
-  // action_t a = queue.back();
-  // queue.pop_back();
+unit_queue_t::entry_t unit_queue_t::pop() {
+  entry_t a = queue[b++];
   return a;
-#else
-  SAT_ASSERT(b < e);
-  action_t a = queue[b];
-  b++;
-  return a;
-#endif
+}
+
+size_t unit_queue_t::size() {
+  return queue.size() - b;
 }
 
 bool unit_queue_t::empty() {

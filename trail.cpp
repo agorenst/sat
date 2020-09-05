@@ -127,6 +127,10 @@ size_t trail_t::count_true_literals(const clause_t &clause) const {
   return std::count_if(std::begin(clause), std::end(clause),
                        [this](auto &c) { return this->literal_true(c); });
 }
+size_t trail_t::count_false_literals(const clause_t &clause) const {
+  return std::count_if(std::begin(clause), std::end(clause),
+                       [this](auto &c) { return this->literal_false(c); });
+}
 size_t trail_t::count_unassigned_literals(const clause_t &c) const {
   return std::count_if(std::begin(c), std::end(c), [this](literal_t l) {
     return this->literal_unassigned(l);

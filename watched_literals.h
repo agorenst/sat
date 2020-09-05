@@ -46,6 +46,13 @@ struct watched_literals_t {
   auto find_next_watcher(clause_t &c, literal_t o);
   void print_watch_state();
   bool validate_state();
+
+  // Metrics!
+  struct metrics_t {
+    size_t rewatch_count = 0;
+    size_t rewatch_iterations = 0;
+  };
+  metrics_t metrics;
 };
 
 std::ostream &operator<<(std::ostream &o, const watched_literals_t &w);

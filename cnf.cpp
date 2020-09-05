@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <forward_list>
 
 #include "debug.h"
 
@@ -108,6 +109,7 @@ std::ostream &operator<<(std::ostream &o, const cnf_t &cnf) {
   return o;
 }
 
+
 cnf_t load_cnf(std::istream &in) {
   cnf_t cnf;
   // Load in cnf from stdin.
@@ -193,6 +195,24 @@ clause_id cnf_t::add_clause(clause_t c) {
 #else
   auto ret = new clause_t(std::move(c));
 #endif
+
+#if 0
+  std::vector<clause_t*>& l = sig_to_clause[ret->signature()];
+  auto it = std::begin(l);
+  for (; it != std::end(l); it++) {
+    if (clauses_equal(**it, *ret)) {
+      break;
+    }
+  }
+  if (it != std::end(l)) {
+    delete ret;
+    return *it;
+  }
+  else {
+    l.push_back(ret);
+  }
+  #endif
+
   if (!head) {
     head = ret;
   } else {
@@ -225,6 +245,14 @@ void cnf_t::remove_clause(clause_id cid) {
       head = cid->right;
     }
     to_erase.push_back(cid);
+
+#if 0
+    auto& l = sig_to_clause[cid->signature()];
+    auto it = std::find(std::begin(l), std::end(l), cid);
+    assert(it != std::end(l));
+    std::iter_swap(std::prev(std::end(l)), it);
+    l.pop_back();
+    #endif
   }
 }
 

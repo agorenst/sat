@@ -6,6 +6,8 @@
 #include <numeric>
 #include <queue>
 #include <vector>
+#include <forward_list>
+#include <unordered_map>
 
 #include "debug.h"
 
@@ -33,6 +35,8 @@ struct cnf_t {
   clause_t *head = nullptr;
   size_t live_count = 0;
   std::vector<clause_id> to_erase;
+
+  std::unordered_map<size_t, std::vector<clause_t*>> sig_to_clause;
 
   struct clause_iterator {
     clause_t *curr;
