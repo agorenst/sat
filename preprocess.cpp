@@ -72,21 +72,21 @@ bool clauses_self_subsume(variable_t v, const clause_t &pclause,
 }
 void naive_self_subsumption(cnf_t &cnf) {
   std::map<literal_t, std::vector<clause_id>> literal_to_clauses;
-  variable_t max_var = 0;
   for (clause_id i : cnf) {
     for (literal_t l : cnf[i]) {
       literal_to_clauses[l].push_back(i);
-      max_var = std::max(std::abs(l), max_var);
     }
   }
-  for (variable_t v = 1; v < max_var + 1; v++) {
-    const auto &pos_clause_list = literal_to_clauses[v];
+
+  for (variable_t v : cnf.var_range()) {
+    const auto &pos_clause_list = literal_to_clauses[lit(v)];
     const auto &neg_clause_list = literal_to_clauses[neg(v)];
     for (auto pcid : pos_clause_list) {
       for (auto ncid : neg_clause_list) {
         const auto &pclause = cnf[pcid];
         const auto &nclause = cnf[ncid];
         if (clauses_self_subsume(v, pclause, nclause)) {
+          std::cerr << "trip" << std::endl;
         }
       }
     }
@@ -141,27 +141,49 @@ void preprocess(cnf_t &cnf) {
       commit_literal(cnf, u);
       did_work = true;
     }
-    bool VIV(cnf_t & cnf);
+    bool BVE(cnf_t & cnf);
 
-    // if (VIV(cnf)) {
-    // did_work = true;
+    if (BVE(cnf)) {
+      //std::cerr << "BVE" << std::endl;
+      did_work = true;
+    }
+
+    while (literal_t u = find_unit(cnf)) {
+      // std::cout << "[PRE][NUP] " << u << std::endl;
+      commit_literal(cnf, u);
+      did_work = true;
+    }
+
+    bool VIV(cnf_t & cnf);
+    //if (VIV(cnf)) {
+      // this has correctness issues?
+      //std::cerr << "VIV" << std::endl;
+      //did_work = true;
     //}
-    /*
+
+    while (literal_t u = find_unit(cnf)) {
+      // std::cout << "[PRE][NUP] " << u << std::endl;
+      commit_literal(cnf, u);
+      did_work = true;
+    }
+
+/*
     std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
-                                                    std::sort(std::begin(cnf[cid]),
-    std::end(cnf[cid])); }); for (auto cid : cnf) { clause_t& c = cnf[cid]; for
-    (size_t i = 0; i < c.size(); i++) { c[i] = neg(c[i]); auto subsumes =
-    find_subsumed(cnf, c); for (auto did: subsumes) { clause_t d = cnf[did];
-          std::cerr << "Strengthening " << d << " into ";
-          assert(contains(d, c[i]));
-          auto dt = std::remove(std::begin(d), std::end(d), c[i]);
-          d.erase(dt, std::end(d));
-          std::cerr << d << " thanks to " << c << "(with the " << i << "th
-    element negated)" << std::endl;
+      std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
+    });
+
+    for (auto cid : cnf) {
+        const auto& c = cnf[cid];
+      for (auto did : cnf) {
+        const auto& d = cnf[did];
+        if (c.possibly_subsumes(d) &&
+            subsumes(c, d)) {
+              std::cerr << "SUBSUMPTION: " << c << "; " << d << std::endl;
         }
-        c[i] = neg(c[i]);
       }
     }
+
+    naive_self_subsumption(cnf);
     */
 
     /*

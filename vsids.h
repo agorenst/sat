@@ -6,6 +6,7 @@ struct vsids_t {
   literal_t choose() const;
   void clause_learned(const clause_t &c);
   float score(literal_t l) const;
+  void clear_activity();
 
   // const float alpha = 0.95;
   const float alpha = 0.95;

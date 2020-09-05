@@ -125,8 +125,8 @@ void solver_t::install_core_plugins() {
 
   // Invariants:
 #ifdef SAT_DEBUG_MODE
-  before_decision.precondition(
-      [&](const cnf_t &avoid) { SAT_ASSERT(!has_unit_clause(cnf, trail)); });
+  // before_decision.precondition(
+  //[&](const cnf_t &avoid) { SAT_ASSERT(!has_unit_clause(cnf, trail)); });
 #endif
 }
 
@@ -431,6 +431,8 @@ INLINESTATE void solver_t::restart() {
   while (trail.level())
     trail.pop();
 
+  // vsids.clear_activity();
+
   ema_restart.reset();
 }
 INLINESTATE void solver_t::choose_literal(literal_t &l) {
@@ -494,7 +496,6 @@ bool solver_t::solve() {
         auto e = unit_queue.pop();
         literal_t l = e.l;
         clause_id c = e.c;
-        SAT_ASSERT(trail.literal_unassigned(l));
         if (trail.literal_unassigned(l)) {
           apply_unit(l, c);
         }

@@ -14,10 +14,6 @@
 #include "clause.h"
 #include "variable.h"
 
-template <typename C, typename V> bool contains(const C &c, const V &v) {
-  return std::find(std::begin(c), std::end(c), v) != std::end(c);
-}
-
 template <typename C, typename V> void unsorted_remove(C &c, const V &v) {
   auto it = std::find(std::begin(c), std::end(c), v);
   // it exists

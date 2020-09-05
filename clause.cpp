@@ -86,3 +86,24 @@ bool clauses_equal(const clause_t &a, const clause_t &b) {
   std::sort(std::begin(bl), std::end(bl));
   return al == bl;
 }
+
+clause_t resolve_ref(const clause_t &c1, const clause_t &c2, literal_t l) {
+  SAT_ASSERT(contains(c1, l));
+  SAT_ASSERT(contains(c2, neg(l)));
+  std::vector<literal_t> c3tmp;
+  // clause_t c3tmp;
+  for (literal_t x : c1) {
+    if (var(x) != var(l)) {
+      c3tmp.push_back(x);
+    }
+  }
+  for (literal_t x : c2) {
+    if (var(x) != var(l)) {
+      c3tmp.push_back(x);
+    }
+  }
+  std::sort(std::begin(c3tmp), std::end(c3tmp));
+  auto new_end = std::unique(std::begin(c3tmp), std::end(c3tmp));
+  c3tmp.erase(new_end, std::end(c3tmp));
+  return c3tmp;
+}

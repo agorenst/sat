@@ -63,11 +63,11 @@ std::vector<clause_id> find_subsumed(cnf_t &cnf, const clause_t &c) {
   return result;
 }
 
-#if 0
 std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
   // deliberately *copying* here.
   std::vector<clause_id> strengthened;
-  clause_t c = cnf[cid];
+  std::vector<literal_t> c;
+  for (literal_t l : cnf[cid]) { c.push_back(l); }
   for (size_t i = 0; i < c.size(); i++) {
     c[i] = neg(c[i]);
     std::sort(std::begin(c), std::end(c));
@@ -88,15 +88,13 @@ std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
   }
   return strengthened;
 }
-#endif
 
-#if 0
 size_t naive_self_subsume(cnf_t& cnf) {
   std::for_each(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
     std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
   });
 
-  literal_to_clause = std::make_unique<literal_map_t<clause_set_t>>(cnf);
+  literal_to_clause = std::make_unique<literal_map_t<clause_set_t>>(max_variable(cnf));
   for (clause_id cid : cnf) {
     const clause_t& c = cnf[cid];
     for (literal_t l : c) {
@@ -110,11 +108,15 @@ size_t naive_self_subsume(cnf_t& cnf) {
     did_work = false;
     for (auto cid : cnf) {
       auto res = self_subsume(cnf, cid);
-      if (res.size() > 0) did_work = true;
-      total_strengthened += res.size();
+      if (res.size() > 0) {
+        std::cerr << "tripped" << std::endl;
+        did_work = true;
+        total_strengthened += res.size();
+      }
     }
   }
+
+  literal_to_clause.release();
+  
   return total_strengthened;
 }
-
-#endif
