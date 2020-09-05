@@ -13,7 +13,7 @@ struct unit_queue_t {
   };
 
   using entry_t = simple_entry_t;
-  //using entry_t = size_entry_t;
+  // using entry_t = size_entry_t;
 
   std::vector<entry_t> queue;
   size_t b = 0;

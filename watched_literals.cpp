@@ -1,5 +1,5 @@
-#include "subsumption.h"
 #include "watched_literals.h"
+#include "subsumption.h"
 
 #include "measurements.h"
 
@@ -119,12 +119,12 @@ void watched_literals_t::literal_falsed(literal_t l) {
     SAT_ASSERT(contains(cnf[cid], ol));
 
     auto it = std::begin(c) + 2;
-    //metrics.rewatch_count++;
+    // metrics.rewatch_count++;
     for (; *it; it++) {
       if (!literal_false(*it)) {
         break;
       }
-      //metrics.rewatch_iterations++;
+      // metrics.rewatch_iterations++;
     }
 
     if (*it) {

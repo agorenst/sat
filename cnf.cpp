@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 #include <forward_list>
+#include <iostream>
 
 #include "debug.h"
 
@@ -109,7 +109,6 @@ std::ostream &operator<<(std::ostream &o, const cnf_t &cnf) {
   return o;
 }
 
-
 cnf_t load_cnf(std::istream &in) {
   cnf_t cnf;
   // Load in cnf from stdin.
@@ -211,7 +210,7 @@ clause_id cnf_t::add_clause(clause_t c) {
   else {
     l.push_back(ret);
   }
-  #endif
+#endif
 
   if (!head) {
     head = ret;
@@ -252,7 +251,7 @@ void cnf_t::remove_clause(clause_id cid) {
     assert(it != std::end(l));
     std::iter_swap(std::prev(std::end(l)), it);
     l.pop_back();
-    #endif
+#endif
   }
 }
 

@@ -30,7 +30,7 @@ solver_t::solver_t(const cnf_t &CNF)
 
   remove_clause_p.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
   // Optional.
-  //install_metrics_plugins();
+  // install_metrics_plugins();
 }
 auto find_unit_clause(const cnf_t &cnf, const trail_t &trail) {
   return std::find_if(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
@@ -451,13 +451,12 @@ INLINESTATE void solver_t::end_solve() {
     end_solve_p();
     return;
   }
-  #if 0
+#if 0
   std::cerr << watch.metrics.rewatch_count << std::endl;
   std::cerr << watch.metrics.rewatch_iterations << std::endl;
   std::cerr << ((double)watch.metrics.rewatch_iterations)/((double)(watch.metrics.rewatch_count)) << std::endl;
-  #endif
+#endif
 }
-
 
 bool solver_t::solve() {
   SAT_ASSERT(state == state_t::quiescent);

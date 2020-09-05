@@ -56,29 +56,32 @@ size_t clause_set_t::size() const {
   return mem.size();
 }
 
-
-
-  size_t clause_t::signature() const {
-    if (sig_computed) {
-      return sig;
-    }
-    sig_computed = true;
-    auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
-    auto addhash = [&h](literal_t a, literal_t b) { return h(a) | h(b); };
-    sig = std::accumulate(begin(), end(), 0, addhash);
+size_t clause_t::signature() const {
+  if (sig_computed) {
     return sig;
   }
+  sig_computed = true;
+  auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
+  auto addhash = [&h](literal_t a, literal_t b) { return h(a) | h(b); };
+  sig = std::accumulate(begin(), end(), 0, addhash);
+  return sig;
+}
 
-  bool clause_t::possibly_subsumes(const clause_t &that) const {
-    return (this->signature() & that.signature()) == this->signature();
-  }
+bool clause_t::possibly_subsumes(const clause_t &that) const {
+  return (this->signature() & that.signature()) == this->signature();
+}
 
-bool clauses_equal(const clause_t& a, const clause_t& b) {
-  if (a.size() != b.size()) return false;
+bool clauses_equal(const clause_t &a, const clause_t &b) {
+  if (a.size() != b.size())
+    return false;
   std::vector<literal_t> al;
-  for (auto l : a) { al.push_back(l); }
+  for (auto l : a) {
+    al.push_back(l);
+  }
   std::vector<literal_t> bl;
-  for (auto l : b) { bl.push_back(l); }
+  for (auto l : b) {
+    bl.push_back(l);
+  }
   std::sort(std::begin(al), std::end(al));
   std::sort(std::begin(bl), std::end(bl));
   return al == bl;

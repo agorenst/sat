@@ -1,13 +1,13 @@
 #pragma once
 // This isn't "cnf" so much as it is all our types
 #include <algorithm>
+#include <forward_list>
 #include <functional>
 #include <iostream>
 #include <numeric>
 #include <queue>
-#include <vector>
-#include <forward_list>
 #include <unordered_map>
+#include <vector>
 
 #include "debug.h"
 
@@ -36,7 +36,7 @@ struct cnf_t {
   size_t live_count = 0;
   std::vector<clause_id> to_erase;
 
-  std::unordered_map<size_t, std::vector<clause_t*>> sig_to_clause;
+  std::unordered_map<size_t, std::vector<clause_t *>> sig_to_clause;
 
   struct clause_iterator {
     clause_t *curr;

@@ -266,4 +266,4 @@ struct clause_set_t {
   clause_id back() const { return mem.back(); }
 };
 
-bool clauses_equal(const clause_t& a, const clause_t& b);
+bool clauses_equal(const clause_t &a, const clause_t &b);
