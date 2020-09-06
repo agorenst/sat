@@ -41,15 +41,13 @@ literal_t vsids_t::choose() const {
   variable_t c = 0;
   float a = -1;
   for (variable_t v : vars) {
-    if (trail.varset.get(v))
-      continue;
+    if (trail.varset.get(v)) continue;
     if (activity[v] >= a) {
       a = activity[v];
       c = v;
     }
   }
-  if (!c)
-    return 0;
+  if (!c) return 0;
   return trail.previously_assigned_literal(c);
 }
 

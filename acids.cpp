@@ -22,8 +22,7 @@ literal_t acids_t::choose() {
   variable_t r = 0;
   for (variable_t v : vr) {
     literal_t l = lit(v);
-    if (!trail.literal_unassigned(l))
-      continue;
+    if (!trail.literal_unassigned(l)) continue;
     if (r == 0) {
       r = v;
       s = score[v];
@@ -34,7 +33,6 @@ literal_t acids_t::choose() {
       s = score[v];
     }
   }
-  if (!r)
-    return 0;
+  if (!r) return 0;
   return trail.previously_assigned_literal(r);
 }

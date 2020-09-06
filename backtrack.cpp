@@ -13,7 +13,7 @@ action_t *backtrack(const clause_t &c, trail_t &actions) {
     auto to_erase = std::find_if(std::begin(actions), std::end(actions),
                                  [](action_t &a) { return a.is_decision(); });
     actions.drop_from(to_erase);
-  } else { // if (backtrack_mode == backtrack_mode_t::nonchron) {
+  } else {  // if (backtrack_mode == backtrack_mode_t::nonchron) {
     // std::cerr << "Backtracking with " << c << std::endl;
     SAT_ASSERT(std::prev(actions.end())->action_kind ==
                action_t::action_kind_t::halt_conflict);
@@ -81,8 +81,7 @@ action_t *backtrack(const clause_t &c, trail_t &actions) {
     // The simple backtrack:
     else {
       // std::cerr << "Case 2" << std::endl;
-      while (actions.level(*del_it) == actions.level())
-        del_it--;
+      while (actions.level(*del_it) == actions.level()) del_it--;
       return del_it;
     }
   }

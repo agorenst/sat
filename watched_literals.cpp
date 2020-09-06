@@ -5,30 +5,19 @@
 
 watched_literals_t::watched_literals_t(cnf_t &cnf, trail_t &trail,
                                        unit_queue_t &units)
-    : cnf(cnf), trail(trail), units(units), litstate(trail.litstate),
+    : cnf(cnf),
+      trail(trail),
+      units(units),
+      litstate(trail.litstate),
       literals_to_watcher(max_variable(cnf)) {}
 
 auto watched_literals_t::find_second_watcher(clause_t &c, literal_t o) {
   auto it = std::begin(c);
   // for (; it != std::end(c); it++) {
-  for (; *it != 0; it++) {
+  for (; it != std::end(c); it++) {
     literal_t l = *it;
-    if (l == o)
-      continue;
-    if (!literal_false(l))
-      return it;
-  }
-  return it;
-}
-auto watched_literals_t::find_next_watcher(clause_t &c, literal_t o) {
-  auto it = std::begin(c) + 2;
-  // for (; it != std::end(c); it++) { // use the iterator
-  for (; *it != 0; it++) { // use the 0-end encoding of the clause...
-    literal_t l = *it;
-    if (l == o)
-      continue;
-    if (!literal_false(l))
-      return it;
+    if (l == o) continue;
+    if (!literal_false(l)) return it;
   }
   return it;
 }
@@ -42,9 +31,8 @@ void watched_literals_t::watch_clause(clause_id cid) {
   // Find a non-false watcher; one should exist.
   literal_t l1 = find_first_watcher(c);
 #ifdef SAT_DEBUG_MODE
-  if (!l1)
-    std::cerr << "Could not find watch in " << c << std::endl;
-  SAT_ASSERT(l1); // shouldn't be 0, at least
+  if (!l1) std::cerr << "Could not find watch in " << c << std::endl;
+  SAT_ASSERT(l1);  // shouldn't be 0, at least
 #endif
 
   auto it2 = find_second_watcher(c, l1);
@@ -53,7 +41,7 @@ void watched_literals_t::watch_clause(clause_id cid) {
   // We may already be a unit. If so, to maintain backtracking
   // we want to have our other watcher be the last-falsified thing
   // if (it2 == std::end(c)) {
-  if (!*it2) {
+  if (it2 == std::end(c)) {
     literal_t l = trail.find_last_falsified(cnf[cid]);
     l2 = l;
   } else {
@@ -77,7 +65,6 @@ void watched_literals_t::watch_clause(clause_id cid) {
 }
 
 void watched_literals_t::literal_falsed(literal_t l) {
-
   literal_t ul = neg(l);
   SAT_ASSERT(trail.literal_false(ul));
 
@@ -99,8 +86,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
     // The first two literals in the clause are always the "live" watcher.
     // What if we're not live?
     clause_t &c = cnf[cid];
-    if (c[0] == ul)
-      std::swap(c[0], c[1]);
+    if (c[0] == ul) std::swap(c[0], c[1]);
 
     // Update our information
     ol = c[0];
@@ -120,14 +106,14 @@ void watched_literals_t::literal_falsed(literal_t l) {
 
     auto it = std::begin(c) + 2;
     // metrics.rewatch_count++;
-    for (; *it; it++) {
+    for (; it != std::end(c); it++) {
       if (!literal_false(*it)) {
         break;
       }
       // metrics.rewatch_iterations++;
     }
 
-    if (*it) {
+    if (it != std::end(c)) {
       // we do have a next watcher, "n", at location "it".
       literal_t n = *it;
       SAT_ASSERT(n != ul);
@@ -184,21 +170,17 @@ void watched_literals_t::literal_falsed(literal_t l) {
 
 literal_t watched_literals_t::find_first_watcher(const clause_t &c) {
   for (literal_t l : c) {
-    if (trail.literal_true(l))
-      return l;
+    if (trail.literal_true(l)) return l;
   }
   for (literal_t l : c) {
-    if (!trail.literal_false(l))
-      return l;
+    if (!trail.literal_false(l)) return l;
   }
   return 0;
 }
 
 INLINESTATE void watched_literals_t::remove_clause(clause_id cid) {
-  if (!clause_watched(cid))
-    return;
-  if (!cid->is_alive)
-    return;
+  if (!clause_watched(cid)) return;
+  if (!cid->is_alive) return;
   const clause_t &c = cnf[cid];
 
   {
@@ -227,13 +209,11 @@ INLINESTATE void watched_literals_t::remove_clause(clause_id cid) {
 }
 
 void watched_literals_t::remove_literal(clause_id cid, literal_t l) {
-  // TODO: This has never been used. See how remove_literal simply removes and re-adds
-  // the clause. That seems to be good enough, for our purposes.
+  // TODO: This has never been used. See how remove_literal simply removes and
+  // re-adds the clause. That seems to be good enough, for our purposes.
   assert(0);
-  if (!clause_watched(cid))
-    return;
-  if (!cid->is_alive)
-    return;
+  if (!clause_watched(cid)) return;
+  if (!cid->is_alive) return;
   const clause_t &c = cnf[cid];
 
   // We won't be watching this, anyways.
@@ -262,25 +242,23 @@ void watched_literals_t::remove_literal(clause_id cid, literal_t l) {
   // we failed to find a non-falsed literal,
   // find the falsed literal with the highest level.
   if (jt == std::end(c)) {
-    jt = std::max_element(std::begin(c)+2, std::end(c),
-    [&](literal_t a, literal_t b) {
-      SAT_ASSERT(a != l && b != l);
-      return this->trail.level(a) < this->trail.level(b);
-    });
+    jt = std::max_element(std::begin(c) + 2, std::end(c),
+                          [&](literal_t a, literal_t b) {
+                            SAT_ASSERT(a != l && b != l);
+                            return this->trail.level(a) < this->trail.level(b);
+                          });
   }
 
   SAT_ASSERT(jt != std::end(c));
 
   // No matter what, now, we have jt which is not watching
   // this clause, and it that is. Swap them.
-
 }
 
 #ifdef SAT_DEBUG_MODE
 void watched_literals_t::print_watch_state() {
   for (auto cid : cnf) {
-    if (!clause_watched(cid))
-      continue;
+    if (!clause_watched(cid)) continue;
     // const watcher_t& w = watched_literals[cid];
     // std::cout << "#" << cid << ": " << cnf[cid] << " watched by " << w
     //<< std::endl;

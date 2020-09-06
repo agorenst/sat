@@ -1,7 +1,7 @@
 
+#include <list>
 #include "cnf.h"
 #include "trail.h"
-#include <list>
 
 struct vmtf_t {
   using queue_t = std::list<variable_t>;

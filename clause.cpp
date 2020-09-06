@@ -37,6 +37,7 @@ clause_id &clause_set_t::operator[](const int i) { return mem[i]; }
 void clause_set_t::remove(clause_id cid) {
   SAT_ASSERT(contains(*this, cid));
   clause_id *e = end();
+
   clause_id *r = std::find(begin(), e, cid);
   SAT_ASSERT(r >= begin());
   SAT_ASSERT(r < e);
@@ -51,6 +52,7 @@ void clause_set_t::clear() {
   mem.clear();
   // s = 0;
 }
+
 size_t clause_set_t::size() const {
   // return s;
   return mem.size();
@@ -72,8 +74,7 @@ bool clause_t::possibly_subsumes(const clause_t &that) const {
 }
 
 bool clauses_equal(const clause_t &a, const clause_t &b) {
-  if (a.size() != b.size())
-    return false;
+  if (a.size() != b.size()) return false;
   std::vector<literal_t> al;
   for (auto l : a) {
     al.push_back(l);

@@ -7,17 +7,19 @@
 
 #include "variable.h"
 
-template <typename C, typename V> bool contains(const C &c, const V &v) {
+template <typename C, typename V>
+bool contains(const C &c, const V &v) {
   return std::find(std::begin(c), std::end(c), v) != std::end(c);
 }
 
-template <typename T, size_t B> struct cache_storage {
-
+template <typename T, size_t B>
+struct cache_storage {
   std::array<T, B> hot;
   std::unique_ptr<T[]> cold;
   int len;
 
-  template <typename U> struct iterator_actual {
+  template <typename U>
+  struct iterator_actual {
     typedef iterator_actual<U> iterator;
     typedef U value_type;
     typedef U &reference_type;
@@ -112,7 +114,8 @@ template <typename T, size_t B> struct cache_storage {
 
   void clear() { len = 0; }
 
-  template <typename C> void construct(const C &container) {
+  template <typename C>
+  void construct(const C &container) {
     this->len = container.size();
     size_t with_padding = this->len + 1;
     if (with_padding >= B) {
@@ -187,7 +190,10 @@ struct clause_t {
   auto empty() const { return mem.empty(); }
   auto &operator[](size_t i) { return mem[i]; }
   auto &operator[](size_t i) const { return mem[i]; }
-  void pop_back() { mem.pop_back(); mem[mem.len] = 0; }
+  void pop_back() {
+    mem.pop_back();
+    mem[mem.len] = 0;
+  }
   bool operator==(const clause_t &that) const { return mem == that.mem; }
   bool operator!=(const clause_t &that) const { return mem != that.mem; }
 
@@ -220,7 +226,8 @@ struct std::iterator_traits<
   typedef std::random_access_iterator_tag iterator_category;
 };
 
-template <typename T> struct clause_map_t {
+template <typename T>
+struct clause_map_t {
   typedef size_t key_t;
   std::vector<T> mem;
   clause_map_t(size_t s) : mem(s) {}
@@ -272,4 +279,4 @@ struct clause_set_t {
 };
 
 bool clauses_equal(const clause_t &a, const clause_t &b);
-clause_t resolve_ref(const clause_t& c1, const clause_t& c2, literal_t l);
+clause_t resolve_ref(const clause_t &c1, const clause_t &c2, literal_t l);

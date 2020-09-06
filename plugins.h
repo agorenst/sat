@@ -1,9 +1,10 @@
 #pragma once
+#include <functional>
 #include "cnf.h"
 #include "trail.h"
-#include <functional>
 
-template <typename... Args> struct plugin {
+template <typename... Args>
+struct plugin {
   typedef std::function<void(Args... args)> listener;
   std::vector<listener> preconditions;
   std::vector<listener> listeners;

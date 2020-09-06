@@ -1,9 +1,9 @@
 #pragma once
 
+#include <cstring>  // memcmp
+#include <iostream>
 #include "cnf.h"
 #include "debug.h"
-#include <cstring> // memcmp
-#include <iostream>
 
 // This is the various kinds of actions we can record.
 struct action_t {

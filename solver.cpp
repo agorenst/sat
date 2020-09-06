@@ -15,15 +15,20 @@ variable_choice_mode_t variable_choice_mode =
 
 // We create a local copy of the CNF.
 solver_t::solver_t(const cnf_t &CNF)
-    : cnf(CNF), literal_to_clauses_complete(max_variable(cnf)),
-      stamped(max_variable(cnf)), watch(cnf, trail, unit_queue),
-      vsids(cnf, trail), vmtf(cnf, trail), acids(cnf, trail), lbm(cnf) {
+    : cnf(CNF),
+      literal_to_clauses_complete(max_variable(cnf)),
+      stamped(max_variable(cnf)),
+      watch(cnf, trail, unit_queue),
+      vsids(cnf, trail),
+      vmtf(cnf, trail),
+      acids(cnf, trail),
+      lbm(cnf) {
   variable_t max_var = max_variable(cnf);
   trail.construct(max_var);
 
   install_core_plugins();
   install_watched_literals();
-  install_lcm(); // we want LCM early on, to improve, e.g., LBD values.
+  install_lcm();  // we want LCM early on, to improve, e.g., LBD values.
   install_lbm();
   install_restart();
   install_literal_chooser();
@@ -116,8 +121,7 @@ void solver_t::install_core_plugins() {
                            while (trail.level() >= level) trail.pop();
                          } else {
 #endif
-    while (trail.level())
-      trail.pop();
+    while (trail.level()) trail.pop();
 #if 0
                          }
 #endif
@@ -190,8 +194,7 @@ void solver_t::install_watched_literals() {
 
   clause_added_p.add_listener([&](clause_id cid) {
     const clause_t &c = cnf[cid];
-    if (c.size() > 1)
-      watch.watch_clause(cid);
+    if (c.size() > 1) watch.watch_clause(cid);
     SAT_ASSERT(watch.validate_state());
   });
   remove_literal_p.add_listener([&](clause_id cid, literal_t l) {
@@ -215,20 +218,16 @@ void solver_t::install_lcm() {
 void solver_t::naive_cleaning() {
   static lit_bitset_t seen(max_variable(cnf));
   for (action_t a : trail) {
-    if (trail.level(a))
-      break;
-    if (!a.is_unit_prop())
-      continue;
+    if (trail.level(a)) break;
+    if (!a.is_unit_prop()) continue;
     clause_id cid = a.get_clause();
     {
       const clause_t &c = cnf[cid];
-      if (c.size() != 1)
-        continue;
+      if (c.size() != 1) continue;
     }
 
     literal_t l = a.get_literal();
-    if (seen.get(l))
-      continue;
+    if (seen.get(l)) continue;
     seen.set(l);
 
     // Collect all clauses with that literal.
@@ -267,11 +266,9 @@ void solver_t::install_lbm() {
                          [&](clause_id cid) { return trail.uses_clause(cid); });
 
       // erase those
-      while (std::end(to_remove) != et)
-        to_remove.pop_back();
+      while (std::end(to_remove) != et) to_remove.pop_back();
 
-      for (auto cid : to_remove)
-        remove_clause(cid);
+      for (auto cid : to_remove) remove_clause(cid);
 
       cnf.clean_clauses();
     }
@@ -311,10 +308,8 @@ INLINESTATE void solver_t::backtrack_subsumption(clause_t &c, action_t *a,
   for (; a != e; a++) {
     if (a->has_clause()) {
       const clause_t &d = cnf[a->get_clause()];
-      if (c.size() >= d.size())
-        continue;
-      if (!c.possibly_subsumes(d))
-        continue;
+      if (c.size() >= d.size()) continue;
+      if (!c.possibly_subsumes(d)) continue;
       // if (subsumes(c, d)) {
       if (subsumes_and_sort(c, d)) {
         // counter++;
@@ -354,13 +349,11 @@ void solver_t::before_decision(cnf_t &cnf) {
     }
 
     cnf.clean_clauses();
-
   }
-
 
   // Restart policy
   if (ema_restart.should_restart()) {
-    restart(); // this is calling the solver's "restart" plugin!
+    restart();  // this is calling the solver's "restart" plugin!
   }
 }
 INLINESTATE void solver_t::apply_unit(literal_t l, clause_id cid) {
@@ -394,8 +387,7 @@ INLINESTATE void solver_t::clause_added(clause_id cid) {
   }
   const clause_t &c = cnf[cid];
 
-  if (c.size() > 1)
-    watch.watch_clause(cid);
+  if (c.size() > 1) watch.watch_clause(cid);
   SAT_ASSERT(watch.validate_state());
 
   lbm.flush_value(cid);
@@ -430,8 +422,7 @@ INLINESTATE void solver_t::restart() {
     restart_p();
     return;
   }
-  while (trail.level())
-    trail.pop();
+  while (trail.level()) trail.pop();
 
   vsids.static_activity();
 
@@ -473,78 +464,77 @@ bool solver_t::solve() {
   // std::end(cnf[cid]))); }
 
   for (;;) {
-     //std::cerr << "State: " << static_cast<int>(state) << std::endl;
-     //std::cerr << "Trail: " << trail << std::endl;
+    // std::cerr << "State: " << static_cast<int>(state) << std::endl;
+    // std::cerr << "Trail: " << trail << std::endl;
     switch (state) {
-    case state_t::quiescent: {
-      before_decision(cnf);
+      case state_t::quiescent: {
+        before_decision(cnf);
 
-      literal_t l;
-      choose_literal(l);
+        literal_t l;
+        choose_literal(l);
 
-      if (l == 0) {
-        state = state_t::sat;
-      } else {
-        apply_decision(l);
-        state = state_t::check_units;
-      }
-      break;
-    }
-
-    case state_t::check_units:
-
-      while (!unit_queue.empty()) {
-
-        auto e = unit_queue.pop();
-        literal_t l = e.l;
-        clause_id c = e.c;
-        if (trail.literal_unassigned(l)) {
-          apply_unit(l, c);
+        if (l == 0) {
+          state = state_t::sat;
+        } else {
+          apply_decision(l);
+          state = state_t::check_units;
         }
-
-        if (halted()) {
-          break;
-        }
-      }
-
-      if (halted()) {
-        state = state_t::conflict;
-      } else {
-        state = state_t::quiescent;
-      }
-
-      break;
-
-    case state_t::conflict: {
-      // TODO: how handle on-the-fly subsumption?
-      clause_t c = learn_clause(cnf, trail, stamped);
-
-      // Minimize, cache lbm score, etc.
-      // Order matters (we want to minimize before LBM'ing)
-      learned_clause(c, trail);
-
-      // early out in the unsat case.
-      if (c.empty()) {
-        state = state_t::unsat;
         break;
       }
 
-      action_t *target = backtrack(c, trail);
+      case state_t::check_units:
 
-      backtrack_subsumption(c, target, std::end(trail));
-      trail.drop_from(target);
+        while (!unit_queue.empty()) {
+          auto e = unit_queue.pop();
+          literal_t l = e.l;
+          clause_id c = e.c;
+          if (trail.literal_unassigned(l)) {
+            apply_unit(l, c);
+          }
 
-      // Experimentally validated that there are no "leftover" units
-      // we're missing out on.
-      unit_queue.clear();
+          if (halted()) {
+            break;
+          }
+        }
 
-      // High-level assert:
-      // // the clause is unique
-      // // the clause contains no literals that are level 0 (proven-fixed)
+        if (halted()) {
+          state = state_t::conflict;
+        } else {
+          state = state_t::quiescent;
+        }
+
+        break;
+
+      case state_t::conflict: {
+        // TODO: how handle on-the-fly subsumption?
+        clause_t c = learn_clause(cnf, trail, stamped);
+
+        // Minimize, cache lbm score, etc.
+        // Order matters (we want to minimize before LBM'ing)
+        learned_clause(c, trail);
+
+        // early out in the unsat case.
+        if (c.empty()) {
+          state = state_t::unsat;
+          break;
+        }
+
+        action_t *target = backtrack(c, trail);
+
+        backtrack_subsumption(c, target, std::end(trail));
+        trail.drop_from(target);
+
+        // Experimentally validated that there are no "leftover" units
+        // we're missing out on.
+        unit_queue.clear();
+
+        // High-level assert:
+        // // the clause is unique
+        // // the clause contains no literals that are level 0 (proven-fixed)
 
 #if 1
-      if (c.size() == 1) {
-        auto l = c[0];
+        if (c.size() == 1) {
+          auto l = c[0];
 
 #if 0
         // weird heurstic: what about just what we're currently watching?
@@ -556,52 +546,50 @@ bool solver_t::solve() {
           remove_literal(did, neg(l));
         }
 #else
-        auto n = neg(l);
-        for (auto did : cnf) {
-          if (trail.contains_clause(did))
-            continue;
+          auto n = neg(l);
+          for (auto did : cnf) {
+            if (trail.contains_clause(did)) continue;
 
-          const clause_t& d = cnf[did];
-          if (contains(d, n)) {
-            remove_literal(did, n);
-            // todo: what if this induces a unit?
-            //if (cnf[did].size() == 1) {
-              //std::cerr << "KNOCK-ON-UNIT" << std::endl;
-            //}
+            const clause_t &d = cnf[did];
+            if (contains(d, n)) {
+              remove_literal(did, n);
+              // todo: what if this induces a unit?
+              // if (cnf[did].size() == 1) {
+              // std::cerr << "KNOCK-ON-UNIT" << std::endl;
+              //}
+            }
+            if (contains(d, l)) {
+              remove_clause(did);
+            }
           }
-          if (contains(d, l)) {
-            remove_clause(did);
-          }
+#endif
         }
 #endif
+
+        // Core action -- we decide to commit the clause.
+        clause_id cid = cnf.add_clause(std::move(c));
+
+        // Commit the clause, the LBM score of that clause, and so on.
+        clause_added(cid);
+
+        SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
+        literal_t u = trail.find_unassigned_literal(cnf[cid]);
+        // SAT_ASSERT(trail.literal_unassigned(cnf[cid][0]));
+
+        // Add it as a unit... this is dependent on certain backtracking, I
+        // think.
+        unit_queue.push({u, cid});
+
+        state = state_t::check_units;
+        break;
       }
-#endif
 
-      // Core action -- we decide to commit the clause.
-      clause_id cid = cnf.add_clause(std::move(c));
-
-      // Commit the clause, the LBM score of that clause, and so on.
-      clause_added(cid);
-
-
-      SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
-      literal_t u = trail.find_unassigned_literal(cnf[cid]);
-      // SAT_ASSERT(trail.literal_unassigned(cnf[cid][0]));
-
-      // Add it as a unit... this is dependent on certain backtracking, I
-      // think.
-      unit_queue.push({u, cid});
-
-      state = state_t::check_units;
-      break;
-    }
-
-    case state_t::sat:
-      end_solve();
-      return true;
-    case state_t::unsat:
-      end_solve();
-      return false;
+      case state_t::sat:
+        end_solve();
+        return true;
+      case state_t::unsat:
+        end_solve();
+        return false;
     }
   }
 }

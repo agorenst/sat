@@ -34,8 +34,7 @@ bool subsumes_and_sort(const clause_t &c, const clause_t &d) {
 bool subsumes(const clause_t &c, const clause_t &d) {
   // Basic early-out. Also needed for correctness (otherwise c always subsumes
   // c)
-  if (d.size() <= c.size())
-    return false;
+  if (d.size() <= c.size()) return false;
 
   SAT_ASSERT(std::is_sorted(std::begin(c), std::end(c)));
   SAT_ASSERT(std::is_sorted(std::begin(d), std::end(d)));
@@ -63,23 +62,27 @@ std::vector<clause_id> find_subsumed(cnf_t &cnf, const clause_t &c) {
   return result;
 }
 
-std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
+std::vector<clause_id> self_subsume(cnf_t &cnf, clause_id cid) {
   // deliberately *copying* here.
   std::vector<clause_id> strengthened;
   std::vector<literal_t> c;
-  for (literal_t l : cnf[cid]) { c.push_back(l); }
+  for (literal_t l : cnf[cid]) {
+    c.push_back(l);
+  }
   for (size_t i = 0; i < c.size(); i++) {
     c[i] = neg(c[i]);
     std::sort(std::begin(c), std::end(c));
     auto subsumes = find_subsumed(cnf, c);
     for (auto did : subsumes) {
-      clause_t& d = cnf[did];
+      clause_t &d = cnf[did];
       // std::cerr << "[SUB] Shrinking " << d << " -> ";
       auto dit = std::remove(std::begin(d), std::end(d), c[i]);
       SAT_ASSERT(dit != std::end(d));
       auto to_erase = std::distance(dit, std::end(d));
-      for (auto i = 0; i < to_erase; i++) { d.pop_back(); }
-      //d.erase(dit, std::end(d));
+      for (auto i = 0; i < to_erase; i++) {
+        d.pop_back();
+      }
+      // d.erase(dit, std::end(d));
       // std::cerr << d << std::endl;
       strengthened.push_back(did);
     }
@@ -89,14 +92,15 @@ std::vector<clause_id> self_subsume(cnf_t& cnf, clause_id cid) {
   return strengthened;
 }
 
-size_t naive_self_subsume(cnf_t& cnf) {
+size_t naive_self_subsume(cnf_t &cnf) {
   std::for_each(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
     std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
   });
 
-  literal_to_clause = std::make_unique<literal_map_t<clause_set_t>>(max_variable(cnf));
+  literal_to_clause =
+      std::make_unique<literal_map_t<clause_set_t>>(max_variable(cnf));
   for (clause_id cid : cnf) {
-    const clause_t& c = cnf[cid];
+    const clause_t &c = cnf[cid];
     for (literal_t l : c) {
       (*literal_to_clause)[l].push_back(cid);
     }
@@ -117,6 +121,6 @@ size_t naive_self_subsume(cnf_t& cnf) {
   }
 
   literal_to_clause.release();
-  
+
   return total_strengthened;
 }

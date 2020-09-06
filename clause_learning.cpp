@@ -116,8 +116,7 @@ clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
   // This is the amount of things we know we'll be resolving against.
   size_t counter = 0;
   for (literal_t l : c) {
-    if (actions.level(l) == actions.level())
-      counter++;
+    if (actions.level(l) == actions.level()) counter++;
   }
 
   for (literal_t l : c) {
@@ -137,13 +136,12 @@ clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
     }
 
     // L *is* stamped, so we *can* resolve against it!
-    counter--; // track the number of resolutions we're doing.
+    counter--;  // track the number of resolutions we're doing.
 
     const clause_t &d = cnf[it->get_clause()];
 
     for (literal_t a : d) {
-      if (a == L)
-        continue;
+      if (a == L) continue;
       // We care about future resolutions, so we negate a
       if (!stamped.get(neg(a))) {
         stamped.set(neg(a));
@@ -156,8 +154,7 @@ clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
     }
   }
 
-  while (!stamped.get(it->get_literal()))
-    it++;
+  while (!stamped.get(it->get_literal())) it++;
 
   SAT_ASSERT(it->has_literal());
   C.push_back(neg(it->get_literal()));

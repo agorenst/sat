@@ -44,8 +44,7 @@ void action_work_list_method(const cnf_t &cnf, clause_t &c,
 
     action_t a = actions.cause(neg(l));
 
-    if (a.is_decision())
-      continue;
+    if (a.is_decision()) continue;
 
     SAT_ASSERT(a.is_unit_prop());
 
@@ -61,14 +60,12 @@ void action_work_list_method(const cnf_t &cnf, clause_t &c,
       const clause_t &d = cnf[a.get_clause()];
       SAT_ASSERT(contains(d, a.get_literal()));
       for (literal_t p : d) {
-        if (a.get_literal() == p)
-          continue;
+        if (a.get_literal() == p) continue;
 
         // Yay, at least some paths up are dominated by a marked literal.
         // At least *this* antecedent literal, p, is already in c. So if we
         // resolve c against r, p won't be added to c (it's already in c...)
-        if (contains(c, p))
-          continue;
+        if (contains(c, p)) continue;
 
         // Our dominating set has a decision, we fail, quit.
         action_t a = actions.cause(neg(p));
@@ -80,8 +77,7 @@ void action_work_list_method(const cnf_t &cnf, clause_t &c,
         SAT_ASSERT(a.is_unit_prop());
         work_list.push_back(a);
       }
-      if (!is_removable)
-        break;
+      if (!is_removable) break;
     }
 
     if (is_removable) {
@@ -135,8 +131,7 @@ void lcm_cache_dfs(const cnf_t &cnf, clause_t &c, const trail_t &actions) {
     // only if everything else is.
     const clause_t &d = cnf[a.get_clause()];
     for (literal_t p : d) {
-      if (p == neg(l))
-        continue;
+      if (p == neg(l)) continue;
       if (!explore(p)) {
         not_removable.set(l);
         return false;
@@ -165,8 +160,7 @@ void lcm_cache_dfs(const cnf_t &cnf, clause_t &c, const trail_t &actions) {
 
     const clause_t &d = cnf[a.get_clause()];
     for (literal_t p : d) {
-      if (p == neg(l))
-        continue;
+      if (p == neg(l)) continue;
       if (!explore(p)) {
         removable = false;
         break;
@@ -220,8 +214,7 @@ void learned_clause_minimization(const cnf_t &cnf, clause_t &c,
     work_list.clear();
     SAT_ASSERT(contains(r, neg(l)));
     for (literal_t p : r) {
-      if (p == neg(l))
-        continue; // this is the resolvent, so skip it.
+      if (p == neg(l)) continue;  // this is the resolvent, so skip it.
       work_list.push_back(p);
     }
 
@@ -264,8 +257,7 @@ void learned_clause_minimization(const cnf_t &cnf, clause_t &c,
       const clause_t &pr = cnf[a.get_clause()];
       SAT_ASSERT(contains(pr, neg(p)));
       for (literal_t q : pr) {
-        if (q == neg(p))
-          continue;
+        if (q == neg(p)) continue;
         work_list.push_back(q);
       }
     }

@@ -1,8 +1,8 @@
 #pragma once
-#include "cnf.h"
-#include "trail.h"
 #include <algorithm>
 #include <queue>
+#include "cnf.h"
+#include "trail.h"
 // Literal block distance, for glue clauses
 // Keeps track of the metrics, too.
 

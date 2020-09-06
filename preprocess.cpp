@@ -5,7 +5,6 @@
 #include <map>
 
 #include "bce.h"
-#include "circuit.h"
 #include "subsumption.h"
 
 // PRE = preprocess
@@ -144,7 +143,7 @@ void preprocess(cnf_t &cnf) {
     bool BVE(cnf_t & cnf);
 
     if (BVE(cnf)) {
-      //std::cerr << "BVE" << std::endl;
+      // std::cerr << "BVE" << std::endl;
       did_work = true;
     }
 
@@ -155,10 +154,10 @@ void preprocess(cnf_t &cnf) {
     }
 
     bool VIV(cnf_t & cnf);
-    //if (VIV(cnf)) {
-      // this has correctness issues?
-      //std::cerr << "VIV" << std::endl;
-      //did_work = true;
+    // if (VIV(cnf)) {
+    // this has correctness issues?
+    // std::cerr << "VIV" << std::endl;
+    // did_work = true;
     //}
 
     while (literal_t u = find_unit(cnf)) {
@@ -167,24 +166,24 @@ void preprocess(cnf_t &cnf) {
       did_work = true;
     }
 
-/*
-    std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
-      std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
-    });
+    /*
+        std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
+          std::sort(std::begin(cnf[cid]), std::end(cnf[cid]));
+        });
 
-    for (auto cid : cnf) {
-        const auto& c = cnf[cid];
-      for (auto did : cnf) {
-        const auto& d = cnf[did];
-        if (c.possibly_subsumes(d) &&
-            subsumes(c, d)) {
-              std::cerr << "SUBSUMPTION: " << c << "; " << d << std::endl;
+        for (auto cid : cnf) {
+            const auto& c = cnf[cid];
+          for (auto did : cnf) {
+            const auto& d = cnf[did];
+            if (c.possibly_subsumes(d) &&
+                subsumes(c, d)) {
+                  std::cerr << "SUBSUMPTION: " << c << "; " << d << std::endl;
+            }
+          }
         }
-      }
-    }
 
-    naive_self_subsumption(cnf);
-    */
+        naive_self_subsumption(cnf);
+        */
 
     /*
       // THIS HAS A CORRECTNESS BUG???

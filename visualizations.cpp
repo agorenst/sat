@@ -70,8 +70,7 @@ std::string render_action(const cnf_t &cnf, const action_t &a) {
 std::string draw_edge(const cnf_t &cnf, const trail_t &t, literal_t l,
                       const action_t &p) {
   auto al = std::find_if(std::begin(t), std::end(t), [l](action_t a) {
-    if (a.has_literal())
-      return a.get_literal() == l;
+    if (a.has_literal()) return a.get_literal() == l;
     return false;
   });
 
@@ -136,7 +135,7 @@ void print_conflict_graph(const cnf_t &cnf, const trail_t &trail) {
 
     // printed.insert(a);
 
-    o << r << ";" << std::endl; // render the appropriate node.
+    o << r << ";" << std::endl;  // render the appropriate node.
     if (a.is_unit_prop()) {
       const clause_t &c = cnf[a.get_clause()];
       for (literal_t l : c) {
@@ -148,8 +147,7 @@ void print_conflict_graph(const cnf_t &cnf, const trail_t &trail) {
 
         auto al =
             std::find_if(std::begin(trail), std::end(trail), [l](action_t a) {
-              if (a.has_literal())
-                return a.get_literal() == -l;
+              if (a.has_literal()) return a.get_literal() == -l;
               return false;
             });
         assert(al != std::end(trail));
@@ -163,8 +161,7 @@ void print_conflict_graph(const cnf_t &cnf, const trail_t &trail) {
 
         auto al =
             std::find_if(std::begin(trail), std::end(trail), [l](action_t a) {
-              if (a.has_literal())
-                return a.get_literal() == -l;
+              if (a.has_literal()) return a.get_literal() == -l;
               return false;
             });
         assert(al != std::end(trail));

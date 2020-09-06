@@ -1,6 +1,6 @@
 #pragma once
-#include "action.h"
 #include <memory>
+#include "action.h"
 
 struct var_data_t {
   size_t level = 0;

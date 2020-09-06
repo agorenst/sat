@@ -1,8 +1,8 @@
 #pragma once
 
-#include "debug.h"
 #include <cstdint>
 #include <vector>
+#include "debug.h"
 
 struct action_t;
 
@@ -59,7 +59,8 @@ struct literal_range {
   }
 };
 
-template <typename T> struct literal_map_t {
+template <typename T>
+struct literal_map_t {
   typedef std::vector<T> mem_t;
   mem_t mem;
   variable_t max_var;
@@ -82,7 +83,8 @@ template <typename T> struct literal_map_t {
   size_t literal_to_index(literal_t l) const;
 };
 
-template <typename T> struct var_map_t {
+template <typename T>
+struct var_map_t {
   typedef std::vector<T> mem_t;
   mem_t mem;
   variable_t max_var;
@@ -121,13 +123,13 @@ struct lit_bitset_t {
   void clear(literal_t v) { mem[literal_to_index(v)] = 0; }
   bool get(literal_t v) const { return mem[literal_to_index(v)]; }
 
-private:
+ private:
   auto begin() { return mem.begin(); }
   auto end() { return mem.end(); }
   auto begin() const { return mem.begin(); }
   auto end() const { return mem.end(); }
 
-public:
+ public:
   void clear() { std::fill(begin(), end(), 0); }
 
   size_t literal_to_index(literal_t l) const { return l; }
@@ -151,13 +153,13 @@ struct var_bitset_t {
   void clear(variable_t v) { mem[variable_to_index(v)] = false; }
   bool get(variable_t v) const { return mem[variable_to_index(v)]; }
 
-private:
+ private:
   auto begin() { return mem.begin(); }
   auto end() { return mem.end(); }
   auto begin() const { return mem.begin(); }
   auto end() const { return mem.end(); }
 
-public:
+ public:
   void clear() { std::fill(begin(), end(), 0); }
 };
 
@@ -167,28 +169,32 @@ size_t literal_map_t<T>::literal_to_index(literal_t l) const {
   // return l + max_var;
 }
 
-template <typename T> T &literal_map_t<T>::operator[](literal_t l) {
+template <typename T>
+T &literal_map_t<T>::operator[](literal_t l) {
   size_t i = literal_to_index(l);
   return mem[i];
 }
 
-template <typename T> const T &literal_map_t<T>::operator[](literal_t l) const {
+template <typename T>
+const T &literal_map_t<T>::operator[](literal_t l) const {
   size_t i = literal_to_index(l);
   return mem[i];
 }
 
-template <typename T> void literal_map_t<T>::construct(variable_t m) {
+template <typename T>
+void literal_map_t<T>::construct(variable_t m) {
   max_var = m;
   mem.resize(max_var * 2 + 2);
 }
 
-template <typename T> literal_map_t<T>::literal_map_t(variable_t m) {
+template <typename T>
+literal_map_t<T>::literal_map_t(variable_t m) {
   construct(m);
 }
 
 template <typename T>
-literal_t
-literal_map_t<T>::iter_to_literal(typename mem_t::const_iterator it) const {
+literal_t literal_map_t<T>::iter_to_literal(
+    typename mem_t::const_iterator it) const {
   size_t index = std::distance(std::begin(mem), it);
   return index;
   // return index - max_var;

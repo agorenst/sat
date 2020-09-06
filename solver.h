@@ -159,10 +159,8 @@ struct solver_t {
       ema_slow = 0;
     }
     bool should_restart() const {
-      if (counter < 50)
-        return false;
-      if (ema_fast > c * ema_slow)
-        return true;
+      if (counter < 50) return false;
+      if (ema_fast > c * ema_slow) return true;
       return false;
     }
     void step(const size_t lbd) {

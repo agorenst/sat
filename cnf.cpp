@@ -154,8 +154,8 @@ variable_t max_variable(const cnf_t &cnf) {
 clause_id cnf_t::add_clause(clause_t c) {
   live_count++;
 
-  //std::sort(std::begin(c), std::end(c));
-  //assert(std::unique(std::begin(c), std::end(c)) == std::end(c));
+  // std::sort(std::begin(c), std::end(c));
+  // assert(std::unique(std::begin(c), std::end(c)) == std::end(c));
 
 #if 0
     std::vector<literal_t> lits;

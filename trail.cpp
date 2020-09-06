@@ -91,10 +91,10 @@ void trail_t::append(action_t a) {
 literal_t trail_t::previously_assigned_literal(variable_t v) const {
   literal_t l = lit(v);
   switch (oldlitstate[l]) {
-  case v_state_t::var_false:
-    return neg(l);
-  default:
-    return l;
+    case v_state_t::var_false:
+      return neg(l);
+    default:
+      return l;
   }
 }
 
@@ -144,12 +144,12 @@ literal_t trail_t::find_unassigned_literal(const clause_t &c) const {
 
 std::ostream &operator<<(std::ostream &o, const trail_t::v_state_t s) {
   switch (s) {
-  case trail_t::v_state_t::unassigned:
-    return o << "unassigned";
-  case trail_t::v_state_t::var_true:
-    return o << "true";
-  case trail_t::v_state_t::var_false:
-    return o << "false";
+    case trail_t::v_state_t::unassigned:
+      return o << "unassigned";
+    case trail_t::v_state_t::var_true:
+      return o << "true";
+    case trail_t::v_state_t::var_false:
+      return o << "false";
   };
   return o;
 }
@@ -195,8 +195,7 @@ bool trail_t::uses_clause(const clause_id cid) const {
 size_t trail_t::level(action_t a) const {
   size_t l = 0;
   for (action_t b : *this) {
-    if (b.is_decision())
-      l++;
+    if (b.is_decision()) l++;
     if (b == a) {
       return l;
     }

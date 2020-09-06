@@ -1,5 +1,5 @@
-#include "cnf.h"
 #include <map>
+#include "cnf.h"
 class NIVER {
   struct metrics_t {
     size_t tauts_found = 0;
@@ -19,11 +19,10 @@ class NIVER {
   mutable std::vector<clause_t> r;
 
   struct entry_t {
-      variable_t v;
-      size_t count;
-      bool operator<(const entry_t& e) const { return count < e.count; }
+    variable_t v;
+    size_t count;
+    bool operator<(const entry_t &e) const { return count < e.count; }
   };
-
 
   bool is_taut(const clause_t &c) const {
     for (auto it = std::begin(c); it != std::end(c); it++) {
@@ -49,14 +48,13 @@ class NIVER {
     }
   }
 
-public:
+ public:
   std::vector<entry_t> worklist;
-  NIVER(cnf_t &cnf, float growth_factor) : cnf(cnf),
-  literals_to_clauses(max_variable(cnf)),
-  occurrence_count(max_variable(cnf)),
-  growth_factor(growth_factor)
-  {
-
+  NIVER(cnf_t &cnf, float growth_factor)
+      : cnf(cnf),
+        literals_to_clauses(max_variable(cnf)),
+        occurrence_count(max_variable(cnf)),
+        growth_factor(growth_factor) {
     // build a mapping of literals to clauses.
 
     for (clause_id cid : cnf) {
@@ -79,19 +77,18 @@ public:
     }
 
     for (variable_t v : cnf.var_range()) {
-        worklist.push_back({v, occurrence_count[v]});
+      worklist.push_back({v, occurrence_count[v]});
     }
     std::sort(std::begin(worklist), std::end(worklist));
   }
-
 
   bool report_possibility(variable_t v) const {
     literal_t p = lit(v);
     literal_t n = neg(p);
     // These collections will transform when we remove clauses,
     // so make a copy
-    const auto& CP = literals_to_clauses[p];
-    const auto& CN = literals_to_clauses[n];
+    const auto &CP = literals_to_clauses[p];
+    const auto &CN = literals_to_clauses[n];
 
     size_t csize = 0;
     for (auto pid : CP) {
@@ -117,8 +114,7 @@ public:
       }
     }
 
-    if (!rsize)
-      return false;
+    if (!rsize) return false;
 
     if ((growth_factor * csize) < rsize) {
       return false;
@@ -132,20 +128,19 @@ public:
   }
 
   bool any_possibility() const {
-      for (variable_t v : cnf.var_range()) {
-          if (report_possibility(v)) {
-              return true;
-          }
+    for (variable_t v : cnf.var_range()) {
+      if (report_possibility(v)) {
+        return true;
       }
-      return false;
+    }
+    return false;
   }
 
   bool try_resolve(variable_t v) {
-
     // this method also initializes all the metadata
     // we are counting on to actually resolve this
     if (!report_possibility(v)) {
-        return false;
+      return false;
     }
 
     for (auto pid : cp) {
@@ -168,10 +163,10 @@ bool BVE(cnf_t &cnf) {
   bool did_work = false;
   while (continue_work) {
     continue_work = false;
-    //for (variable_t v : cnf.var_range()) {
+    // for (variable_t v : cnf.var_range()) {
     for (auto [v, c] : niv.worklist) {
       if (niv.try_resolve(v)) {
-        //std::cerr << "DID WORK " << v << std::endl;
+        // std::cerr << "DID WORK " << v << std::endl;
         continue_work = true;
         did_work = true;
       }
@@ -181,6 +176,6 @@ bool BVE(cnf_t &cnf) {
 }
 
 bool can_BVE(cnf_t &cnf) {
-    NIVER niv(cnf, 1.0);
-    return niv.any_possibility();
+  NIVER niv(cnf, 1.0);
+  return niv.any_possibility();
 }

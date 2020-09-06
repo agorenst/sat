@@ -1,6 +1,6 @@
 #include "variable.h"
-#include "debug.h"
 #include <cassert>
+#include "debug.h"
 
 variable_t var(literal_t l) { return l >> 1; }
 literal_t lit(variable_t l) { return l << 1; }
@@ -11,8 +11,7 @@ literal_t dimacs_to_lit(int x) {
   bool is_neg = x < 0;
   literal_t l = std::abs(x);
   l <<= 1;
-  if (is_neg)
-    l++;
+  if (is_neg) l++;
   SAT_ASSERT(l > 1);
   return l;
 }

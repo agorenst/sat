@@ -14,14 +14,15 @@
 #include "clause.h"
 #include "variable.h"
 
-template <typename C, typename V> void unsorted_remove(C &c, const V &v) {
+template <typename C, typename V>
+void unsorted_remove(C &c, const V &v) {
   auto it = std::find(std::begin(c), std::end(c), v);
   // it exists
   SAT_ASSERT(it != std::end(c));
   // it's unique
   SAT_ASSERT(std::find(std::next(it), std::end(c), v) == std::end(c));
   std::iter_swap(std::prev(std::end(c)), it);
-  c.pop_back(); // remove.
+  c.pop_back();  // remove.
   SAT_ASSERT(std::find(std::begin(c), std::end(c), v) == std::end(c));
 }
 
@@ -40,28 +41,24 @@ struct cnf_t {
     clause_id operator->() { return curr; }
     clause_iterator operator++() {
       curr = curr->right;
-      while (curr && !curr->is_alive)
-        curr = curr->right;
+      while (curr && !curr->is_alive) curr = curr->right;
       return *this;
     }
     clause_iterator operator++(int) {
       auto tmp = *this;
       curr = curr->right;
-      while (curr && !curr->is_alive)
-        curr = curr->right;
+      while (curr && !curr->is_alive) curr = curr->right;
       return tmp;
     }
     clause_iterator operator--(int) {
       auto tmp = *this;
       curr = curr->left;
-      while (curr && !curr->is_alive)
-        curr = curr->left;
+      while (curr && !curr->is_alive) curr = curr->left;
       return tmp;
     }
     clause_iterator operator--() {
       curr = curr->left;
-      while (curr && !curr->is_alive)
-        curr = curr->left;
+      while (curr && !curr->is_alive) curr = curr->left;
       return *this;
     }
     bool operator==(const clause_iterator &that) const {
@@ -150,7 +147,8 @@ variable_t max_variable(const cnf_t &cnf);
 
 size_t signature(const clause_t &c);
 
-template <> struct std::iterator_traits<cnf_t::clause_iterator> {
+template <>
+struct std::iterator_traits<cnf_t::clause_iterator> {
   typedef clause_id value_type;
   typedef clause_id &reference_type;
   typedef clause_id *pointer;
@@ -158,7 +156,8 @@ template <> struct std::iterator_traits<cnf_t::clause_iterator> {
   typedef std::bidirectional_iterator_tag iterator_category;
 };
 
-template <> struct std::iterator_traits<variable_range::iterator> {
+template <>
+struct std::iterator_traits<variable_range::iterator> {
   typedef variable_t value_type;
   typedef variable_t &reference_type;
   typedef variable_t *pointer;

@@ -13,7 +13,7 @@ struct vsids_t {
   const float alpha = 0.95;
   const float bump = 1.0;
 
-  const cnf_t& cnf;
+  const cnf_t &cnf;
   // This is the activity. One day we'll have a better heap.
   // (Right now we're obliged to do a lot of linear scans, not great.)
   var_map_t<float> activity;

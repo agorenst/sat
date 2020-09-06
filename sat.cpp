@@ -83,7 +83,7 @@ void print() {
   std::cout << "Average learned clause length: "
             << float(total_length) / float(conflicts) << std::endl;
 }
-} // namespace counters
+}  // namespace counters
 
 // The perspective I want to take is not one of deriving an assignment,
 // but a trace exploring the recursive, DFS space of assignments.
@@ -109,29 +109,29 @@ void process_flags(int argc, char *argv[]) {
     }
 
     switch (c) {
-    case 'b':
-      if (optarg_match(optarg, "simplest", "s")) {
-        backtrack_mode = backtrack_mode_t::simplest;
-      } else if (optarg_match(optarg, "nonchron", "n")) {
-        backtrack_mode = backtrack_mode_t::nonchron;
-      }
-      break;
-    case 'l':
-      if (optarg_match(optarg, "simplest", "s")) {
-        learn_mode = learn_mode_t::simplest;
-      } else if (optarg_match(optarg, "resolution", "r")) {
-        learn_mode = learn_mode_t::explicit_resolution;
-      }
-      break;
-    case 'u':
-      if (optarg_match(optarg, "simplest", "s")) {
-        unit_prop_mode = unit_prop_mode_t::simplest;
-      } else if (optarg_match(optarg, "queue", "q")) {
-        unit_prop_mode = unit_prop_mode_t::queue;
-      } else if (optarg_match(optarg, "watched", "w")) {
-        unit_prop_mode = unit_prop_mode_t::watched;
-      }
-      break;
+      case 'b':
+        if (optarg_match(optarg, "simplest", "s")) {
+          backtrack_mode = backtrack_mode_t::simplest;
+        } else if (optarg_match(optarg, "nonchron", "n")) {
+          backtrack_mode = backtrack_mode_t::nonchron;
+        }
+        break;
+      case 'l':
+        if (optarg_match(optarg, "simplest", "s")) {
+          learn_mode = learn_mode_t::simplest;
+        } else if (optarg_match(optarg, "resolution", "r")) {
+          learn_mode = learn_mode_t::explicit_resolution;
+        }
+        break;
+      case 'u':
+        if (optarg_match(optarg, "simplest", "s")) {
+          unit_prop_mode = unit_prop_mode_t::simplest;
+        } else if (optarg_match(optarg, "queue", "q")) {
+          unit_prop_mode = unit_prop_mode_t::queue;
+        } else if (optarg_match(optarg, "watched", "w")) {
+          unit_prop_mode = unit_prop_mode_t::watched;
+        }
+        break;
     }
   }
   // std::cerr << "Settings are: " << static_cast<int>(learn_mode) << " " <<
@@ -143,7 +143,7 @@ void process_flags(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
   // Instantiate our CNF object
   cnf_t cnf = load_cnf(std::cin);
-  SAT_ASSERT(cnf.live_clause_count() > 0); // make sure parsing worked.
+  SAT_ASSERT(cnf.live_clause_count() > 0);  // make sure parsing worked.
 
   auto start = std::chrono::steady_clock::now();
   preprocess(cnf);

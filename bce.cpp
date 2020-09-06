@@ -98,16 +98,14 @@ std::vector<clause_id> BCE(cnf_t &cnf) {
 
     for (clause_id cid : CL) {
       // If we've already eliminated this, skip.
-      if (contains(result, cid))
-        continue;
+      if (contains(result, cid)) continue;
 
       bool is_blocked = std::all_of(
           std::begin(DL), std::end(DL), [l, cid, &cnf](clause_id did) {
             return resolve_taut(cnf[cid], cnf[did], l);
           });
 
-      if (!is_blocked)
-        continue;
+      if (!is_blocked) continue;
 
       result.push_back(cid);
 
