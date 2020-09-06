@@ -349,12 +349,14 @@ void solver_t::before_decision(cnf_t &cnf) {
     }
 
     for (auto cid : to_remove) {
-      assert(cnf[cid].size() > 2);
+      SAT_ASSERT(cnf[cid].size() > 2);
       remove_clause(cid);
     }
 
     cnf.clean_clauses();
+
   }
+
 
   // Restart policy
   if (ema_restart.should_restart()) {
@@ -431,7 +433,7 @@ INLINESTATE void solver_t::restart() {
   while (trail.level())
     trail.pop();
 
-  // vsids.clear_activity();
+  vsids.static_activity();
 
   ema_restart.reset();
 }
@@ -471,8 +473,8 @@ bool solver_t::solve() {
   // std::end(cnf[cid]))); }
 
   for (;;) {
-    // std::cerr << "State: " << static_cast<int>(state) << std::endl;
-    // std::cerr << "Trail: " << trail << std::endl;
+     //std::cerr << "State: " << static_cast<int>(state) << std::endl;
+     //std::cerr << "Trail: " << trail << std::endl;
     switch (state) {
     case state_t::quiescent: {
       before_decision(cnf);
@@ -540,10 +542,11 @@ bool solver_t::solve() {
       // // the clause is unique
       // // the clause contains no literals that are level 0 (proven-fixed)
 
-#if 0
+#if 1
       if (c.size() == 1) {
         auto l = c[0];
 
+#if 0
         // weird heurstic: what about just what we're currently watching?
         // Doesn't seem to hurt or help.
         for (auto&& [did, ol] : watch.literals_to_watcher[l]) {
@@ -552,7 +555,7 @@ bool solver_t::solve() {
         for (auto&& [did, ol] : watch.literals_to_watcher[neg(l)]) {
           remove_literal(did, neg(l));
         }
-#if 0
+#else
         auto n = neg(l);
         for (auto did : cnf) {
           if (trail.contains_clause(did))
@@ -562,9 +565,9 @@ bool solver_t::solve() {
           if (contains(d, n)) {
             remove_literal(did, n);
             // todo: what if this induces a unit?
-            if (cnf[did].size() == 1) {
-              std::cerr << "KNOCK-ON-UNIT" << std::endl;
-            }
+            //if (cnf[did].size() == 1) {
+              //std::cerr << "KNOCK-ON-UNIT" << std::endl;
+            //}
           }
           if (contains(d, l)) {
             remove_clause(did);

@@ -154,6 +154,9 @@ variable_t max_variable(const cnf_t &cnf) {
 clause_id cnf_t::add_clause(clause_t c) {
   live_count++;
 
+  //std::sort(std::begin(c), std::end(c));
+  //assert(std::unique(std::begin(c), std::end(c)) == std::end(c));
+
 #if 0
     std::vector<literal_t> lits;
     for (auto l : c) { lits.push_back(l); }
@@ -252,6 +255,20 @@ void cnf_t::remove_clause(clause_id cid) {
     std::iter_swap(std::prev(std::end(l)), it);
     l.pop_back();
 #endif
+  }
+}
+
+void cnf_t::restore_clause(clause_id cid) {
+  SAT_ASSERT(!cid->is_alive);
+  cid->is_alive = true;
+  live_count++;
+
+  if (!head) {
+    head = cid;
+  } else {
+    head->left = cid;
+    cid->right = head;
+    head = cid;
   }
 }
 

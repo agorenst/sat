@@ -112,6 +112,7 @@ struct cnf_t {
   clause_id add_clause(clause_t c);
   void remove_clause_set(const clause_set_t &cs);
   void remove_clause(clause_id cid);
+  void restore_clause(clause_id cid);
   void clean_clauses();
 
   literal_range lit_range() const {

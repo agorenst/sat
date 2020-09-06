@@ -9,8 +9,14 @@ class NIVER {
   metrics_t metrics;
   cnf_t &cnf;
   size_t cnf_size = 0;
+
   literal_map_t<clause_set_t> literals_to_clauses;
   literal_map_t<size_t> occurrence_count;
+
+  const float growth_factor = 1.0;
+
+  mutable clause_set_t cp, cn;
+  mutable std::vector<clause_t> r;
 
   struct entry_t {
       variable_t v;
@@ -19,7 +25,7 @@ class NIVER {
   };
 
 
-  bool is_taut(const clause_t &c) {
+  bool is_taut(const clause_t &c) const {
     for (auto it = std::begin(c); it != std::end(c); it++) {
       for (auto jt = std::next(it); jt != std::end(c); jt++) {
         if (*it == neg(*jt)) {
@@ -45,9 +51,10 @@ class NIVER {
 
 public:
   std::vector<entry_t> worklist;
-  NIVER(cnf_t &cnf) : cnf(cnf),
+  NIVER(cnf_t &cnf, float growth_factor) : cnf(cnf),
   literals_to_clauses(max_variable(cnf)),
-  occurrence_count(max_variable(cnf))
+  occurrence_count(max_variable(cnf)),
+  growth_factor(growth_factor)
   {
 
     // build a mapping of literals to clauses.
@@ -77,28 +84,28 @@ public:
     std::sort(std::begin(worklist), std::end(worklist));
   }
 
-  bool try_resolve(variable_t v) {
+
+  bool report_possibility(variable_t v) const {
     literal_t p = lit(v);
     literal_t n = neg(p);
-
     // These collections will transform when we remove clauses,
     // so make a copy
-    const auto cp = literals_to_clauses[p];
-    const auto cn = literals_to_clauses[n];
+    const auto& CP = literals_to_clauses[p];
+    const auto& CN = literals_to_clauses[n];
 
     size_t csize = 0;
-    for (auto pid : cp) {
+    for (auto pid : CP) {
       csize += cnf[pid].size();
     }
-    for (auto nid : cn) {
+    for (auto nid : CN) {
       csize += cnf[nid].size();
     }
 
     // compute resolvents.
     size_t rsize = 0;
-    std::vector<clause_t> r;
-    for (auto pid : cp) {
-      for (auto nid : cn) {
+    r.clear();
+    for (auto pid : CP) {
+      for (auto nid : CN) {
         clause_t c = resolve_ref(cnf[pid], cnf[nid], p);
         // metrics.resolvents_tried++;
         if (is_taut(c)) {
@@ -113,8 +120,32 @@ public:
     if (!rsize)
       return false;
 
-    if ((1.3 * csize) < rsize) {
+    if ((growth_factor * csize) < rsize) {
       return false;
+    }
+
+    // export our results as needed
+    cp = CP;
+    cn = CN;
+
+    return true;
+  }
+
+  bool any_possibility() const {
+      for (variable_t v : cnf.var_range()) {
+          if (report_possibility(v)) {
+              return true;
+          }
+      }
+      return false;
+  }
+
+  bool try_resolve(variable_t v) {
+
+    // this method also initializes all the metadata
+    // we are counting on to actually resolve this
+    if (!report_possibility(v)) {
+        return false;
     }
 
     for (auto pid : cp) {
@@ -132,7 +163,7 @@ public:
 };
 
 bool BVE(cnf_t &cnf) {
-  NIVER niv(cnf);
+  NIVER niv(cnf, 1.3);
   bool continue_work = true;
   bool did_work = false;
   while (continue_work) {
@@ -147,4 +178,9 @@ bool BVE(cnf_t &cnf) {
     }
   }
   return did_work;
+}
+
+bool can_BVE(cnf_t &cnf) {
+    NIVER niv(cnf, 1.0);
+    return niv.any_possibility();
 }

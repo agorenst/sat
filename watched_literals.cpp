@@ -301,8 +301,9 @@ void watched_literals_t::print_watch_state() {
 bool watched_literals_t::clause_watched(clause_id cid) {
   return cnf[cid].size() > 1;
 }
-bool watched_literals_t::validate_state() {
+bool watched_literals_t::validate_state(clause_id skip_id) {
   for (clause_id cid : cnf) {
+    if (cid == skip_id) continue;
     const clause_t &c = cnf[cid];
     if (c.size() < 2) {
       SAT_ASSERT(!clause_watched(cid));
@@ -351,6 +352,9 @@ bool watched_literals_t::validate_state() {
                             [cid](const std::pair<clause_id, literal_t> &o) {
                               return o.first == cid;
                             });
+      if (w == std::end(watchers)) {
+        std::cerr << "Only single watcher for clause: " << c << std::endl;
+      }
       SAT_ASSERT(w != std::end(watchers));
       if (trail.literal_false(w->second)) {
         // this suggests that

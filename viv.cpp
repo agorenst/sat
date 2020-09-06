@@ -5,6 +5,7 @@
 // Sort of like a solver, but not really.
 struct vivifier_t {
   cnf_t &cnf;
+  clause_id to_skip = nullptr;
   trail_t trail;
   watched_literals_t watch;
   unit_queue_t unit_queue;
@@ -20,13 +21,18 @@ struct vivifier_t {
     });
   }
   void install_watched_literals() {
+    for (clause_id cid : cnf) {
+      // TODO: we should be filtering out units aggressively?
+      if (cnf[cid].size() > 1)
+        watch.watch_clause(cid);
+    }
     apply_decision.add_listener([&](literal_t l) {
       watch.literal_falsed(l);
-      SAT_ASSERT(halted() || watch.validate_state());
+      SAT_ASSERT(halted() || watch.validate_state(to_skip));
     });
     apply_unit.add_listener([&](literal_t l, clause_id cid) {
       watch.literal_falsed(l);
-      SAT_ASSERT(halted() || watch.validate_state());
+      SAT_ASSERT(halted() || watch.validate_state(to_skip));
     });
   }
   bool halt_state(const action_t action) const {
@@ -48,6 +54,7 @@ struct vivifier_t {
       auto e = unit_queue.pop();
       literal_t l = e.l;
       clause_id c = e.c;
+      if (!trail.literal_unassigned(l)) continue;
       apply_unit(l, c);
       if (halted()) {
         break;
@@ -57,19 +64,24 @@ struct vivifier_t {
   }
 
   bool vivify(clause_id cid) {
+    assert(watch.validate_state());
     if (!watch.clause_watched(cid))
       return false;
 
     clause_t &c = cnf[cid];
-    //// std::cerr << "[VIV][VERBOSE] Starting to viv " << c << std::endl;
+    //std::cerr << "[VIV][VERBOSE] Starting to viv " << c << std::endl;
 
     // Provisionally stop watching c.
     // This is simulating "cnf \ c".
     watch.remove_clause(cid);
+    to_skip = cid;
 
     bool did_work = false;
     auto it = std::begin(c);
+    assert(trail.next_index == 0);
     for (; it != std::end(c); it++) {
+      //std::cerr << "XXX" << std::endl;
+      assert(watch.validate_state(to_skip));
       literal_t l = neg(*it);
       apply_decision(l);
       bool did_prop = drain_units();
@@ -77,21 +89,22 @@ struct vivifier_t {
         continue;
 
       // Case 1: there's a conflict:
-      // if there's a conflict?
       if (halted()) {
-        // assert it's a conflict
+
         assert(trail.crbegin()->action_kind ==
                action_t::action_kind_t::halt_conflict);
+
         if (std::next(it) != std::end(c)) {
-          // std::cerr << "Case 1: " << c << " into ";
-          // c.erase(std::next(it), std::end(c));
+          //std::cerr << "Case 1: " << c << " into ";
           auto to_erase = std::distance(std::next(it), std::end(c));
           for (auto i = 0; i < to_erase; i++) {
             c.pop_back();
           }
-          // std::cerr << c << std::endl;
+          //std::cerr << c << std::endl;
           did_work = true;
+          //std::cerr << trail << std::endl;
         }
+
         break;
       }
 
@@ -109,19 +122,19 @@ struct vivifier_t {
       literal_t j = *jt;
       if (trail.literal_false(j)) {
         // case 1, we can exactly remove j.
-        // std::cerr << "Case 2a: " << c << " into ";
+        //std::cerr << "Case 2a: " << c << " into ";
         std::iter_swap(jt, std::prev(std::end(c)));
         c.pop_back();
-        // std::cerr << c << std::endl;
+        //std::cerr << c << std::endl;
         did_work = true;
         break;
       } else {
-        assert(trail.literal_true(j));
+        SAT_ASSERT(trail.literal_true(j));
         // case 2, we can just append j on and that's
 
         // Include j in our clause
         if (std::next(std::next(it)) != std::end(c)) {
-          // std::cerr << "Case 2b: " << c << " into ";
+          //std::cerr << "Case 2b: " << c << " into ";
           std::iter_swap(jt, std::next(it));
           it++;
 
@@ -131,25 +144,21 @@ struct vivifier_t {
           for (auto i = 0; i < to_erase; i++) {
             c.pop_back();
           }
-          // std::cerr << c << std::endl;
+          //std::cerr << c << std::endl;
           did_work = true;
         }
         break;
       }
     }
 
-    if (did_work) {
-      std::sort(std::begin(c), std::end(c));
-    }
-
     // reset completely.
-    while (trail.level()) {
-      trail.pop();
-    }
+    trail.drop_from(std::begin(trail));
     unit_queue.clear();
 
     if (c.size() > 1)
       watch.watch_clause(cid);
+
+    //cnf.restore_clause(cid);
 
     return did_work;
   }
@@ -160,9 +169,15 @@ struct vivifier_t {
     bool change = false;
 
     // The iterator we use here shouldn't be invalidated by vivify.
-    while (std::any_of(std::begin(cnf), std::end(cnf),
-                       [&](clause_id cid) { return vivify(cid); })) {
-      change = true;
+    bool continue_iterating = true;
+    while (continue_iterating) {
+      continue_iterating = false;
+      for (auto cid : cnf) {
+        if (vivify(cid)) {
+          change = true;
+          continue_iterating = true;
+        }
+      }
     }
     return change;
   }
@@ -170,18 +185,14 @@ struct vivifier_t {
   vivifier_t(cnf_t &CNF) : cnf(CNF), watch(cnf, trail, unit_queue) {
     variable_t max_var = max_variable(cnf);
     trail.construct(max_var);
-    // TODO: This should be unnecessary?
-    for (clause_id cid : cnf) {
-      if (cnf[cid].size() > 1)
-        watch.watch_clause(cid);
-    }
-    SAT_ASSERT(watch.validate_state());
     install_core_plugins();
     install_watched_literals();
+    SAT_ASSERT(watch.validate_state());
   }
 };
 
 bool VIV(cnf_t &cnf) {
   vivifier_t viv(cnf);
-  return viv.vivify();
+  bool result = viv.vivify();
+  return result;
 }

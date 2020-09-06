@@ -8,17 +8,19 @@
 //}
 
 vsids_t::vsids_t(const cnf_t &cnf, const trail_t &trail)
-    : vars(cnf.var_range()), trail(trail) {
+    : cnf(cnf), vars(cnf.var_range()), trail(trail) {
   activity.construct(max_variable(cnf));
 
-  clear_activity();
+  static_activity();
+}
 
+void vsids_t::static_activity() {
+  clear_activity();
   for (auto cid : cnf) {
     for (auto l : cnf[cid]) {
       activity[var(l)] += bump;
     }
   }
-  // std::copy(std::begin(vars), std::end(vars), std::back_inserter(heap));
 }
 
 void vsids_t::clear_activity() {

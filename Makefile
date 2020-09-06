@@ -1,6 +1,7 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++20 -g -O2 -flto $(DBG) #-D SAT_DEBUG_MODE 
+CXXFLAGS=-Wall -std=c++20 -g -O2 -flto $(DBG)
+#CXXFLAGS=-Wall -std=c++20 -g -O2 -flto -D SAT_DEBUG_MODE 
 #CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
 
 #ifdef SAT_DEBUG_MODE
@@ -93,7 +94,8 @@ clean:
 # $(info $(uf50-218-tests))
 
 fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0308.cnf
+	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0557.cnf
+#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0308.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0495.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0615.cnf
 #gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0830.cnf

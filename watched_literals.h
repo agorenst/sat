@@ -46,7 +46,7 @@ struct watched_literals_t {
   auto find_second_watcher(clause_t &c, literal_t o);
   auto find_next_watcher(clause_t &c, literal_t o);
   void print_watch_state();
-  bool validate_state();
+  bool validate_state(clause_id skip_id = nullptr);
 
   // Metrics!
   struct metrics_t {
