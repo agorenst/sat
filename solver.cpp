@@ -20,8 +20,6 @@ solver_t::solver_t(const cnf_t &CNF)
       stamped(max_variable(cnf)),
       watch(cnf, trail, unit_queue),
       vsids(cnf, trail),
-      vmtf(cnf, trail),
-      acids(cnf, trail),
       lbm(cnf) {
   variable_t max_var = max_variable(cnf);
   trail.construct(max_var);
@@ -298,6 +296,7 @@ void solver_t::install_literal_chooser() {
       [&](const clause_t &c, const trail_t &t) { vsids.clause_learned(c); });
 
   choose_literal_p.add_listener([&](literal_t &d) { d = vsids.choose(); });
+  restart_p.add_listener([&]() { vsids.static_activity(); });
 }
 
 // This is my poor-man's attempt at on-the-fly subsumption... to  be honest
@@ -321,8 +320,6 @@ INLINESTATE void solver_t::backtrack_subsumption(clause_t &c, action_t *a,
   }
   // if (counter) std::cerr << counter << std::endl;
 }
-
-// This is the core method:
 
 // These are the "function" versions of the plugins. Trying to measure how much
 // overhead there is.
@@ -519,7 +516,7 @@ bool solver_t::solve() {
           break;
         }
 
-        action_t *target = backtrack(c, trail);
+        action_t *target = nonchronological_backtrack(c, trail);
 
         backtrack_subsumption(c, target, std::end(trail));
         trail.drop_from(target);

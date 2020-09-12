@@ -1,5 +1,7 @@
 #pragma once
-#include "action.h"
+#include <vector>
+#include "clause.h"
+#include "variable.h"
 // We use a real queue
 struct unit_queue_t {
   struct size_entry_t {
@@ -25,8 +27,8 @@ struct unit_queue_t {
 
   size_t size();
 
-  using iterator = std::vector<entry_t>::iterator;
+  // using iterator = std::vector<entry_t>::iterator;
 
-  iterator begin();
-  iterator end();
+  auto begin();
+  auto end();
 };

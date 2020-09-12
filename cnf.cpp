@@ -154,66 +154,7 @@ variable_t max_variable(const cnf_t &cnf) {
 clause_id cnf_t::add_clause(clause_t c) {
   live_count++;
 
-  // std::sort(std::begin(c), std::end(c));
-  // assert(std::unique(std::begin(c), std::end(c)) == std::end(c));
-
-#if 0
-    std::vector<literal_t> lits;
-    for (auto l : c) { lits.push_back(l); }
-
-    size_t true_size = sizeof(clause_t) + sizeof(literal_t)*(lits.size()+1);
-    clause_t* new_clause = (clause_t*) malloc(true_size);
-    new_clause->zero_headers();
-    new_clause->literals = (literal_t*) &new_clause[1];
-
-    //clause_t* new_clause = (clause_t*) malloc(sizeof(clause_t));
-    //new_clause->zero_headers();
-    //new_clause->literals = (literal_t*) malloc(sizeof(literal_t)*(lits.size()+1));
-
-    new_clause->len = lits.size();
-
-    //fprintf(stderr, "True size is: %d of pointer %p\n", true_size, new_clause);
-
-    //fprintf(stderr, "Setting literals first addr to %p\n", new_clause->literals);
-
-    size_t i = 0;
-    for (literal_t l : lits) {
-      new_clause->literals[i++] = l;
-    }
-    new_clause->literals[i] = 0;
-
-
-    //clause_t* new_clause = new (mem) clause_t(lits, (literal_t*) (mem+sizeof(c)));
-
-    //auto new_clause = new clause_t(std::move(c));
-    clause_id ret = new_clause;
-    if (!head) {
-      head = ret;
-    } else {
-      head->left = ret;
-      ret->right = head;
-      head = ret;
-    }
-#else
   auto ret = new clause_t(std::move(c));
-#endif
-
-#if 0
-  std::vector<clause_t*>& l = sig_to_clause[ret->signature()];
-  auto it = std::begin(l);
-  for (; it != std::end(l); it++) {
-    if (clauses_equal(**it, *ret)) {
-      break;
-    }
-  }
-  if (it != std::end(l)) {
-    delete ret;
-    return *it;
-  }
-  else {
-    l.push_back(ret);
-  }
-#endif
 
   if (!head) {
     head = ret;
@@ -232,8 +173,6 @@ void cnf_t::remove_clause_set(const clause_set_t &cs) {
 }
 
 void cnf_t::remove_clause(clause_id cid) {
-  // if (cid->literals) delete cid->literals;
-  // delete cid;
   if (cid->is_alive) {
     live_count--;
     cid->is_alive = false;
@@ -247,14 +186,6 @@ void cnf_t::remove_clause(clause_id cid) {
       head = cid->right;
     }
     to_erase.push_back(cid);
-
-#if 0
-    auto& l = sig_to_clause[cid->signature()];
-    auto it = std::find(std::begin(l), std::end(l), cid);
-    assert(it != std::end(l));
-    std::iter_swap(std::prev(std::end(l)), it);
-    l.pop_back();
-#endif
   }
 }
 

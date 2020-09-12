@@ -1,9 +1,7 @@
-#include "acids.h"
 #include "cnf.h"
 #include "lbm.h"
 #include "plugins.h"
 #include "unit_queue.h"
-#include "vmtf.h"
 #include "vsids.h"
 #include "watched_literals.h"
 
@@ -49,8 +47,6 @@ struct solver_t {
 
   // This VSIDS object is how we choose our literals.
   vsids_t vsids;
-  vmtf_t vmtf;
-  acids_t acids;
 
   // Our main clause-removal heuristic:
   lbm_t lbm;
