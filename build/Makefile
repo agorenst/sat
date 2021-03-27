@@ -1,6 +1,6 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++20 -g -O2 -flto $(DBG)
+CXXFLAGS=-Wall -std=c++20 -g -O2 -fno-omit-frame-pointer
 
 SOLVERDIR=../src/solver
 BUILDDIR=.
@@ -22,6 +22,9 @@ $(SOLVERSANOBJECTS) : $(BUILDDIR)/%.san.o : $(SOLVERDIR)/%.cpp
 
 $(BUILDDIR)/sat.san : $(SOLVERSANOBJECTS)
 	$(CC) $(CXXFLAGS) -fsanitize=address,undefined $^ -o $@
+
+clean:
+	rm -f $(SOLVERSANOBJECTS)
 
 
 #CXXFLAGS=-Wall -std=c++20 -g -O2 -flto -D SAT_DEBUG_MODE 
@@ -106,9 +109,6 @@ tests0: sat
 # This is a sequence of tests where have the trivial 8-clause unsat 3SAT instances.
 tests8: tests0
 	./sat < tests/tests_3sat_unsat.cnf | diff - UNSAT
-
-clean:
-	rm -f sat *.o *~
 
 
 # Run in bactch mode

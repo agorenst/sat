@@ -258,14 +258,16 @@ struct clause_set_t {
   // size_t c;
   // size_t s;
   std::vector<clause_id> mem;
+  using iter_t = std::vector<clause_id>::iterator;
+  using const_iter_t = std::vector<clause_id>::const_iterator;
 
   clause_set_t();
   clause_set_t(const clause_set_t &that);
-  clause_id *begin();
-  clause_id *end();
+  iter_t begin();
+  iter_t end();
 
-  const clause_id *begin() const;
-  const clause_id *end() const;
+  const_iter_t begin() const;
+  const_iter_t end() const;
 
   void push_back(clause_id cid);
   clause_id &operator[](const size_t i);

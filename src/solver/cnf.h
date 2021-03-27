@@ -90,6 +90,13 @@ struct cnf_t {
     return ci;
   }
 
+  ~cnf_t() {
+    while (begin() != end()) {
+      remove_clause(*begin());
+    }
+    clean_clauses();
+  }
+
   cnf_t() = default;
   cnf_t(const cnf_t &cnf) {
     std::vector<literal_t> tmp;

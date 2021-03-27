@@ -17,11 +17,11 @@ clause_set_t::clause_set_t(const clause_set_t &that) {
   }
 }
 
-clause_id *clause_set_t::begin() { return &mem[0]; }
-clause_id *clause_set_t::end() { return begin() + size(); }
+clause_set_t::iter_t clause_set_t::begin() { return mem.begin(); }
+clause_set_t::iter_t clause_set_t::end() { return mem.end(); }
 
-const clause_id *clause_set_t::begin() const { return &mem[0]; }
-const clause_id *clause_set_t::end() const { return begin() + size(); }
+clause_set_t::const_iter_t clause_set_t::begin() const { return mem.begin(); }
+clause_set_t::const_iter_t clause_set_t::end() const { return mem.end(); }
 
 void clause_set_t::push_back(clause_id cid) {
   // if (s >= c) {
@@ -36,12 +36,12 @@ clause_id &clause_set_t::operator[](const size_t i) { return mem[i]; }
 clause_id &clause_set_t::operator[](const int i) { return mem[i]; }
 void clause_set_t::remove(clause_id cid) {
   SAT_ASSERT(contains(*this, cid));
-  clause_id *e = end();
+  auto e = end();
 
-  clause_id *r = std::find(begin(), e, cid);
+  auto r = std::find(begin(), e, cid);
   SAT_ASSERT(r >= begin());
   SAT_ASSERT(r < e);
-  std::swap(*(e - 1), *r);
+  std::iter_swap((e - 1), r);
 
   mem.pop_back();
   // s--;
