@@ -1,6 +1,29 @@
 CXX=clang++
 CC=clang++
 CXXFLAGS=-Wall -std=c++20 -g -O2 -flto $(DBG)
+
+SOLVERDIR=../src/solver
+BUILDDIR=.
+
+# This was a big help: https://stackoverflow.com/questions/16924333/makefile-compiling-from-directory-to-another-directory
+
+SOLVERSOURCES=$(wildcard $(SOLVERDIR)/*.cpp)
+SOLVEROBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOLVERSOURCES))
+
+$(SOLVEROBJECTS) : $(BUILDDIR)/%.o : $(SOLVERDIR)/%.cpp
+	$(CC) $(CXXFLAGS) -c $< -o $@
+
+$(BUILDDIR)/sat : $(SOLVEROBJECTS)
+	$(CC) $(CXXFLAGS) $^ -o $@
+
+SOLVERSANOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.san.o,$(SOLVERSOURCES))
+$(SOLVERSANOBJECTS) : $(BUILDDIR)/%.san.o : $(SOLVERDIR)/%.cpp
+	$(CC) $(CXXFLAGS) -fsanitize=address,undefined -c $< -o $@
+
+$(BUILDDIR)/sat.san : $(SOLVERSANOBJECTS)
+	$(CC) $(CXXFLAGS) -fsanitize=address,undefined $^ -o $@
+
+
 #CXXFLAGS=-Wall -std=c++20 -g -O2 -flto -D SAT_DEBUG_MODE 
 #CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
 
@@ -27,8 +50,6 @@ uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250
 uuf250-1065-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/uuf250-01*.cnf)))
 
 sat2018-cnf-small = $(addsuffix .unsatresult, $(basename $(wildcard benchmarks/2018/Random/cnf)))
-
-sat: variable.o clause.o cnf.o watched_literals.o preprocess.o lcm.o action.o trail.o clause_learning.o backtrack.o bce.o vsids.o unit_queue.o subsumption.o viv.o plugins.o visualizations.o lbm.o solver.o measurements.o niver.o
 
 # to test learning, e.g.: ./test_learning < tests/clause_learning/t3.learninglog
 test_learning: clause_learning.o trail.o cnf.o action.o lcm.o visualizations.o
