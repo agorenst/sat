@@ -1,6 +1,8 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++20 -g -O2 -fno-omit-frame-pointer
+CXXFLAGS=-Wall -std=c++17 -g -O2 
+DBGFLAGS=-Wall -std=c++17 -g -DSAT_DEBUG_MODE
+AFL=afl-clang-fast++
 
 SOLVERDIR=../src/solver
 BUILDDIR=.
@@ -8,23 +10,33 @@ BUILDDIR=.
 # This was a big help: https://stackoverflow.com/questions/16924333/makefile-compiling-from-directory-to-another-directory
 
 SOLVERSOURCES=$(wildcard $(SOLVERDIR)/*.cpp)
-SOLVEROBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOLVERSOURCES))
 
+SOLVEROBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOLVERSOURCES))
 $(SOLVEROBJECTS) : $(BUILDDIR)/%.o : $(SOLVERDIR)/%.cpp
 	$(CC) $(CXXFLAGS) -c $< -o $@
-
 $(BUILDDIR)/sat : $(SOLVEROBJECTS)
 	$(CC) $(CXXFLAGS) $^ -o $@
 
 SOLVERSANOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.san.o,$(SOLVERSOURCES))
 $(SOLVERSANOBJECTS) : $(BUILDDIR)/%.san.o : $(SOLVERDIR)/%.cpp
-	$(CC) $(CXXFLAGS) -fsanitize=address,undefined -c $< -o $@
-
+	$(CC) $(CXXFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer -c $< -o $@
 $(BUILDDIR)/sat.san : $(SOLVERSANOBJECTS)
-	$(CC) $(CXXFLAGS) -fsanitize=address,undefined $^ -o $@
+	$(CC) $(CXXFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer $^ -o $@
+
+SOLVERAFLOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.afl.o,$(SOLVERSOURCES))
+$(SOLVERAFLOBJECTS) : $(BUILDDIR)/%.afl.o : $(SOLVERDIR)/%.cpp
+	$(AFL) $(CXXFLAGS) -c $< -o $@
+$(BUILDDIR)/sat.afl : $(SOLVERAFLOBJECTS)
+	$(AFL) $(CXXFLAGS) $^ -o $@
+
+SOLVERDBGOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.dbg.o,$(SOLVERSOURCES))
+$(SOLVERDBGOBJECTS) : $(BUILDDIR)/%.dbg.o : $(SOLVERDIR)/%.cpp
+	$(CC) $(DBGFLAGS) -c $< -o $@
+$(BUILDDIR)/sat.dbg : $(SOLVERDBGOBJECTS)
+	$(CC) $(DBGFLAGS) $^ -o $@
 
 clean:
-	rm -f $(SOLVERSANOBJECTS)
+	rm -f $(SOLVERSANOBJECTS) $(SOLVEROBJECTS) $(SOLVERAFLOBJECTS) $(SOLVERDBGOBJECTS)
 
 
 #CXXFLAGS=-Wall -std=c++20 -g -O2 -flto -D SAT_DEBUG_MODE 
