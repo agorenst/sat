@@ -1,5 +1,6 @@
 #include "variable.h"
-#include <cassert>
+#include <cmath>
+#include <numeric>
 #include "debug.h"
 
 variable_t var(literal_t l) { return l >> 1; }

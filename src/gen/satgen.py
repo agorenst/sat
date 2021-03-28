@@ -63,7 +63,7 @@ def cnf_to_string(clauses):
     for c in clauses:
         for l in c:
             varcount = max(varcount, abs(l))
-    res = 'p ' + str(varcount) + ' ' + str(clause_count) + '\n'
+    res = 'p cnf ' + str(varcount) + ' ' + str(clause_count) + '\n'
     for c in clauses:
         res += ' '.join(map(str, c)) + ' 0\n'
     return res

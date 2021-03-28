@@ -34,81 +34,71 @@
 // frequently. We'll first start with the basic data structures,
 // and then refine things as they progress.
 
-namespace counters {
-size_t restarts = 0;
-size_t conflicts = 0;
-size_t decisions = 0;
-size_t propagations = 0;
-// learned clause size histogram
-std::map<int, int> lcsh;
-void print() {
-  std::cout << "Restarts: " << restarts << std::endl;
-  std::cout << "Conflicts: " << conflicts << std::endl;
-  std::cout << "Decisions: " << decisions << std::endl;
-  std::cout << "Propagations: " << propagations << std::endl;
-  int max_index = 0;
-  int max_value = 0;
-  int total_count = 0;
-  int total_length = 0;
-  for (auto &&[l, c] : lcsh) {
-    max_index = std::max(l, max_index);
-    max_value = std::max(c, max_value);
-    total_count += c;
-    total_length += c * l;
-  }
-  for (int i = 0; i < 10; i++) {
-    for (int j = 0; j < max_index; j++) {
-      int count = lcsh[j];
-      float normalized = float(100 * count) / float(total_count);
-      if (normalized >= 10 - i) {
-        std::cout << "#  ";
-      } else {
-        std::cout << "   ";
-      }
-    }
-    std::cout << std::endl;
-  }
-  for (int j = 0; j < max_index; j++) {
-    std::cout << j;
-    if (j < 10) {
-      std::cout << " ";
-    }
-    if (j < 100) {
-      std::cout << " ";
-    }
-  }
-  std::cout << std::endl;
-  std::cout << "Average learned clause length: " << float(total_length) << " "
-            << float(conflicts) << std::endl;
-  std::cout << "Average learned clause length: "
-            << float(total_length) / float(conflicts) << std::endl;
-}
-}  // namespace counters
-
 // The perspective I want to take is not one of deriving an assignment,
 // but a trace exploring the recursive, DFS space of assignments.
 // We don't forget anything -- I even want to record backtracking.
 // So let's see what this looks like.
 
-// these are our global settings
+// What is the mode the driver is in?
+// For now just "solver", but could be, e.g., "verifier"
+enum class sat_mode_t { solver, verifier };
+
+sat_mode_t mode = sat_mode_t::solver;
+// These may evolved into more levels.
+bool verbose = false;
+bool timing = false;
+bool solution = false;
+bool emit_help = false;  // should this be a mode? Whatever.
+
+const static struct option long_options[] = {
+    // Usage
+    {"help", no_argument, nullptr, 'h'},
+
+    // Debugging etc.
+    {"verbose", no_argument, nullptr, 'v'},
+    {"timing", no_argument, nullptr, 't'},
+    {"solution", no_argument, nullptr, 's'},
+
+    // Modes
+    {"mode", required_argument, nullptr, 'm'},
+
+    // Options (depend on the mode!)
+    {"backtracking", required_argument, nullptr, 'b'},
+    {"learning", required_argument, nullptr, 'l'},
+    {"unitprop", required_argument, nullptr, 'u'},
+    {"preprocessor", required_argument, nullptr, 'p'},
+
+    {nullptr, 0, nullptr, 0}};
+
+// Helper to match option arguments against known strings.
 bool optarg_match(const char *o, const char *s1, const char *s2) {
   return strcmp(o, s1) == 0 || strcmp(o, s2) == 0;
 }
 void process_flags(int argc, char *argv[]) {
   for (;;) {
-    static struct option long_options[] = {
-        {"backtracking", required_argument, nullptr, 'b'},
-        {"learning", required_argument, nullptr, 'l'},
-        {"unitprop", required_argument, nullptr, 'u'},
-        {nullptr, 0, nullptr, 0}};
     int option_index = 0;
-    int c = getopt_long(argc, argv, "b:l:u:", long_options, &option_index);
+    int c =
+        getopt_long(argc, argv, "b:l:u:p:m:vth", long_options, &option_index);
 
     if (c == -1) {
       break;
     }
 
     switch (c) {
+      case 'h':
+        emit_help = true;
+        break;
+      case 'm':
+        if (optarg_match(optarg, "solver", "s")) {
+          mode = sat_mode_t::solver;
+        }
+        break;
+      case 'v':
+        verbose = true;
+        break;
+      case 't':
+        timing = true;
+        break;
       case 'b':
         if (optarg_match(optarg, "simplest", "s")) {
           backtrack_mode = backtrack_mode_t::simplest;
@@ -134,23 +124,42 @@ void process_flags(int argc, char *argv[]) {
         break;
     }
   }
-  // std::cerr << "Settings are: " << static_cast<int>(learn_mode) << " " <<
-  // static_cast<int>(backtrack_mode) << " " << static_cast<int>(unit_prop_mode)
-  // << std::endl;
 }
 
-// The real goal here is to find conflicts as fast as possible.
+void pretty_print_option(const option *o) {
+  printf("\t--%s, -%c\n", o->name, o->val);
+}
+void pretty_print_options() {
+  int last_option_index = (sizeof(long_options) / sizeof(*long_options)) - 1;
+  for (int i = 0; i < last_option_index; i++) {
+    pretty_print_option(&(long_options[i]));
+  }
+}
+
+// Main entry point, this is a driver that allows for multiple modes.
 int main(int argc, char *argv[]) {
+  // Parse flags to set global state.
+  process_flags(argc, argv);
+
+  // Help case
+  if (emit_help) {
+    pretty_print_options();
+    return 0;
+  }
+
   // Instantiate our CNF object
   cnf_t cnf = load_cnf(std::cin);
   SAT_ASSERT(cnf.live_clause_count() > 0);  // make sure parsing worked.
 
+  // Preprocess
   auto start = std::chrono::steady_clock::now();
   preprocess(cnf);
   auto end = std::chrono::steady_clock::now();
   std::chrono::duration<double> elapsed_seconds = end - start;
-  std::cout << "preprocessing elapsed time: " << elapsed_seconds.count()
-            << "s\n";
+  if (timing) {
+    std::cout << "preprocessing elapsed time: " << elapsed_seconds.count()
+              << "s\n";
+  }
 
   // TODO(aaron): fold this into a more general case, if possible.
   if (immediately_unsat(cnf)) {
@@ -164,11 +173,10 @@ int main(int argc, char *argv[]) {
 
   SAT_ASSERT(!find_unit(cnf));
 
-  process_flags(argc, argv);
-
   start = std::chrono::steady_clock::now();
   solver_t solver(cnf);
 
+  // Solve!
   bool result = solver.solve();
   solver.report_metrics();
   if (result) {

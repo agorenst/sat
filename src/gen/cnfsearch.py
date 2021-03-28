@@ -23,6 +23,28 @@ def exercise_sanitized(seed_start, seed_end):
         p.communicate(cnf_string.encode())
 
 
+def confirm_with_minisat(seed_start, seed_end):
+    diff_name = './build/sat'
+    base_name = 'minisat'
+    for i in range(seed_start, seed_end):
+        example_cnf = satgen.main(200, 426*2, 3, i, 0)
+        cnf_string = satgen.cnf_to_string(example_cnf)
+        d = subprocess.Popen(
+            [diff_name], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        (o, _) = d.communicate(cnf_string.encode())
+        o = o.decode()
+        my_answer = o.strip()
+
+        b = subprocess.Popen(
+            [base_name], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        (a, _) = b.communicate(cnf_string.encode())
+        a = a.decode()
+        # get the last word (unsat or sat)
+        true_answer = a.split()[-1].strip()
+
+        assert(my_answer == true_answer)
+
+
 def find_slowest(seed_start, seed_end):
     solver_name = './build/sat'
     seed_time = {}
@@ -49,5 +71,6 @@ def find_slowest(seed_start, seed_end):
 
 
 if __name__ == "__main__":
-    #exercise_sanitized(0, 100)
-    find_slowest(0, 10)
+    # exercise_sanitized(0, 100)
+    # find_slowest(0, 10)
+    confirm_with_minisat(0, 100)
