@@ -49,6 +49,7 @@ bool verbose = false;
 bool timing = false;
 bool solution = false;
 bool emit_help = false;  // should this be a mode? Whatever.
+bool debug = false;
 
 const static struct option long_options[] = {
     // Usage
@@ -58,6 +59,7 @@ const static struct option long_options[] = {
     {"verbose", no_argument, nullptr, 'v'},
     {"timing", no_argument, nullptr, 't'},
     {"solution", no_argument, nullptr, 's'},
+    {"debug", no_argument, nullptr, 'd'},
 
     // Modes
     {"mode", required_argument, nullptr, 'm'},
@@ -92,6 +94,9 @@ void process_flags(int argc, char *argv[]) {
         if (optarg_match(optarg, "solver", "s")) {
           mode = sat_mode_t::solver;
         }
+        break;
+      case 'd':
+        debug = true;
         break;
       case 'v':
         verbose = true;
@@ -150,6 +155,15 @@ int main(int argc, char *argv[]) {
   // Instantiate our CNF object
   cnf_t cnf = load_cnf(std::cin);
   SAT_ASSERT(cnf.live_clause_count() > 0);  // make sure parsing worked.
+
+  if (debug) {
+    std::cout << cnf << std::endl;
+  }
+
+  canon_cnf(cnf);
+  if (debug) {
+    std::cout << cnf << std::endl;
+  }
 
   // Preprocess
   auto start = std::chrono::steady_clock::now();

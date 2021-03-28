@@ -141,6 +141,38 @@ cnf_t load_cnf(std::istream &in) {
   return cnf;
 }
 
+void canon_cnf(cnf_t &cnf) {
+  std::vector<clause_id> to_remove;
+  for (auto cid : cnf) {
+    if (clause_taut(cnf[cid])) {
+      to_remove.push_back(cid);
+    }
+  }
+  for (auto cid : to_remove) {
+    cnf.remove_clause(cid);
+  }
+  cnf.clean_clauses();
+  to_remove.clear();
+
+  // in-place canon---basically, remove redundant literals.
+  for (auto cid : cnf) {
+    canon_clause(cnf[cid]);
+  }
+
+  // Finally, remove redundant clauses
+  for (auto cit = std::begin(cnf); cit != std::end(cnf); cit++) {
+    for (auto dit = std::next(cit); dit != std::end(cnf); dit++) {
+      if (clauses_equal(cnf[*cit], cnf[*dit])) {
+        to_remove.push_back(*cit);
+      }
+    }
+  }
+  for (auto cid : to_remove) {
+    cnf.remove_clause(cid);
+  }
+  cnf.clean_clauses();
+}
+
 variable_t max_variable(const cnf_t &cnf) {
   literal_t m = 0;
   for (const clause_id cid : cnf) {

@@ -149,6 +149,7 @@ std::ostream &operator<<(std::ostream &o, const cnf_t &cnf);
 void print_cnf(const cnf_t &cnf);
 
 cnf_t load_cnf(std::istream &in);
+void canon_cnf(cnf_t &cnf);
 
 variable_t max_variable(const cnf_t &cnf);
 

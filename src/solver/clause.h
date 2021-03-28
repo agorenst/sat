@@ -281,4 +281,6 @@ struct clause_set_t {
 };
 
 bool clauses_equal(const clause_t &a, const clause_t &b);
+bool clause_taut(const clause_t &c);
+void canon_clause(clause_t &c);
 clause_t resolve_ref(const clause_t &c1, const clause_t &c2, literal_t l);

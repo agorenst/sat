@@ -73,6 +73,28 @@ bool clause_t::possibly_subsumes(const clause_t &that) const {
   return (this->signature() & that.signature()) == this->signature();
 }
 
+bool clause_taut(const clause_t &c) {
+  for (auto l : c) {
+    for (auto r : c) {
+      if (l == -r) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void canon_clause(clause_t &c) {
+  std::sort(std::begin(c), std::end(c));
+
+  auto new_end = std::unique(std::begin(c), std::end(c));
+  // Very primitive form of "erase"
+  auto new_len = std::distance(std::begin(c), new_end);
+  while (std::distance(std::begin(c), std::end(c)) != new_len) {
+    c.pop_back();
+  }
+}
+
 bool clauses_equal(const clause_t &a, const clause_t &b) {
   if (a.size() != b.size()) return false;
   std::vector<literal_t> al;
