@@ -20,9 +20,9 @@ struct trail_t {
   var_map_t<size_t> varlevel;
   var_bitset_t varset;
 
-  size_t next_index;
-  size_t size;
-  size_t dlevel;
+  size_t next_index = 0;
+  size_t size = 0;
+  size_t dlevel = 0;
 
   trail_t(const trail_t &t) = delete;
   trail_t() : litstate(0), oldlitstate(0), lit_to_action(0) {}

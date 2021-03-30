@@ -9,8 +9,8 @@ bool resolve_taut(const clause_t &c, const clause_t &d, literal_t l) {
   SAT_ASSERT(contains(c, l));
   SAT_ASSERT(contains(d, neg(l)));
   // we trust that c, d are sorted by the literal absolute values.
-  size_t i = 0;
-  size_t j = 0;
+  int i = 0;
+  int j = 0;
   while (i < c.size() && j < d.size()) {
     // std::cout << (c[i])  << " " <<  (d[j]) << std::endl;
 

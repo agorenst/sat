@@ -23,8 +23,8 @@ struct lbm_t {
   size_t value_cache = 0;
 
   size_t max_size = 0;
-  float growth = 1.05;
-  float start_growth = 1.2;
+  float growth = 1.05f;
+  float start_growth = 1.2f;
   bool my_erasure = false;
 
   // We clean whenever we've since doubled in size.

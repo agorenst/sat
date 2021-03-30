@@ -24,7 +24,7 @@ void vsids_t::static_activity() {
 }
 
 void vsids_t::clear_activity() {
-  std::fill(std::begin(activity), std::end(activity), 0.0);
+  std::fill(std::begin(activity), std::end(activity), 0.0f);
 }
 
 INLINESTATE

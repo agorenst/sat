@@ -32,7 +32,7 @@ void lbm_t::flush_value(clause_id cid) {
 }
 
 lbm_t::lbm_t(const cnf_t &cnf) : lbm(cnf.live_clause_count()) {
-  max_size = cnf.live_clause_count() * start_growth;
+  max_size = static_cast<size_t>(cnf.live_clause_count() * start_growth);
 }
 
 clause_set_t lbm_t::clean() {
@@ -46,7 +46,7 @@ clause_set_t lbm_t::clean() {
   std::sort(std::begin(to_remove), std::end(to_remove));
 
   worklist.erase(std::begin(worklist) + target_size, std::end(worklist));
-  max_size *= growth;
+  max_size = static_cast<size_t>(max_size * growth);
   return to_remove;
 }
 

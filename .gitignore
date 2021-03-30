@@ -2,3 +2,5 @@
 tests/tests
 tests
 sat
+/build/Debug
+/build/Release

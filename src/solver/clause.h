@@ -4,6 +4,7 @@
 #include <iterator>
 #include <memory>
 #include <numeric>
+#include <array>
 
 #include "variable.h"
 
@@ -23,6 +24,7 @@ struct cache_storage {
     typedef iterator_actual<U> iterator;
     typedef U value_type;
     typedef U &reference_type;
+    typedef U &reference;
     typedef U *pointer;
     typedef int difference_type;
     typedef std::random_access_iterator_tag iterator_category;
@@ -59,13 +61,13 @@ struct cache_storage {
       }
       return &cold[i - B];
     }
-    const U &operator*() const {
+    U &operator*() const {
       if (i < B) {
         return hot[i];
       }
       return cold[i - B];
     }
-    const pointer operator->() const {
+    pointer operator->() const {
       if (i < B) {
         return &hot[i];
       }
@@ -197,7 +199,7 @@ struct clause_t {
   bool operator==(const clause_t &that) const { return mem == that.mem; }
   bool operator!=(const clause_t &that) const { return mem != that.mem; }
 
-  mutable size_t sig;
+  mutable size_t sig = 0;
   mutable bool sig_computed = false;
   // For easier subsumption. This is its hash, really
   size_t signature() const;
@@ -211,6 +213,7 @@ struct std::iterator_traits<
     cache_storage<literal_t, 16>::iterator_actual<literal_t>> {
   typedef literal_t value_type;
   typedef literal_t &reference_type;
+  typedef literal_t &reference;
   typedef literal_t *pointer;
   typedef int difference_type;
   typedef std::random_access_iterator_tag iterator_category;
@@ -221,6 +224,7 @@ struct std::iterator_traits<
     cache_storage<literal_t, 16>::iterator_actual<const literal_t>> {
   typedef literal_t value_type;
   typedef const literal_t &reference_type;
+  typedef const literal_t &reference;
   typedef const literal_t *pointer;
   typedef int difference_type;
   typedef std::random_access_iterator_tag iterator_category;

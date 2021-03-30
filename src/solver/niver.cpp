@@ -158,7 +158,7 @@ class NIVER {
 };
 
 bool BVE(cnf_t &cnf) {
-  NIVER niv(cnf, 1.3);
+  NIVER niv(cnf, 1.3f);
   bool continue_work = true;
   bool did_work = false;
   while (continue_work) {

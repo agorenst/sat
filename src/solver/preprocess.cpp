@@ -153,7 +153,7 @@ void preprocess(cnf_t &cnf) {
       did_work = true;
     }
 
-    bool VIV(cnf_t & cnf);
+    // bool VIV(cnf_t & cnf);
     // if (VIV(cnf)) {
     // this has correctness issues?
     // std::cerr << "VIV" << std::endl;

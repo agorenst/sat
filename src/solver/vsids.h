@@ -9,9 +9,8 @@ struct vsids_t {
   void clear_activity();
   void static_activity();
 
-  // const float alpha = 0.95;
-  const float alpha = 0.95;
-  const float bump = 1.0;
+  const float alpha = 0.95f;
+  const float bump = 1.0f;
 
   const cnf_t &cnf;
   // This is the activity. One day we'll have a better heap.

@@ -1,4 +1,6 @@
+#ifndef _MSC_VER
 #include <getopt.h>
+#endif
 
 #include <algorithm>
 #include <cassert>
@@ -50,6 +52,8 @@ bool timing = false;
 bool solution = false;
 bool emit_help = false;  // should this be a mode? Whatever.
 bool debug = false;
+
+#ifndef _MSC_VER
 
 const static struct option long_options[] = {
     // Usage
@@ -140,10 +144,12 @@ void pretty_print_options() {
     pretty_print_option(&(long_options[i]));
   }
 }
+#endif
 
 // Main entry point, this is a driver that allows for multiple modes.
 int main(int argc, char *argv[]) {
   // Parse flags to set global state.
+#ifndef _MSC_VER
   process_flags(argc, argv);
 
   // Help case
@@ -151,6 +157,7 @@ int main(int argc, char *argv[]) {
     pretty_print_options();
     return 0;
   }
+#endif
 
   // Instantiate our CNF object
   cnf_t cnf = load_cnf(std::cin);
