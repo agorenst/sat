@@ -1,10 +1,10 @@
 #pragma once
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <iterator>
 #include <memory>
 #include <numeric>
-#include <array>
 
 #include "variable.h"
 
@@ -202,9 +202,15 @@ struct clause_t {
   mutable size_t sig = 0;
   mutable bool sig_computed = false;
   // For easier subsumption. This is its hash, really
-  size_t signature() const;
+  int64_t signature() const;
   bool possibly_subsumes(const clause_t &that) const;
 };
+
+inline bool operator<(const clause_t &a, const clause_t &b) {
+  auto [e1, e2] =
+      std::mismatch(std::begin(a), std::end(a), std::begin(b), std::end(b));
+  return e1 == std::end(a) && e2 != std::end(b);
+}
 
 typedef clause_t *clause_id;
 
@@ -288,3 +294,4 @@ bool clauses_equal(const clause_t &a, const clause_t &b);
 bool clause_taut(const clause_t &c);
 void canon_clause(clause_t &c);
 clause_t resolve_ref(const clause_t &c1, const clause_t &c2, literal_t l);
+std::ostream &operator<<(std::ostream &o, const clause_t &c);

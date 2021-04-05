@@ -7,10 +7,8 @@
 #include "bce.h"
 #include "subsumption.h"
 
-// PRE = preprocess
-// NUP = Niave unit prop
-// PLE = Pure literal elimination
-size_t naive_self_subsume(cnf_t &cnf);
+#include "measurements.h"
+#include "settings.h"
 
 literal_t find_pure_literal(const cnf_t &cnf) {
   std::vector<literal_t> positives;
@@ -93,6 +91,8 @@ void naive_self_subsumption(cnf_t &cnf) {
 }
 
 void preprocess(cnf_t &cnf) {
+  cond_log(settings::time_preprocess, solver_action::preprocessor_start,
+           std::chrono::steady_clock::now());
   // Niavely unit-prop
   bool did_work = true;
   // this will be useful for self-subsumption.
@@ -103,16 +103,7 @@ void preprocess(cnf_t &cnf) {
 
   while (did_work) {
     did_work = false;
-    while (literal_t u = find_unit(cnf)) {
-      // std::cout << "[PRE][NUP] " << u << std::endl;
-      commit_literal(cnf, u);
-      did_work = true;
-    }
-    // while (literal_t p = find_pure_literal(cnf)) {
-    //  std::cout << "[PRE][PLE] " << p << std::endl;
-    //  commit_literal(cnf, p);
-    //  did_work = true;
-    //}
+    did_work |= cnf::transform::apply_trivial_units(cnf) > 0;
 
     std::vector<clause_id> bc = BCE(cnf);
     std::sort(std::begin(bc), std::end(bc),
@@ -129,42 +120,24 @@ void preprocess(cnf_t &cnf) {
     std::for_each(std::begin(bc), std::end(bc),
                   [&](const clause_id cid) { cnf.remove_clause(cid); });
 
-    // size_t total_strengthened = naive_self_subsume(cnf);
-    // if (total_strengthened) {
-    // std::cerr << "[NSS] " << total_strengthened << std::endl;
-    // did_work = true;
-    //}
+    did_work |= cnf::transform::apply_trivial_units(cnf) > 0;
 
-    while (literal_t u = find_unit(cnf)) {
-      // std::cout << "[PRE][NUP] " << u << std::endl;
-      commit_literal(cnf, u);
-      did_work = true;
-    }
     bool BVE(cnf_t & cnf);
-
     if (BVE(cnf)) {
       // std::cerr << "BVE" << std::endl;
       did_work = true;
     }
 
-    while (literal_t u = find_unit(cnf)) {
-      // std::cout << "[PRE][NUP] " << u << std::endl;
-      commit_literal(cnf, u);
-      did_work = true;
-    }
+    did_work |= cnf::transform::apply_trivial_units(cnf) > 0;
 
-    // bool VIV(cnf_t & cnf);
+    bool VIV(cnf_t & cnf);
     // if (VIV(cnf)) {
     // this has correctness issues?
     // std::cerr << "VIV" << std::endl;
     // did_work = true;
     //}
 
-    while (literal_t u = find_unit(cnf)) {
-      // std::cout << "[PRE][NUP] " << u << std::endl;
-      commit_literal(cnf, u);
-      did_work = true;
-    }
+    did_work |= cnf::transform::apply_trivial_units(cnf) > 0;
 
     /*
         std::for_each(std::begin(cnf), std::end(cnf), [&cnf](clause_id cid) {
@@ -198,6 +171,10 @@ void preprocess(cnf_t &cnf) {
       }
     }
     */
+  }
+  if (settings::time_preprocess) {
+    cond_log(settings::time_preprocess, solver_action::preprocessor_end,
+             std::chrono::steady_clock::now());
   }
   // std::cerr << "Done preprocessing" << std::endl;
 }

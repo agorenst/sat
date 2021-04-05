@@ -1,149 +1,53 @@
 CXX=clang++
 CC=clang++
-CXXFLAGS=-Wall -std=c++17 -g -O2 
-DBGFLAGS=-Wall -std=c++17 -g -DSAT_DEBUG_MODE
+INCLUDES=-I ./../src/repr -I ./../src/solver
+CXXFLAGS=-Wall -std=c++17 -g -O2 -ffast-math $(INCLUDES)
+DBGFLAGS=-Wall -std=c++17 -g -DSAT_DEBUG_MODE $(INCLUDES)
 AFL=afl-clang-fast++
 
 SOLVERDIR=../src/solver
+DRIVERDIR=../src/driver
+REPRDIR=../src/repr
 BUILDDIR=.
 
 # This was a big help: https://stackoverflow.com/questions/16924333/makefile-compiling-from-directory-to-another-directory
+# The driver library is not something we'll build with different flags.
+DRIVERSOURCES=$(wildcard $(DRIVERDIR)/*.cpp)
+DRIVEROBJECTS=$(patsubst $(DRIVERDIR)/%.cpp,$(BUILDDIR)/%.o,$(DRIVERSOURCES))
+$(DRIVEROBJECTS) : $(BUILDDIR)/%.o : $(DRIVERDIR)/%.cpp
+	$(CC) $(CXXFLAGS) -c $< -o $@
+
+REPRSOURCES=$(wildcard $(REPRDIR)/*.cpp)
+REPROBJECTS=$(patsubst $(REPRDIR)/%.cpp,$(BUILDDIR)/%.o,$(REPRSOURCES))
+$(REPROBJECTS) : $(BUILDDIR)/%.o : $(REPRDIR)/%.cpp
+	$(CC) $(CXXFLAGS) -c $< -o $@
 
 SOLVERSOURCES=$(wildcard $(SOLVERDIR)/*.cpp)
-
 SOLVEROBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOLVERSOURCES))
 $(SOLVEROBJECTS) : $(BUILDDIR)/%.o : $(SOLVERDIR)/%.cpp
 	$(CC) $(CXXFLAGS) -c $< -o $@
-$(BUILDDIR)/sat : $(SOLVEROBJECTS)
+$(BUILDDIR)/sat : $(SOLVEROBJECTS) $(DRIVEROBJECTS) $(REPROBJECTS)
 	$(CC) $(CXXFLAGS) $^ -o $@
 
 SOLVERSANOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.san.o,$(SOLVERSOURCES))
 $(SOLVERSANOBJECTS) : $(BUILDDIR)/%.san.o : $(SOLVERDIR)/%.cpp
 	$(CC) $(CXXFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer -c $< -o $@
-$(BUILDDIR)/sat.san : $(SOLVERSANOBJECTS)
+$(BUILDDIR)/sat.san : $(SOLVERSANOBJECTS) $(DRIVEROBJECTS)  $(REPROBJECTS)
 	$(CC) $(CXXFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer $^ -o $@
 
 SOLVERAFLOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.afl.o,$(SOLVERSOURCES))
 $(SOLVERAFLOBJECTS) : $(BUILDDIR)/%.afl.o : $(SOLVERDIR)/%.cpp
 	$(AFL) $(CXXFLAGS) -c $< -o $@
-$(BUILDDIR)/sat.afl : $(SOLVERAFLOBJECTS)
+$(BUILDDIR)/sat.afl : $(SOLVERAFLOBJECTS) $(DRIVEROBJECTS) $(REPROBJECTS)
 	$(AFL) $(CXXFLAGS) $^ -o $@
 
 SOLVERDBGOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.dbg.o,$(SOLVERSOURCES))
 $(SOLVERDBGOBJECTS) : $(BUILDDIR)/%.dbg.o : $(SOLVERDIR)/%.cpp
 	$(CC) $(DBGFLAGS) -c $< -o $@
-$(BUILDDIR)/sat.dbg : $(SOLVERDBGOBJECTS)
+$(BUILDDIR)/sat.dbg : $(SOLVERDBGOBJECTS) $(DRIVEROBJECTS) $(REPROBJECTS)
 	$(CC) $(DBGFLAGS) $^ -o $@
 
 clean:
-	rm -f $(SOLVERSANOBJECTS) $(SOLVEROBJECTS) $(SOLVERAFLOBJECTS) $(SOLVERDBGOBJECTS)
+	rm -f $(SOLVERSANOBJECTS) $(SOLVEROBJECTS) $(SOLVERAFLOBJECTS) $(SOLVERDBGOBJECTS) $(DRIVEROBJECTS) sat.dbg sat.afl sat sat.san
 
-
-#CXXFLAGS=-Wall -std=c++20 -g -O2 -flto -D SAT_DEBUG_MODE 
-#CXXFLAGS=-Wall -std=c++2a -g -O2 -flto
-
-#ifdef SAT_DEBUG_MODE
-
-uf20-91-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf20-91/*.cnf)))
-
-uf50-218-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf50-218/*.cnf)))
-uuf50-218-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf50-218/*.cnf)))
-
-uuf100-430-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uuf100-430/*.cnf)))
-
-uf100-430-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf100-430/*.cnf)))
-uf100-430-tests-medium = $(addsuffix .satresult, $(basename $(wildcard tests/uf100-430/uf100-01*.cnf)))
-uuf100-430-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/uuf100-011*.cnf)))
-uuf100-430-tests-medium = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/uuf100-01*.cnf)))
-uuf100-430-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf100-430/*.cnf)))
-
-uuf150-645-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf150-645/*.cnf)))
-uuf150-645-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf150-645/uuf150-01*.cnf)))
-
-uf250-1065-tests = $(addsuffix .satresult, $(basename $(wildcard tests/uf250-1065/*.cnf)))
-uuf250-1065-tests = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/*.cnf)))
-uuf250-1065-tests-brief = $(addsuffix .unsatresult, $(basename $(wildcard tests/uuf250-1065/uuf250-01*.cnf)))
-
-sat2018-cnf-small = $(addsuffix .unsatresult, $(basename $(wildcard benchmarks/2018/Random/cnf)))
-
-# to test learning, e.g.: ./test_learning < tests/clause_learning/t3.learninglog
-test_learning: clause_learning.o trail.o cnf.o action.o lcm.o visualizations.o
-
-tests: $(uuf50-218-tests) $(uf50-218-tests) $(uf100-430-tests) $(uuf100-430-tests)
-#tests: $(uf20-91-tests)
-
-benchmark1: $(uuf50-218-tests)
-benchmark2: $(uuf100-430-tests-brief)
-benchmark3: $(uuf100-430-tests-medium)
-benchmark4: $(uuf100-430-tests)
-benchmark5: $(uf100-430-tests-medium)
-benchmark6: $(uuf150-645-tests-brief)
-benchmark7: $(uuf150-645-tests)
-
-# The ultimate!
-benchmark9: $(uuf250-1065-tests-brief)
-benchmark10: $(uuf250-1065-tests)
-
-timing1: sat
-	cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | ./sat
-	cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | ./sat
-	cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | ./sat
-timing2: sat
-	cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | ./sat
-	cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | ./sat
-	cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | ./sat
-minisattiming1:
-	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre
-	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre
-	-cat tests/uuf250-1065/uuf250-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre
-minisattiming2:
-	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat -no-pre
-	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat -no-pre
-	-cat tests/uuf250-1065/uuf250-015.cnf | sed s/%// | sed s/^0// | minisat -no-pre
-
-unit: sat
-	./sat < tests/units1.cnf | diff - SAT
-
-# minisat -no-pre -no-elim -no-luby -rfirst=100000
-
-%.unsatresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - UNSAT
-%.satresult : %.cnf sat
-	cat $< | sed s/%// | sed s/^0// | ./sat -u w -l r -b n | tail -n 1 | diff - SAT
-
-
-# a sequence of basic tests, really trivial CNFs
-tests0: sat
-	./sat < tests/trivial1.cnf | diff - SAT
-	./sat < tests/trivial2.cnf | diff - UNSAT
-	./sat < tests/trivial3.cnf | diff - SAT
-
-# This is a sequence of tests where have the trivial 8-clause unsat 3SAT instances.
-tests8: tests0
-	./sat < tests/tests_3sat_unsat.cnf | diff - UNSAT
-
-
-# Run in bactch mode
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/units1.cnf
-
-# $(info $(uf50-218-tests))
-
-fix: sat
-	gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0557.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0308.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0495.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0615.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0830.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0757.cnf
-#	./sat -u w -l r -b n < tests/uuf150-645/uuf150-01.cnf
-#	cat tests/uuf150-645/uuf150-01.cnf | sed s/%// | sed s/^0// | minisat -no-pre -verb=2 -rinc=1000000 -ccmin-mode=0
-
-#gdb -q -batch -ex run -ex backtrace ./sat < watched_bug_5.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uf20-91/uf20-093.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uuf50-218/uuf50-0218.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/uf50-218/uf50-0100.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/tests_3sat_unsat.cnf
-#gdb -q -batch -ex run -ex backtrace ./sat < tests/tests_3sat_unsat.cnf
-
-apply_trace: cnf.o
+# $(info $(VARNAME))

@@ -174,5 +174,4 @@ INLINESTATE clause_t learn_clause(const cnf_t &cnf, const trail_t &actions,
   SAT_ASSERT(actions.rbegin()->action_kind ==
              action_t::action_kind_t::halt_conflict);
   return stamp_resolution(cnf, actions, stamped);
-  // std::cout << "About to learn clause from: " << *this << std::endl;
 }

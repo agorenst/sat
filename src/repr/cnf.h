@@ -14,21 +14,7 @@
 #include "clause.h"
 #include "variable.h"
 
-template <typename C, typename V>
-void unsorted_remove(C &c, const V &v) {
-  auto it = std::find(std::begin(c), std::end(c), v);
-  // it exists
-  SAT_ASSERT(it != std::end(c));
-  // it's unique
-  SAT_ASSERT(std::find(std::next(it), std::end(c), v) == std::end(c));
-  std::iter_swap(std::prev(std::end(c)), it);
-  c.pop_back();  // remove.
-  SAT_ASSERT(std::find(std::begin(c), std::end(c), v) == std::end(c));
-}
-
-std::ostream &operator<<(std::ostream &o, const clause_t &c);
 struct cnf_t {
-  // clause_t* is punned to clause_id
   clause_t *head = nullptr;
   size_t live_count = 0;
   std::vector<clause_id> to_erase;
@@ -135,15 +121,6 @@ struct cnf_t {
 
 // These are some helper functions for clauses that
 // don't need the state implicit in a trail:
-clause_t resolve(clause_t c1, clause_t c2, literal_t l);
-
-literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after);
-
-// this is for units, unconditionally simplifying the CNF.
-void commit_literal(cnf_t &cnf, literal_t l);
-literal_t find_unit(const cnf_t &cnf);
-bool immediately_unsat(const cnf_t &cnf);
-bool immediately_sat(const cnf_t &cnf);
 
 std::ostream &operator<<(std::ostream &o, const cnf_t &cnf);
 void print_cnf(const cnf_t &cnf);
@@ -152,8 +129,6 @@ cnf_t load_cnf(std::istream &in);
 void canon_cnf(cnf_t &cnf);
 
 variable_t max_variable(const cnf_t &cnf);
-
-size_t signature(const clause_t &c);
 
 template <>
 struct std::iterator_traits<cnf_t::clause_iterator> {
@@ -176,3 +151,16 @@ struct std::iterator_traits<variable_range::iterator> {
 literal_map_t<clause_set_t> build_incidence_map(const cnf_t &cnf);
 bool check_incidence_map(const literal_map_t<clause_set_t> &m,
                          const cnf_t &cnf);
+
+namespace cnf {
+namespace transform {
+void commit_literal(cnf_t &cnf, literal_t l);
+void canon(cnf_t &cnf);
+int apply_trivial_units(cnf_t &cnf);
+}  // namespace transform
+namespace search {
+literal_t find_unit(const cnf_t &cnf);
+bool immediately_unsat(const cnf_t &cnf);
+bool immediately_sat(const cnf_t &cnf);
+}  // namespace search
+}  // namespace cnf

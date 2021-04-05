@@ -1,4 +1,6 @@
 #pragma once
+// This is the core interface that provides everything we'd ever want to know
+// about variables (and literals) on their own.
 
 #include <cstdint>
 #include <vector>

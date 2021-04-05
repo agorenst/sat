@@ -2,11 +2,6 @@
 
 #include <cassert>
 
-// Heap operations, don't need to be exposed anywhere else
-// static void bubble_up_var(variable_t var, std::vector<variable_t>& heap,
-// const var_map_t<float>& activity) {
-//}
-
 vsids_t::vsids_t(const cnf_t &cnf, const trail_t &trail)
     : cnf(cnf), vars(cnf.var_range()), trail(trail) {
   activity.construct(max_variable(cnf));

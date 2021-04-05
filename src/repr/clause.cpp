@@ -58,7 +58,7 @@ size_t clause_set_t::size() const {
   return mem.size();
 }
 
-size_t clause_t::signature() const {
+int64_t clause_t::signature() const {
   if (sig_computed) {
     return sig;
   }
@@ -76,7 +76,7 @@ bool clause_t::possibly_subsumes(const clause_t &that) const {
 bool clause_taut(const clause_t &c) {
   for (auto l : c) {
     for (auto r : c) {
-      if (l == -r) {
+      if (l == neg(r)) {
         return true;
       }
     }
@@ -129,4 +129,11 @@ clause_t resolve_ref(const clause_t &c1, const clause_t &c2, literal_t l) {
   auto new_end = std::unique(std::begin(c3tmp), std::end(c3tmp));
   c3tmp.erase(new_end, std::end(c3tmp));
   return c3tmp;
+}
+
+std::ostream &operator<<(std::ostream &o, const clause_t &c) {
+  for (auto l : c) {
+    o << l << " ";
+  }
+  return o;
 }

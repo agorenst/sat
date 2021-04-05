@@ -1,6 +1,7 @@
 #include "watched_literals.h"
 #include "subsumption.h"
 
+#include <iterator>
 #include "measurements.h"
 
 watched_literals_t::watched_literals_t(cnf_t &cnf, trail_t &trail,
@@ -64,6 +65,8 @@ void watched_literals_t::watch_clause(clause_id cid) {
   }
 }
 
+// This is where the whole SAT solver spends most of its time.
+// Lots of perf-specific choices.
 void watched_literals_t::literal_falsed(literal_t l) {
   literal_t ul = neg(l);
   SAT_ASSERT(trail.literal_false(ul));
@@ -105,16 +108,16 @@ void watched_literals_t::literal_falsed(literal_t l) {
     SAT_ASSERT(contains(cnf[cid], ol));
 
     auto it = std::begin(c) + 2;
-    // metrics.rewatch_count++;
+
     for (; it != std::end(c); it++) {
       if (!literal_false(*it)) {
         break;
       }
-      // metrics.rewatch_iterations++;
     }
 
     if (it != std::end(c)) {
       // we do have a next watcher, "n", at location "it".
+
       literal_t n = *it;
       SAT_ASSERT(n != ul);
       auto &new_set = literals_to_watcher[n];
@@ -133,6 +136,10 @@ void watched_literals_t::literal_falsed(literal_t l) {
       // Explicitly don't copy this thing
       i++;
     } else {
+      // our clause was especially interesting.
+      // move it to the front of the sequence
+      watchers[j++] = watchers[i++];
+
       if (literal_false(ol)) {
         SAT_ASSERT(trail.clause_unsat(cnf[cid]));
         trail.append(make_conflict(cid));
@@ -144,7 +151,6 @@ void watched_literals_t::literal_falsed(literal_t l) {
         SAT_ASSERT(trail.count_unassigned_literals(c) == 1);
         SAT_ASSERT(trail.find_unassigned_literal(c) == ol);
         units.push({ol, cid});
-        watchers[j++] = watchers[i++];
       }
     }
   }
@@ -349,10 +355,4 @@ bool watched_literals_t::validate_state(clause_id skip_id) {
   }
 #endif
   return true;
-}
-
-std::ostream &operator<<(std::ostream &o, const watched_literals_t &w) {
-  assert(0);
-  // w.print_watch_state();
-  return o;
 }

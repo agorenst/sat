@@ -1,3 +1,4 @@
+// This is the package the provides
 #include "cnf.h"
 
 #include <algorithm>
@@ -7,98 +8,6 @@
 #include <string>
 
 #include "debug.h"
-
-std::ostream &operator<<(std::ostream &o, const clause_t &c) {
-  for (auto l : c) {
-    o << l << " ";
-  }
-  return o;
-}
-
-clause_t resolve(clause_t c1, clause_t c2, literal_t l) {
-  assert(0);
-  SAT_ASSERT(contains(c1, l));
-  SAT_ASSERT(contains(c2, neg(l)));
-  std::vector<literal_t> c3tmp;
-  // clause_t c3tmp;
-  for (literal_t x : c1) {
-    if (var(x) != var(l)) {
-      c3tmp.push_back(x);
-    }
-  }
-  for (literal_t x : c2) {
-    if (var(x) != var(l)) {
-      c3tmp.push_back(x);
-    }
-  }
-  std::sort(std::begin(c3tmp), std::end(c3tmp));
-  auto new_end = std::unique(std::begin(c3tmp), std::end(c3tmp));
-  // c3tmp.erase(new_end, std::end(c3tmp));
-  for (int i = std::distance(new_end, std::end(c3tmp)); i >= 0; i--) {
-    c3tmp.pop_back();
-  }
-  return c3tmp;
-}
-
-literal_t resolve_candidate(clause_t c1, clause_t c2, literal_t after = 0) {
-  bool seen = (after == 0);
-
-  for (literal_t l : c1) {
-    // Skip everything until after "after"
-    if (l == after) {
-      seen = true;
-      continue;
-    }
-    if (!seen) {
-      continue;
-    }
-
-    for (literal_t m : c2) {
-      if (l == neg(m)) {
-        return l;
-      }
-    }
-  }
-  return 0;
-}
-
-void commit_literal(cnf_t &cnf, literal_t l) {
-  std::vector<clause_id> containing_clauses;
-  std::copy_if(std::begin(cnf), std::end(cnf),
-               std::back_inserter(containing_clauses),
-               [&](const clause_id cid) { return contains(cnf[cid], l); });
-  std::for_each(std::begin(containing_clauses), std::end(containing_clauses),
-                [&](const clause_id cid) { cnf.remove_clause(cid); });
-  for (auto cid : cnf) {
-    clause_t &c = cnf[cid];
-    auto new_end = std::remove(std::begin(c), std::end(c), neg(l));
-    // c.erase(new_end, std::end(c));
-    auto to_erase = std::distance(new_end, std::end(c));
-    for (auto i = 0; i < to_erase; i++) {
-      c.pop_back();
-    }
-  }
-}
-
-literal_t find_unit(const cnf_t &cnf) {
-  auto it =
-      std::find_if(std::begin(cnf), std::end(cnf),
-                   [&](const clause_id cid) { return cnf[cid].size() == 1; });
-  if (it != std::end(cnf)) {
-    return cnf[*it][0];
-  }
-  return 0;
-}
-
-bool immediately_unsat(const cnf_t &cnf) {
-  for (clause_id cid : cnf) {
-    if (cnf[cid].empty()) {
-      return true;
-    }
-  }
-  return false;
-}
-bool immediately_sat(const cnf_t &cnf) { return cnf.live_clause_count() == 0; }
 
 std::ostream &operator<<(std::ostream &o, const cnf_t &cnf) {
   for (auto &&cid : cnf) {
@@ -140,38 +49,6 @@ cnf_t load_cnf(std::istream &in) {
     next_clause_tmp.push_back(dimacs_to_lit(next_literal));
   }
   return cnf;
-}
-
-void canon_cnf(cnf_t &cnf) {
-  std::vector<clause_id> to_remove;
-  for (auto cid : cnf) {
-    if (clause_taut(cnf[cid])) {
-      to_remove.push_back(cid);
-    }
-  }
-  for (auto cid : to_remove) {
-    cnf.remove_clause(cid);
-  }
-  cnf.clean_clauses();
-  to_remove.clear();
-
-  // in-place canon---basically, remove redundant literals.
-  for (auto cid : cnf) {
-    canon_clause(cnf[cid]);
-  }
-
-  // Finally, remove redundant clauses
-  for (auto cit = std::begin(cnf); cit != std::end(cnf); cit++) {
-    for (auto dit = std::next(cit); dit != std::end(cnf); dit++) {
-      if (clauses_equal(cnf[*cit], cnf[*dit])) {
-        to_remove.push_back(*cit);
-      }
-    }
-  }
-  for (auto cid : to_remove) {
-    cnf.remove_clause(cid);
-  }
-  cnf.clean_clauses();
 }
 
 variable_t max_variable(const cnf_t &cnf) {
@@ -277,3 +154,100 @@ bool check_incidence_map(const literal_map_t<clause_set_t> &m,
 #endif
   return true;
 }
+namespace cnf {
+namespace transform {
+
+void commit_literal(cnf_t &cnf, literal_t l) {
+  std::vector<clause_id> containing_clauses;
+  std::copy_if(std::begin(cnf), std::end(cnf),
+               std::back_inserter(containing_clauses),
+               [&](const clause_id cid) { return contains(cnf[cid], l); });
+  std::for_each(std::begin(containing_clauses), std::end(containing_clauses),
+                [&](const clause_id cid) { cnf.remove_clause(cid); });
+  for (auto cid : cnf) {
+    clause_t &c = cnf[cid];
+    auto new_end = std::remove(std::begin(c), std::end(c), neg(l));
+    // c.erase(new_end, std::end(c));
+    auto to_erase = std::distance(new_end, std::end(c));
+    for (auto i = 0; i < to_erase; i++) {
+      c.pop_back();
+    }
+  }
+}
+void canon(cnf_t &cnf) {
+  // Remove all tautologies
+  std::vector<clause_id> to_remove;
+  std::copy_if(std::begin(cnf), std::end(cnf), std::back_inserter(to_remove),
+               [&cnf](clause_id cid) { return clause_taut(cnf[cid]); });
+  for (auto cid : to_remove) {
+    cnf.remove_clause(cid);
+  }
+  cnf.clean_clauses();
+  to_remove.clear();
+
+  // in-place canon---basically, remove redundant literals.
+  for (auto cid : cnf) {
+    canon_clause(cnf[cid]);
+  }
+
+  // We remove redundant clauses (clauses that represent the same set of
+  // literals) through "hash them, and if any end up in the same bucket, really
+  // see if they're equal" technique.
+  std::unordered_map<int64_t, std::vector<clause_id>> m;
+  for (auto cid : cnf) {
+    int64_t key = cnf[cid].signature();
+    m[key].push_back(cid);
+  }
+
+  for (auto &[k, cs] : m) {
+    if (cs.size() < 2) {
+      continue;
+    }
+    std::for_each(std::begin(cs), std::end(cs), [&](auto c) {
+      std::sort(std::begin(cnf[c]), std::end(cnf[c]));
+    });
+    std::sort(std::begin(cs), std::end(cs),
+              [&](auto a, auto b) { return cnf[a] < cnf[b]; });
+    auto new_end =
+        std::unique(std::begin(cs), std::end(cs),
+                    [&](auto a, auto b) { return cnf[a] == cnf[b]; });
+    std::for_each(new_end, std::end(cs),
+                  [&](auto c) { to_remove.push_back(c); });
+  }
+
+  for (auto cid : to_remove) {
+    cnf.remove_clause(cid);
+  }
+  cnf.clean_clauses();
+}
+int apply_trivial_units(cnf_t &cnf) {
+  int hitcount = 0;
+  while (literal_t u = cnf::search::find_unit(cnf)) {
+    commit_literal(cnf, u);
+    hitcount++;
+  }
+  return hitcount;
+}
+}  // namespace transform
+
+namespace search {
+literal_t find_unit(const cnf_t &cnf) {
+  auto it =
+      std::find_if(std::begin(cnf), std::end(cnf),
+                   [&](const clause_id cid) { return cnf[cid].size() == 1; });
+  if (it != std::end(cnf)) {
+    return cnf[*it][0];
+  }
+  return 0;
+}
+bool immediately_unsat(const cnf_t &cnf) {
+  for (clause_id cid : cnf) {
+    if (cnf[cid].empty()) {
+      return true;
+    }
+  }
+  return false;
+}
+bool immediately_sat(const cnf_t &cnf) { return cnf.live_clause_count() == 0; }
+}  // namespace search
+}  // namespace cnf

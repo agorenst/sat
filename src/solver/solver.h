@@ -5,17 +5,6 @@
 #include "vsids.h"
 #include "watched_literals.h"
 
-enum class backtrack_mode_t {
-  simplest,
-  nonchron,
-};
-enum class unit_prop_mode_t { simplest, queue, watched };
-enum class variable_choice_mode_t { nextliteral, nextclause };
-
-extern backtrack_mode_t backtrack_mode;
-extern unit_prop_mode_t unit_prop_mode;
-extern variable_choice_mode_t variable_choice_mode;
-
 struct solver_t {
   // The root data structure, the "true" CNF.
   // Currently we'll add learned clauses directly to this.
@@ -59,12 +48,12 @@ struct solver_t {
   // To keep things easy to experiment (and conceptually understand),
   // we have our core solver loop that, at certain major points, calls
   // into a sequence of handlers. These handlers are stored in these plugins.
-  static const bool use_plugins = false;
+  static const constexpr bool use_plugins = true;
   plugin<cnf_t &> before_decision_p;
   plugin<literal_t> apply_decision_p;
   plugin<literal_t, clause_id> apply_unit_p;
   plugin<clause_id> remove_clause_p;
-  plugin<clause_id> clause_added_p;
+  plugin<clause_id> process_added_clause_p;
   plugin<clause_t &, trail_t &> learned_clause_p;
   plugin<clause_id, literal_t> remove_literal_p;
   plugin<> restart_p;
@@ -79,8 +68,8 @@ struct solver_t {
   void apply_unit(literal_t, clause_id);
   void apply_decision(literal_t);
   void remove_clause(clause_id);
-  void clause_added(clause_id);
-  void learned_clause(clause_t &, trail_t &);
+  void process_learned_clause(clause_t &, trail_t &);
+  void process_added_clause(clause_id);
   void remove_literal(clause_id, literal_t);
   void restart();
   void choose_literal(literal_t &);
@@ -108,9 +97,12 @@ struct solver_t {
   // This is the core method:
   bool solve();
 
+  state_t drain_unit_queue();
+  clause_t determine_conflict_clause();
+  action_t *determine_backtrack_level(const clause_t &c);
+  void process_backtrack_level(clause_t &c, action_t *target);
+  state_t commit_learned_clause(clause_t &&c);
   void report_metrics();
-
-  void naive_cleaning();
 
   bool halt_state(const action_t action) const {
     return action.action_kind == action_t::action_kind_t::halt_conflict ||

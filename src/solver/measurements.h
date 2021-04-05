@@ -1,4 +1,10 @@
+#pragma once
+#include <cassert>
 #include <chrono>
+#include <cstdio>
+#include "clause.h"
+#include "cnf.h"
+#include "settings.h"
 
 struct timer {
   enum class action {
@@ -14,3 +20,60 @@ struct timer {
   timer(action a) : a(a), start(std::chrono::steady_clock::now()) {}
   ~timer();
 };
+
+enum class solver_action {
+  preprocessor_start,
+  preprocessor_end,
+  apply_unit,
+  skip_unit,
+  apply_decision,
+  restart,
+  determined_conflict_clause,
+  learned_clause
+};
+
+template <typename T>
+inline void log_action_element(const T& t) {
+  assert(0);
+}
+template <>
+inline void log_action_element(
+    const std::chrono::time_point<std::chrono::steady_clock>& c) {
+  printf("%ldms ", std::chrono::duration_cast<std::chrono::milliseconds>(
+                       c.time_since_epoch())
+                       .count());
+}
+template <>
+inline void log_action_element(const solver_action& a) {
+  printf("%d ", static_cast<int>(a));
+}
+template <>
+inline void log_action_element(const literal_t& l) {
+  printf("%d ", l);
+}
+template <>
+inline void log_action_element(const clause_id& cid) {
+  printf("%p ", cid);
+}
+template <>
+inline void log_action_element(const clause_t& c) {
+  printf("{ ");
+  for (auto l : c) {
+    printf("%d ", l);
+  }
+  printf("}");
+}
+
+inline void log_solver_action(void) { printf("\n"); }
+
+template <typename T, typename... Rest>
+inline void log_solver_action(const T& a, const Rest&... rest) {
+  log_action_element(a);
+  log_solver_action(rest...);
+}
+template <typename... Rest>
+inline void cond_log(const bool f, const Rest&... rest) {
+  if (f) {
+    log_solver_action(rest...);
+  }
+}
