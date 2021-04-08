@@ -5,15 +5,15 @@
 #include <cassert>
 #include <forward_list>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #include "debug.h"
 #include "settings.h"
 
 std::ostream &operator<<(std::ostream &o, const cnf_t &cnf) {
-  for (auto &&cid : cnf) {
-    o << cnf[cid] << "0" << std::endl;
-  }
+  std::for_each(std::begin(const_clauses(cnf)), std::end(const_clauses(cnf)),
+                [&o](const clause_t &c) { o << c << "0\n"; });
   return o;
 }
 
@@ -162,8 +162,7 @@ void commit_literal(cnf_t &cnf, literal_t l) {
                [&](const clause_id cid) { return contains(cnf[cid], l); });
   std::for_each(std::begin(containing_clauses), std::end(containing_clauses),
                 [&](const clause_id cid) { cnf.remove_clause(cid); });
-  for (auto cid : cnf) {
-    clause_t &c = cnf[cid];
+  for (clause_t &c : clauses(cnf)) {
     auto new_end = std::remove(std::begin(c), std::end(c), neg(l));
     // c.erase(new_end, std::end(c));
     auto to_erase = std::distance(new_end, std::end(c));
@@ -259,4 +258,63 @@ bool immediately_unsat(const cnf_t &cnf) {
 }
 bool immediately_sat(const cnf_t &cnf) { return cnf.live_clause_count() == 0; }
 }  // namespace search
+
+namespace io {
+bool load_cnf(const char *buffer, cnf_t &cnf) {
+  std::vector<literal_t> next_clause_tmp;
+
+  std::string cppbuffer{buffer};
+  std::istringstream ss(cppbuffer);
+  std::string line;
+
+  while (std::getline(ss, line)) {
+    std::istringstream ws(line);
+    std::vector<std::string> words;
+    std::copy(std::istream_iterator<std::string>(ws),
+              std::istream_iterator<std::string>(), std::back_inserter(words));
+
+    if (words.size() == 0) continue;
+    if (words[0] == "c") continue;
+    if (words[0] == "p") continue;
+
+    for (const std::string &w : words) {
+      size_t chars_read = 0;
+      literal_t l = std::stol(w, &chars_read);
+
+      // Parse error: didn't get an int we expected.
+      if (chars_read != w.size()) {
+        return false;
+      }
+
+      if (l == 0) {
+        std::sort(std::begin(next_clause_tmp), std::end(next_clause_tmp));
+        cnf.add_clause(next_clause_tmp);
+        next_clause_tmp.clear();
+      } else {
+        next_clause_tmp.push_back(dimacs_to_lit(l));
+      }
+    }
+  }
+  if (next_clause_tmp.size() > 0) {
+    return false;
+  }
+  return true;
+}
+}  // namespace io
 }  // namespace cnf
+
+// REVIEW: put these in a namespace, too?
+bool operator==(const const_clauses::iterator &a,
+                const const_clauses::iterator &b) {
+  return a.it == b.it;
+}
+bool operator!=(const const_clauses::iterator &a,
+                const const_clauses::iterator &b) {
+  return a.it != b.it;
+}
+bool operator==(const clauses::iterator &a, const clauses::iterator &b) {
+  return a.it == b.it;
+}
+bool operator!=(const clauses::iterator &a, const clauses::iterator &b) {
+  return a.it != b.it;
+}

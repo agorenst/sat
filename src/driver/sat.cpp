@@ -36,7 +36,14 @@ int main(int argc, char* argv[]) {
   }
 
   // Instantiate our CNF object
-  cnf_t cnf = load_cnf(std::cin);
+  std::string input_file;
+  char c;
+  while ((c = fgetc(stdin)) != EOF) {
+    input_file.push_back(c);
+  }
+  cnf_t cnf;
+  bool parse_successful = cnf::io::load_cnf(input_file.c_str(), cnf);
+
   SAT_ASSERT(cnf.live_clause_count() > 0);  // make sure parsing worked.
 
   if (settings::print_parse) {

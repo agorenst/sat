@@ -119,6 +119,58 @@ struct cnf_t {
   }
 };
 
+// This is "just" a transformer that wraps the clause-id iterators in the CNF
+// It is to enable easier usage of std::algorithms.
+struct clauses {
+  cnf_t &cnf;
+  struct iterator {
+    cnf_t &cnf;
+    cnf_t::clause_iterator it;
+    iterator operator++() {
+      it++;
+      return *this;
+    }
+    iterator operator++(int) {
+      auto tmp = *this;
+      ++it;
+      return tmp;
+    }
+    clause_t &operator*() { return cnf[*it]; }
+    clause_t &operator->() { return cnf[*it]; }
+  };
+  iterator begin() { return {cnf, cnf.begin()}; }
+  iterator end() { return {cnf, cnf.end()}; }
+  clauses(cnf_t &cnf) : cnf(cnf) {}
+};
+bool operator==(const clauses::iterator &a, const clauses::iterator &b);
+bool operator!=(const clauses::iterator &a, const clauses::iterator &b);
+
+struct const_clauses {
+  const cnf_t &cnf;
+  struct iterator {
+    const cnf_t &cnf;
+    cnf_t::clause_iterator it;
+    iterator operator++() {
+      it++;
+      return *this;
+    }
+    iterator operator++(int) {
+      auto tmp = *this;
+      ++it;
+      return tmp;
+    }
+    const clause_t &operator*() { return cnf[*it]; }
+    const clause_t &operator->() { return cnf[*it]; }
+  };
+  iterator begin() const { return {cnf, cnf.begin()}; }
+  iterator end() const { return {cnf, cnf.end()}; }
+  const_clauses(const cnf_t &cnf) : cnf(cnf) {}
+};
+bool operator==(const const_clauses::iterator &a,
+                const const_clauses::iterator &b);
+bool operator!=(const const_clauses::iterator &a,
+                const const_clauses::iterator &b);
+
 // These are some helper functions for clauses that
 // don't need the state implicit in a trail:
 
@@ -137,6 +189,23 @@ struct std::iterator_traits<cnf_t::clause_iterator> {
   typedef clause_id *pointer;
   typedef int difference_type;
   typedef std::bidirectional_iterator_tag iterator_category;
+};
+
+template <>
+struct std::iterator_traits<clauses::iterator> {
+  typedef clause_t value_type;
+  typedef clause_t &reference_type;
+  typedef clause_t *pointer;
+  typedef int difference_type;
+  typedef std::forward_iterator_tag iterator_category;
+};
+template <>
+struct std::iterator_traits<const_clauses::iterator> {
+  typedef const clause_t value_type;
+  typedef const clause_t &reference_type;
+  typedef const clause_t *pointer;
+  typedef int difference_type;
+  typedef std::forward_iterator_tag iterator_category;
 };
 
 template <>
@@ -163,4 +232,7 @@ literal_t find_unit(const cnf_t &cnf);
 bool immediately_unsat(const cnf_t &cnf);
 bool immediately_sat(const cnf_t &cnf);
 }  // namespace search
+namespace io {
+bool load_cnf(const char *, cnf_t &);
+}
 }  // namespace cnf
