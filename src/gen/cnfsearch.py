@@ -79,7 +79,7 @@ def find_slowest(seed_start, seed_end):
 
 
 def benchmark1(seed_start, seed_end, solver_name='./build/sat'):
-    scale = 2.0
+    scale = 2.5
     start = time.time()
     for i in range(seed_start, seed_end):
         example_cnf = satgen.main(int(100*scale), int(426*scale), 3, i, 0)
@@ -111,9 +111,9 @@ if __name__ == "__main__":
     # exercise_sanitized(0, 100)
     #find_slowest(0, 1)
 
-    confirm_with_minisat(0, 1000, 0.3)
-    confirm_with_minisat(0, 100, 0.8)
-    confirm_with_minisat(0, 10, 2.0)
+    #confirm_with_minisat(0, 1000, 0.3)
+    #confirm_with_minisat(0, 100, 0.8)
+    #confirm_with_minisat(0, 10, 2.0)
 
-    #compare_benchmark()
+    compare_benchmark()
     # single_big_one()

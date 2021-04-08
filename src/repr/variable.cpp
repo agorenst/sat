@@ -16,6 +16,13 @@ literal_t dimacs_to_lit(int x) {
   SAT_ASSERT(l > 1);
   return l;
 }
+int lit_to_dimacs(literal_t l) {
+  assert(l != 0);
+  bool is_neg = (l % 2) != 0;
+  int x = l >> 1;
+  if (is_neg) x = -x;
+  return x;
+}
 
 variable_range::variable_range(const variable_t max_var) : max_var(max_var) {}
 

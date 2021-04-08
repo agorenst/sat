@@ -67,9 +67,9 @@ std::ostream &operator<<(std::ostream &o, const action_t a) {
   o << "{ " << a.action_kind;
   switch (a.action_kind) {
     case action_t::action_kind_t::decision:
-      return o << ", " << a.l << " }";
+      return o << ", " << lit_to_dimacs(a.l) << " }";
     case action_t::action_kind_t::unit_prop:
-      return o << ", " << a.l << ", " << *a.c << " }";
+      return o << ", " << lit_to_dimacs(a.l) << ", " << *a.c << " }";
     case action_t::action_kind_t::halt_conflict:
       return o << ", " << *a.c << " }";
     default:

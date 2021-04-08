@@ -50,15 +50,20 @@ int main(int argc, char* argv[]) {
   }
 
   // Preprocess, if requested
-  preprocess(cnf);
+  if (settings::preprocess) {
+    preprocess(cnf);
+    if (settings::print_preprocess) {
+      std::cout << cnf << std::endl;
+    }
+  }
 
   // TODO(aaron): fold this into a more general case, if possible.
   if (cnf::search::immediately_unsat(cnf)) {
-    std::cout << "UNSATISFIABLE" << std::endl;
+    printf("UNSATISFIABLE\n");
     return 0;
   }
   if (cnf::search::immediately_sat(cnf)) {
-    std::cout << "SATISFIABLE" << std::endl;
+    printf("SATISFIABLE\n");
     return 0;
   }
 
@@ -67,9 +72,12 @@ int main(int argc, char* argv[]) {
   bool result = solver.solve();
 
   if (result) {
-    std::cout << "SATISFIABLE" << std::endl;
+    if (settings::print_certificate) {
+      solver.trail.print_certificate();
+    }
+    printf("SATISFIABLE\n");
   } else {
-    std::cout << "UNSATISFIABLE" << std::endl;
+    printf("UNSATISFIABLE\n");
   }
   return 0;
 }

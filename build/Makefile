@@ -4,6 +4,7 @@ INCLUDES=-I ./../src/repr -I ./../src/solver
 CXXFLAGS=-Wall -std=c++17 -g -O2 -ffast-math $(INCLUDES)
 DBGFLAGS=-Wall -std=c++17 -g -DSAT_DEBUG_MODE $(INCLUDES)
 AFL=afl-clang-fast++
+SHELL=/bin/bash
 
 SOLVERDIR=../src/solver
 DRIVERDIR=../src/driver
@@ -51,3 +52,20 @@ clean:
 	rm -f $(SOLVERSANOBJECTS) $(SOLVEROBJECTS) $(SOLVERAFLOBJECTS) $(SOLVERDBGOBJECTS) $(DRIVEROBJECTS) sat.dbg sat.afl sat sat.san
 
 # $(info $(VARNAME))
+
+# This doesn't actually produce the file, but teaches us how to 
+# GENTESTS=$(shell seq 1000 | awk '{print $$1".minisat_diff"}')
+# tests: $(GENTESTS)
+# %.minisat_diff:
+# 	python3 ./../src/gen/satgen.py --vars 100 -s $(basename $@) | ./sat | diff - <(python3 ./../src/gen/satgen.py --vars 100 -s $(basename $@) | minisat | tail -n 1)
+
+GENTESTS1000=$(shell seq 1000 | awk '{print $$1".1000minisat_diff"}')
+GENTESTS100=$(shell seq 100 | awk '{print $$1".100minisat_diff"}')
+GENTESTS10=$(shell seq 10 | awk '{print $$1".10minisat_diff"}')
+tests: $(GENTESTS1000) $(GENTESTS100) $(GENTESTS10)
+%.1000minisat_diff:
+	python3 ./../src/gen/satgen.py --vars 10 -s $(basename $@) | ./sat --debug-max | diff - <(python3 ./../src/gen/satgen.py --vars 10 -s $(basename $@) | minisat | tail -n 1)
+%.100minisat_diff:
+	python3 ./../src/gen/satgen.py --vars 100 -s $(basename $@) | ./sat --debug-max | diff - <(python3 ./../src/gen/satgen.py --vars 100 -s $(basename $@) | minisat | tail -n 1)
+%.10minisat_diff:
+	python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | ./sat | diff - <(python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | minisat | tail -n 1)

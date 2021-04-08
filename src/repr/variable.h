@@ -18,6 +18,7 @@ literal_t lit(variable_t l);
 literal_t neg(literal_t l);
 bool ispos(literal_t l);
 literal_t dimacs_to_lit(int x);
+int lit_to_dimacs(literal_t l);
 
 struct variable_range {
   const variable_t max_var;

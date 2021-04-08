@@ -8,13 +8,11 @@
 #include <string>
 
 #include "debug.h"
+#include "settings.h"
 
 std::ostream &operator<<(std::ostream &o, const cnf_t &cnf) {
   for (auto &&cid : cnf) {
-    for (auto &&l : cnf[cid]) {
-      o << l << " ";
-    }
-    o << "0" << std::endl;
+    o << cnf[cid] << "0" << std::endl;
   }
   return o;
 }
@@ -208,11 +206,22 @@ void canon(cnf_t &cnf) {
     });
     std::sort(std::begin(cs), std::end(cs),
               [&](auto a, auto b) { return cnf[a] < cnf[b]; });
-    auto new_end =
-        std::unique(std::begin(cs), std::end(cs),
-                    [&](auto a, auto b) { return cnf[a] == cnf[b]; });
-    std::for_each(new_end, std::end(cs),
-                  [&](auto c) { to_remove.push_back(c); });
+
+    // This is basically std::unique, but we have to call to_remove.push_back
+    // (std::unique can trash the values "in the suffix" it leaves.)
+    auto input = std::begin(cs);
+    auto output = std::begin(cs);
+    while (input != std::end(cs)) {
+      // if input and output have the same value, but are not the same iterator,
+      // "skip" that input.
+      if (cnf[*input] == cnf[*output] && input != output) {
+        to_remove.push_back(*input);
+        input++;
+        continue;
+      } else {
+        *output++ = *input++;
+      }
+    }
   }
 
   for (auto cid : to_remove) {

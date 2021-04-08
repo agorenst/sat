@@ -69,6 +69,14 @@ struct trail_t {
 
   action_t cause(literal_t l) const;
   bool contains_clause(clause_id cid) const;
+
+  static void validate(const cnf_t &cnf, const trail_t &trail);
+  void print_certificate() const;
+
+  static bool has_unit(const cnf_t &cnf, const trail_t &t);
+  static bool is_satisfied(const cnf_t &cnf, const trail_t &t);
+  static bool is_conflicted(const cnf_t &cnf, const trail_t &t);
+  static bool is_indeterminate(const cnf_t &cnf, const trail_t &t);
 };
 
 std::ostream &operator<<(std::ostream &o, const trail_t::v_state_t s);

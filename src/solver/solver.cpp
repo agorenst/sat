@@ -20,6 +20,7 @@
 
 // This is the main driver loop. It reads in some high-level state of the
 // solver, and dispatches to the appropriate plugin.
+std::string to_string(solver_t::state_t t);
 bool solver_t::solve() {
   start_solve();
 
@@ -82,6 +83,9 @@ bool solver_t::solve() {
 
         // Actually add the learned clause, and (in many cases) that
         // induces a new unit.
+        if (settings::trace_clause_learning) {
+          std::cout << "learned: " << c << std::endl;
+        }
         clause_id cid = cnf.add_clause(std::move(c));
         // Commit the clause, the LBM score of that clause, and so on.
         process_added_clause(cid);
@@ -219,6 +223,23 @@ void solver_t::install_core_plugins() {
   restart_p.add_listener([&]() {
     while (trail.level()) trail.pop();
   });
+
+  // Invariants!
+  if (settings::debug_max) {
+    before_decision_p.precondition([&](const cnf_t &cnf) {
+      trail_t::validate(cnf, trail);
+      assert(!trail_t::is_conflicted(cnf, trail));
+    });
+    apply_unit_p.precondition([&](literal_t l, clause_id cid) {
+      assert(trail.count_unassigned_literals(cnf[cid]) == 1);
+      assert(trail.find_unassigned_literal(cnf[cid]) == l);
+      assert(!trail_t::is_conflicted(cnf, trail));
+    });
+    choose_literal_p.postcondition([&](literal_t l) {
+      assert(trail.literal_unassigned(l));
+      assert(!trail_t::has_unit(cnf, trail));
+    });
+  }
 }
 
 void solver_t::install_watched_literals() {
@@ -347,3 +368,18 @@ void solver_t::restart() { restart_p(); }
 void solver_t::choose_literal(literal_t &l) { choose_literal_p(l); }
 void solver_t::start_solve() { start_solve_p(); }
 void solver_t::end_solve() { end_solve_p(); }
+
+std::string to_string(solver_t::state_t t) {
+  switch (t) {
+    case solver_t::state_t::check_units:
+      return "check_units";
+    case solver_t::state_t::conflict:
+      return "conflict";
+    case solver_t::state_t::quiescent:
+      return "quiescent";
+    case solver_t::state_t::sat:
+      return "sat";
+    case solver_t::state_t::unsat:
+      return "unsat";
+  }
+}

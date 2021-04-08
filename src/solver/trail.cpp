@@ -221,3 +221,130 @@ bool trail_t::contains_clause(clause_id cid) const {
     return a.has_clause() && a.get_clause() == cid;
   });
 }
+
+// For error-checking. This is by-design incredibly simple.
+struct correctness_trail {
+  const cnf_t &cnf;
+  std::vector<literal_t> assigned;
+  correctness_trail(const cnf_t &cnf) : cnf(cnf) {}
+  bool literal_true(literal_t l) const {
+    return std::find(std::begin(assigned), std::end(assigned), l) !=
+           std::end(assigned);
+  }
+  bool literal_false(literal_t l) const {
+    return std::find(std::begin(assigned), std::end(assigned), neg(l)) !=
+           std::end(assigned);
+  }
+  bool literal_assigned(literal_t l) const {
+    return literal_true(l) || literal_false(l);
+  }
+
+  int count_unassigned_literals(const clause_t &c) const {
+    return std::count_if(std::begin(c), std::end(c),
+                         [&](literal_t l) { return !literal_assigned(l); });
+  }
+  literal_t first_unassigned_literal(const clause_t &c) const {
+    auto it = std::find_if(std::begin(c), std::end(c),
+                           [&](literal_t l) { return !literal_assigned(l); });
+    return *it;
+  }
+  bool is_sat_clause(const clause_t &c) const {
+    return std::any_of(std::begin(c), std::end(c),
+                       [&](literal_t l) { return literal_true(l); });
+  }
+  bool is_conflict_clause(const clause_t &c) const {
+    return std::all_of(std::begin(c), std::end(c),
+                       [&](literal_t l) { return literal_false(l); });
+  }
+  bool cnf_is_sat() const {
+    return std::all_of(std::begin(cnf), std::end(cnf),
+                       [&](clause_id cid) { return is_sat_clause(cnf[cid]); });
+  }
+  bool cnf_is_conflict() const {
+    return std::any_of(std::begin(cnf), std::end(cnf), [&](clause_id cid) {
+      return is_conflict_clause(cnf[cid]);
+    });
+  }
+  bool cnf_is_indeterminate() const {
+    return !cnf_is_sat() && !cnf_is_conflict();
+  }
+  literal_t is_unit(const clause_t &c) {
+    if (!is_sat_clause(c) && (count_unassigned_literals(c) == 1)) {
+      return first_unassigned_literal(c);
+    }
+    return 0;
+  }
+
+  void validate_no_units() {
+    for (auto cid : cnf) {
+      assert(!is_unit(cnf[cid]));
+    }
+  }
+  void push_decision(literal_t l) {
+    assert(!literal_assigned(l));
+    assigned.push_back(l);
+  }
+  void push_unit(literal_t l, const clause_t &c) {
+    assert(is_unit(c) == l);
+    assigned.push_back(l);
+  }
+  void validate_trail(const trail_t &t) {
+    for (const action_t &a : t) {
+      if (a.is_decision()) {
+        assert(!cnf_is_conflict());
+        // it can be SAT, so we can't say "indeterminate"
+        validate_no_units();
+        push_decision(a.get_literal());
+      } else if (a.is_unit_prop()) {
+        assert(cnf_is_indeterminate());
+        push_unit(a.get_literal(), cnf[a.get_clause()]);
+      } else if (a.is_conflict()) {
+        assert(is_conflict_clause(cnf[a.get_clause()]));
+      }
+    }
+  }
+};
+
+// Use only "primitive" CNF operations, make sure the trail is valid.
+void trail_t::validate(const cnf_t &cnf, const trail_t &trail) {
+  correctness_trail T(cnf);
+  T.validate_trail(trail);
+}
+
+void trail_t::print_certificate() const {
+  for (auto &a : *this) {
+    printf("%d\n", lit_to_dimacs(a.get_literal()));
+  }
+}
+
+bool trail_t::has_unit(const cnf_t &cnf, const trail_t &trail) {
+  for (auto cid : cnf) {
+    if (trail.clause_sat(cnf[cid])) continue;
+    // not sure what I want in this case.
+    if (trail.clause_unsat(cnf[cid])) continue;
+    size_t c = trail.count_unassigned_literals(cnf[cid]);
+    assert(c);
+    if (c == 1) return true;
+  }
+  return false;
+}
+bool trail_t::is_satisfied(const cnf_t &cnf, const trail_t &trail) {
+  for (auto cid : cnf) {
+    if (!trail.clause_sat(cnf[cid])) return false;
+  }
+  return true;
+}
+bool trail_t::is_conflicted(const cnf_t &cnf, const trail_t &trail) {
+  for (auto cid : cnf) {
+    if (trail.clause_unsat(cnf[cid])) return true;
+  }
+  return false;
+}
+bool trail_t::is_indeterminate(const cnf_t &cnf, const trail_t &trail) {
+  size_t indeterminated_clause_count = 0;
+  for (auto cid : cnf) {
+    if (trail.clause_unsat(cnf[cid])) return false;
+    if (!trail.clause_sat(cnf[cid])) indeterminated_clause_count++;
+  }
+  return indeterminated_clause_count > 0;
+}

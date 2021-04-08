@@ -136,10 +136,7 @@ void watched_literals_t::literal_falsed(literal_t l) {
       // Explicitly don't copy this thing
       i++;
     } else {
-      // our clause was especially interesting.
-      // move it to the front of the sequence
       watchers[j++] = watchers[i++];
-
       if (literal_false(ol)) {
         SAT_ASSERT(trail.clause_unsat(cnf[cid]));
         trail.append(make_conflict(cid));

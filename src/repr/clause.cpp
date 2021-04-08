@@ -1,5 +1,6 @@
 #include "clause.h"
 #include <iterator>
+#include "settings.h"
 
 // Really a "clause set", we don't promise anything about order.
 
@@ -133,7 +134,10 @@ clause_t resolve_ref(const clause_t &c1, const clause_t &c2, literal_t l) {
 
 std::ostream &operator<<(std::ostream &o, const clause_t &c) {
   for (auto l : c) {
-    o << l << " ";
+    if (settings::output_dimacs)
+      o << lit_to_dimacs(l) << " ";
+    else
+      o << l << " ";
   }
   return o;
 }

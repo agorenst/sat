@@ -37,7 +37,7 @@ bool verify_resolution_expected(const clause_t &c, const trail_t &actions) {
 
     // std::cout << "Learned clause " << c << std::endl;
     // std::cout << "Counter = " << counter << std::endl;
-    SAT_ASSERT(counter == 1);
+    assert(counter == 1);
   }
   return true;
 }
@@ -169,9 +169,10 @@ clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
   return clause_t{C};
 }
 
-INLINESTATE clause_t learn_clause(const cnf_t &cnf, const trail_t &actions,
-                                  lit_bitset_t &stamped) {
+clause_t learn_clause(const cnf_t &cnf, const trail_t &actions,
+                      lit_bitset_t &stamped) {
   SAT_ASSERT(actions.rbegin()->action_kind ==
              action_t::action_kind_t::halt_conflict);
   return stamp_resolution(cnf, actions, stamped);
+  // verify_resolution_expected(res, actions);
 }

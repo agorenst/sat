@@ -7,12 +7,17 @@ namespace settings {
 bool print_parse = false;
 bool print_canon = false;
 bool preprocess = true;
+bool print_preprocess = false;
+bool output_dimacs = true;  // this should be an enum of "output format".
 
 bool time_preprocess = false;
 
 bool trace_applications = false;
 bool trace_clause_learning = false;
 
+bool print_certificate = false;
+
+bool debug_max = false;  // this should ultimately be an integer or osmething.
 struct flag_t {
   std::string name;
   std::string description;
@@ -23,9 +28,19 @@ std::vector<flag_t> options{
      print_parse},
     {"print-canon", "Output CNF just after canon (mainly for debugging)",
      print_canon},
+    {"print-preprocess",
+     "Output CNF after preprocessing (mainly for debugging)", print_preprocess},
     {"preprocessor-", "Don't run the preprocessor", preprocess},
     {"time-preprocessor", "Log the timing of the preprocessor",
-     time_preprocess}};
+     time_preprocess},
+    {"output-dimacs-", "Output literals in raw (rather than DIMACS) format",
+     output_dimacs},
+    {"trace-clause-learning", "Logging level of clause learning steps",
+     trace_clause_learning},
+    {"debug-max", "Run a lot more asserts", debug_max},
+    {"print-certificate", "Output our solution (if sat) in a trivial format",
+     print_certificate},
+};
 int parse(int argc, char* argv[]) {
   for (int i = 1; i < argc; i++) {
     const char* arg = argv[i];
