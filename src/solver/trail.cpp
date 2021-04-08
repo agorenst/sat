@@ -329,10 +329,9 @@ bool trail_t::has_unit(const cnf_t &cnf, const trail_t &trail) {
   return false;
 }
 bool trail_t::is_satisfied(const cnf_t &cnf, const trail_t &trail) {
-  for (auto cid : cnf) {
-    if (!trail.clause_sat(cnf[cid])) return false;
-  }
-  return true;
+  return std::all_of(std::begin(const_clauses(cnf)),
+                     std::end(const_clauses(cnf)),
+                     [&](const clause_t &c) { return trail.clause_sat(c); });
 }
 bool trail_t::is_conflicted(const cnf_t &cnf, const trail_t &trail) {
   for (auto cid : cnf) {
