@@ -383,3 +383,27 @@ std::string to_string(solver_t::state_t t) {
       return "unsat";
   }
 }
+
+// LibFuzzer support:
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  cnf_t cnf;
+  bool parse_successful = cnf::io::load_cnf((char *)Data, Size, cnf);
+  if (!parse_successful) {
+    // We trim ourselves to just valid CNFs
+    return 0;
+  }
+  // Just exercise the parser.
+  return 0;
+
+  cnf::transform::canon(cnf);
+  preprocess(cnf);
+  if (cnf::search::immediately_unsat(cnf)) {
+    return 0;
+  }
+  if (cnf::search::immediately_sat(cnf)) {
+    return 0;
+  }
+  solver_t solver(cnf);
+  solver.solve();
+  return 0;  // Non-zero return values are reserved for future use.
+}

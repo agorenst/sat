@@ -42,7 +42,8 @@ int main(int argc, char* argv[]) {
     input_file.push_back(c);
   }
   cnf_t cnf;
-  bool parse_successful = cnf::io::load_cnf(input_file.c_str(), cnf);
+  bool parse_successful =
+      cnf::io::load_cnf(input_file.c_str(), input_file.size(), cnf);
 
   SAT_ASSERT(cnf.live_clause_count() > 0);  // make sure parsing worked.
 

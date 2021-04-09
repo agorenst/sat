@@ -36,6 +36,12 @@ $(SOLVERSANOBJECTS) : $(BUILDDIR)/%.san.o : $(SOLVERDIR)/%.cpp
 $(BUILDDIR)/sat.san : $(SOLVERSANOBJECTS) $(DRIVEROBJECTS)  $(REPROBJECTS)
 	$(CC) $(CXXFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer $^ -o $@
 
+SOLVERFUZZOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.fuzz.o,$(SOLVERSOURCES))
+$(SOLVERFUZZOBJECTS) : $(BUILDDIR)/%.fuzz.o : $(SOLVERDIR)/%.cpp
+	$(CC) $(CXXFLAGS) -fsanitize=fuzzer,address -fno-omit-frame-pointer -c $< -o $@
+$(BUILDDIR)/sat.fuzz : $(SOLVERFUZZOBJECTS)  $(REPROBJECTS)
+	$(CC) $(CXXFLAGS) -fsanitize=fuzzer,address -fno-omit-frame-pointer $^ -o $@
+
 SOLVERAFLOBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.afl.o,$(SOLVERSOURCES))
 $(SOLVERAFLOBJECTS) : $(BUILDDIR)/%.afl.o : $(SOLVERDIR)/%.cpp
 	$(AFL) $(CXXFLAGS) -c $< -o $@

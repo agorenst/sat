@@ -233,6 +233,6 @@ bool immediately_unsat(const cnf_t &cnf);
 bool immediately_sat(const cnf_t &cnf);
 }  // namespace search
 namespace io {
-bool load_cnf(const char *, cnf_t &);
+bool load_cnf(const char *, size_t, cnf_t &);
 }
 }  // namespace cnf

@@ -17,38 +17,6 @@ std::ostream &operator<<(std::ostream &o, const cnf_t &cnf) {
   return o;
 }
 
-cnf_t load_cnf(std::istream &in) {
-  cnf_t cnf;
-  // Load in cnf from stdin.
-  literal_t next_literal;
-  std::vector<literal_t> next_clause_tmp;
-
-  std::string line;
-  while (std::getline(in, line)) {
-    if (line.empty()) {
-      continue;
-    }
-    if (line[0] == 'c') {
-      continue;
-    }
-    if (line[0] == 'p') {
-      // TODO(aaron): do some error-checking;
-      break;
-    }
-  }
-
-  while (in >> next_literal) {
-    if (next_literal == 0) {
-      std::sort(std::begin(next_clause_tmp), std::end(next_clause_tmp));
-      cnf.add_clause(next_clause_tmp);
-      next_clause_tmp.clear();
-      continue;
-    }
-    next_clause_tmp.push_back(dimacs_to_lit(next_literal));
-  }
-  return cnf;
-}
-
 variable_t max_variable(const cnf_t &cnf) {
   literal_t m = 0;
   for (const clause_id cid : cnf) {
@@ -260,10 +228,10 @@ bool immediately_sat(const cnf_t &cnf) { return cnf.live_clause_count() == 0; }
 }  // namespace search
 
 namespace io {
-bool load_cnf(const char *buffer, cnf_t &cnf) {
+bool load_cnf(const char *buffer, size_t s, cnf_t &cnf) {
   std::vector<literal_t> next_clause_tmp;
 
-  std::string cppbuffer{buffer};
+  std::string cppbuffer{buffer, s};
   std::istringstream ss(cppbuffer);
   std::string line;
 
@@ -279,7 +247,14 @@ bool load_cnf(const char *buffer, cnf_t &cnf) {
 
     for (const std::string &w : words) {
       size_t chars_read = 0;
-      literal_t l = std::stol(w, &chars_read);
+      literal_t l = 0;
+      try {
+        l = std::stol(w, &chars_read);
+      } catch (std::invalid_argument) {
+        return false;
+      } catch (std::out_of_range) {
+        return false;
+      }
 
       // Parse error: didn't get an int we expected.
       if (chars_read != w.size()) {
