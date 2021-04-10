@@ -55,8 +55,9 @@ def find_slowest(seed_start, seed_end):
     solver_name = './build/sat'
     #solver_name = 'minisat'
     seed_time = {}
-    scale = 3.0
+    scale = 2.3
     for i in range(seed_start, seed_end):
+        print("Doing ", i)
         seed_time[i] = 0
         start = time.time()
         for p in range(1):
@@ -109,7 +110,7 @@ def single_big_one():
 
 if __name__ == "__main__":
     # exercise_sanitized(0, 100)
-    #find_slowest(0, 1)
+    #find_slowest(0, 10)
 
     #confirm_with_minisat(0, 1000, 0.3)
     #confirm_with_minisat(0, 100, 0.8)

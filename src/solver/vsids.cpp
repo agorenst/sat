@@ -22,7 +22,6 @@ void vsids_t::clear_activity() {
   std::fill(std::begin(activity), std::end(activity), 0.0f);
 }
 
-INLINESTATE
 void vsids_t::clause_learned(const clause_t &c) {
   for (literal_t l : c) {
     activity[var(l)] += bump;
@@ -31,7 +30,6 @@ void vsids_t::clause_learned(const clause_t &c) {
                 [this](float &s) { s *= alpha; });
 }
 
-INLINESTATE
 literal_t vsids_t::choose() const {
   variable_t c = 0;
   float a = -1;

@@ -80,6 +80,7 @@ bool solver_t::solve() {
         // High-level assert:
         // // the clause is unique
         // // the clause contains no literals that are level 0 (proven-fixed)
+        // TODO: ADD ABOVE TO MAX DEBUGGIN
 
         // Actually add the learned clause, and (in many cases) that
         // induces a new unit.
