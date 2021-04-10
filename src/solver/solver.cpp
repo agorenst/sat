@@ -338,12 +338,11 @@ void solver_t::backtrack_subsumption(clause_t &c, action_t *a, action_t *e) {
       const clause_t &d = cnf[a->get_clause()];
       if (c.size() >= d.size()) continue;
       if (!c.possibly_subsumes(d)) continue;
-      // if (subsumes(c, d)) {
       if (subsumes_and_sort(c, d)) {
-        // counter++;
-        // std::cerr << "removing clause! " << cnf[a->get_clause()] << "
-        // with " << c << std::endl;
         remove_clause(a->get_clause());
+      }
+      else {
+        cond_log(settings::trace_hash_collisions, solver_action::hash_false_positive);
       }
     }
   }

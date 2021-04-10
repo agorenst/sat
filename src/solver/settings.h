@@ -9,6 +9,7 @@ extern bool time_preprocess;
 
 extern bool trace_applications;
 extern bool trace_clause_learning;
+extern bool trace_hash_collisions;
 
 extern bool debug_max;
 

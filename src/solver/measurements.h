@@ -29,7 +29,8 @@ enum class solver_action {
   apply_decision,
   restart,
   determined_conflict_clause,
-  learned_clause
+  learned_clause,
+  hash_false_positive,
 };
 
 template <typename T>

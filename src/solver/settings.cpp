@@ -14,6 +14,7 @@ bool time_preprocess = false;
 
 bool trace_applications = false;
 bool trace_clause_learning = false;
+bool trace_hash_collisions = false;
 
 bool print_certificate = false;
 
@@ -40,6 +41,7 @@ std::vector<flag_t> options{
     {"debug-max", "Run a lot more asserts", debug_max},
     {"print-certificate", "Output our solution (if sat) in a trivial format",
      print_certificate},
+    {"trace-hash-collisions", "Trace hash collisions", trace_hash_collisions},
 };
 int parse(int argc, char* argv[]) {
   for (int i = 1; i < argc; i++) {
