@@ -199,7 +199,7 @@ struct clause_t {
   bool operator==(const clause_t &that) const { return mem == that.mem; }
   bool operator!=(const clause_t &that) const { return mem != that.mem; }
 
-  mutable size_t sig = 0;
+  mutable int64_t sig = 0;
   mutable bool sig_computed = false;
   // For easier subsumption. This is its hash, really
   int64_t signature() const;

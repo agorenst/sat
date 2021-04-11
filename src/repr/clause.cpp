@@ -68,8 +68,11 @@ int64_t clause_t::signature() const {
   //auto h = [](literal_t l) { return var(l) % 64; };
   //auto h = [](literal_t l) -> int64_t { return 1 << (var(l) % 64); };
   auto h = [](literal_t l) -> int64_t { return (1 << (var(l) % 64)) | (1 << ((var(l) * 37) % 64)); };
-  auto addhash = [&h](literal_t a, literal_t b) { return h(a) | h(b); };
-  sig = std::accumulate(begin(), end(), 0, addhash);
+
+  for (auto l : (*this)) {
+    sig |= h(l);
+  }
+
   return sig;
 }
 
