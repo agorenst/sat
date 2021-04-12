@@ -15,6 +15,7 @@ bool time_preprocess = false;
 bool trace_applications = false;
 bool trace_clause_learning = false;
 bool trace_hash_collisions = false;
+bool trace_decisions = false;
 
 bool print_certificate = false;
 
@@ -42,6 +43,7 @@ std::vector<flag_t> options{
     {"print-certificate", "Output our solution (if sat) in a trivial format",
      print_certificate},
     {"trace-hash-collisions", "Trace hash collisions", trace_hash_collisions},
+    {"trace-decisions", "Trace decisions", trace_decisions},
 };
 int parse(int argc, char* argv[]) {
   for (int i = 1; i < argc; i++) {

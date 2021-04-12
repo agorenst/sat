@@ -241,6 +241,12 @@ void solver_t::install_core_plugins() {
       assert(!trail_t::has_unit(cnf, trail));
     });
   }
+
+  if (settings::trace_decisions) {
+    choose_literal_p.postcondition([&](literal_t l) {
+      log_solver_action(solver_action::apply_decision, l);
+    });
+  }
 }
 
 void solver_t::install_watched_literals() {
@@ -340,9 +346,9 @@ void solver_t::backtrack_subsumption(clause_t &c, action_t *a, action_t *e) {
       if (!c.possibly_subsumes(d)) continue;
       if (subsumes_and_sort(c, d)) {
         remove_clause(a->get_clause());
-      }
-      else {
-        cond_log(settings::trace_hash_collisions, solver_action::hash_false_positive);
+      } else {
+        cond_log(settings::trace_hash_collisions,
+                 solver_action::hash_false_positive);
       }
     }
   }
