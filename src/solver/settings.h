@@ -7,14 +7,17 @@ extern bool output_dimacs;
 
 extern bool time_preprocess;
 
+extern bool trace_decisions;
 extern bool trace_applications;
+
 extern bool trace_clause_learning;
 extern bool trace_hash_collisions;
-extern bool trace_decisions;
 
 extern bool debug_max;
 
 extern bool print_certificate;
+
+extern bool naive_vsids;
 
 int parse(int argc, char* argv[]);
 void print_help();

@@ -36,6 +36,7 @@ struct solver_t {
 
   // This VSIDS object is how we choose our literals.
   vsids_t vsids;
+  vsids_heap_t vsids_heap;
 
   // Our main clause-removal heuristic:
   lbm_t lbm;

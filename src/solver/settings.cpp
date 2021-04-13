@@ -19,6 +19,8 @@ bool trace_decisions = false;
 
 bool print_certificate = false;
 
+bool naive_vsids = false;
+
 bool debug_max = false;  // this should ultimately be an integer or osmething.
 struct flag_t {
   std::string name;
@@ -42,8 +44,12 @@ std::vector<flag_t> options{
     {"debug-max", "Run a lot more asserts", debug_max},
     {"print-certificate", "Output our solution (if sat) in a trivial format",
      print_certificate},
+
     {"trace-hash-collisions", "Trace hash collisions", trace_hash_collisions},
     {"trace-decisions", "Trace decisions", trace_decisions},
+    {"trace-applications", "Trace applications", trace_applications},
+
+    {"naive-vsids", "Use the original vsids algorithm", naive_vsids},
 };
 int parse(int argc, char* argv[]) {
   for (int i = 1; i < argc; i++) {

@@ -68,7 +68,7 @@ clean:
 GENTESTS1000=$(shell seq 1000 | awk '{print $$1".1000minisat_diff"}')
 GENTESTS100=$(shell seq 100 | awk '{print $$1".100minisat_diff"}')
 GENTESTS10=$(shell seq 10 | awk '{print $$1".10minisat_diff"}')
-tests: $(GENTESTS1000) $(GENTESTS100) $(GENTESTS10) sat
+tests: sat $(GENTESTS1000) $(GENTESTS100) $(GENTESTS10)
 %.1000minisat_diff:
 	python3 ./../src/gen/satgen.py --vars 10 -s $(basename $@) | ./sat --debug-max | diff - <(python3 ./../src/gen/satgen.py --vars 10 -s $(basename $@) | minisat | tail -n 1)
 %.100minisat_diff:
@@ -77,7 +77,7 @@ tests: $(GENTESTS1000) $(GENTESTS100) $(GENTESTS10) sat
 	python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | ./sat | diff - <(python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | minisat | tail -n 1)
 
 PERFTESTS10=$(shell seq 10 | awk '{print $$1".10perftest"}')
-benchmarks: $(PERFTESTS10) sat
+benchmarks: sat $(PERFTESTS10)
 %.10perftest:
 	time python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | ./sat > /dev/null
 	time python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | minisat > /dev/null

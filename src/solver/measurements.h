@@ -60,7 +60,7 @@ template <>
 inline void log_action_element(const clause_t& c) {
   printf("{ ");
   for (auto l : c) {
-    printf("%d ", l);
+    printf("%d ", lit_to_dimacs(l));
   }
   printf("}");
 }

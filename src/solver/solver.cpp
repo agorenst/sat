@@ -84,9 +84,6 @@ bool solver_t::solve() {
 
         // Actually add the learned clause, and (in many cases) that
         // induces a new unit.
-        if (settings::trace_clause_learning) {
-          std::cout << "learned: " << c << std::endl;
-        }
         clause_id cid = cnf.add_clause(std::move(c));
         // Commit the clause, the LBM score of that clause, and so on.
         process_added_clause(cid);
@@ -119,11 +116,11 @@ solver_t::state_t solver_t::drain_unit_queue() {
     clause_id c = e.c;
     if (trail.literal_unassigned(l)) {
       apply_unit(l, c);
-      cond_log(settings::trace_applications, solver_action::apply_unit, l,
-               cnf[c]);
+      cond_log(settings::trace_applications, solver_action::apply_unit,
+               lit_to_dimacs(l), cnf[c]);
     } else {
-      cond_log(settings::trace_applications, solver_action::skip_unit, l,
-               cnf[c]);
+      cond_log(settings::trace_applications, solver_action::skip_unit,
+               lit_to_dimacs(l), cnf[c]);
     }
     if (halted()) {
       return state_t::conflict;
@@ -157,6 +154,7 @@ solver_t::solver_t(const cnf_t &CNF)
       stamped(max_variable(cnf)),
       watch(cnf, trail, unit_queue),
       vsids(cnf, trail),
+      vsids_heap(cnf, trail),
       lbm(cnf) {
   variable_t max_var = max_variable(cnf);
   trail.construct(max_var);
@@ -327,12 +325,21 @@ void solver_t::install_restart() {
 }
 
 void solver_t::install_literal_chooser() {
-  // For now, we'll just install vsids.
-  learned_clause_p.add_listener(
-      [&](const clause_t &c, const trail_t &t) { vsids.clause_learned(c); });
+  if (settings::naive_vsids) {
+    learned_clause_p.add_listener(
+        [&](const clause_t &c, const trail_t &t) { vsids.clause_learned(c); });
 
-  choose_literal_p.add_listener([&](literal_t &d) { d = vsids.choose(); });
-  restart_p.add_listener([&]() { vsids.static_activity(); });
+    choose_literal_p.add_listener([&](literal_t &d) { d = vsids.choose(); });
+    restart_p.add_listener([&]() { vsids.static_activity(); });
+  } else {
+    learned_clause_p.add_listener([&](const clause_t &c, const trail_t &t) {
+      vsids_heap.clause_learned(c);
+    });
+
+    choose_literal_p.add_listener(
+        [&](literal_t &d) { d = vsids_heap.choose(); });
+    restart_p.add_listener([&]() { vsids_heap.static_activity(); });
+  }
 }
 
 // This is my poor-man's attempt at on-the-fly subsumption... to  be honest
@@ -352,7 +359,6 @@ void solver_t::backtrack_subsumption(clause_t &c, action_t *a, action_t *e) {
       }
     }
   }
-  // if (counter) std::cerr << counter << std::endl;
 }
 
 // We may want to "inline" the different algorithms at some point; did that
@@ -365,6 +371,8 @@ void solver_t::process_learned_clause(clause_t &c, trail_t &trail) {
   learned_clause_p(c, trail);
 }
 void solver_t::process_added_clause(clause_id cid) {
+  cond_log(settings::trace_clause_learning, solver_action::learned_clause,
+           cnf[cid]);
   process_added_clause_p(cid);
 }
 void solver_t::remove_literal(clause_id cid, literal_t l) {

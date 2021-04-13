@@ -79,24 +79,31 @@ def find_slowest(seed_start, seed_end):
     print(max_seed, max_time)
 
 
-def benchmark1(seed_start, seed_end, solver_name='./build/sat'):
-    scale = 2.5
+def benchmark1(seed_start, seed_end, solver_name='./build/sat', flags=[]):
+    scale = 3.0
     start = time.time()
     for i in range(seed_start, seed_end):
         example_cnf = satgen.main(int(100*scale), int(426*scale), 3, i, 0)
         cnf_string = satgen.cnf_to_string(example_cnf)
         p = subprocess.Popen(
-            [solver_name], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+            [solver_name] + flags, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
         p.communicate(cnf_string.encode())
     end = time.time()
     print(end-start)
 
 
 def compare_benchmark():
-    print("My solver:")
-    benchmark1(0, 20)
+    print("My solver naive:")
+    benchmark1(0, 10, './build/sat', ['--naive-vsids'])
+    print("My solver better:")
+    benchmark1(0, 10, './build/sat')
+    print("My solver naive:")
+    benchmark1(0, 10, './build/sat', ['--naive-vsids'])
+    print("My solver better:")
+    benchmark1(0, 10, './build/sat')
+
     print("Minisat:")
-    benchmark1(0, 20, 'minisat')
+    benchmark1(0, 10, 'minisat')
 
 
 def single_big_one():

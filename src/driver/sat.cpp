@@ -44,6 +44,10 @@ int main(int argc, char* argv[]) {
   cnf_t cnf;
   bool parse_successful =
       cnf::io::load_cnf(input_file.c_str(), input_file.size(), cnf);
+  if (!parse_successful) {
+    printf("Error parsing input file\n");
+    return 1;
+  }
 
   SAT_ASSERT(cnf.live_clause_count() > 0);  // make sure parsing worked.
 
