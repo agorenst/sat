@@ -16,10 +16,11 @@ bool trace_applications = false;
 bool trace_clause_learning = false;
 bool trace_hash_collisions = false;
 bool trace_decisions = false;
+bool trace_conflicts = false;
 
 bool print_certificate = false;
 
-bool naive_vsids = false;
+bool naive_vsids = true;
 
 bool debug_max = false;  // this should ultimately be an integer or osmething.
 struct flag_t {
@@ -48,6 +49,7 @@ std::vector<flag_t> options{
     {"trace-hash-collisions", "Trace hash collisions", trace_hash_collisions},
     {"trace-decisions", "Trace decisions", trace_decisions},
     {"trace-applications", "Trace applications", trace_applications},
+    {"trace-conflicts", "Trace conflicts", trace_conflicts},
 
     {"naive-vsids", "Use the original vsids algorithm", naive_vsids},
 };

@@ -22,9 +22,11 @@ void vsids_t::clear_activity() {
   std::fill(std::begin(activity), std::end(activity), 0.0f);
 }
 
+void vsids_t::bump_variable(variable_t v) { activity[v] += bump; }
+
 void vsids_t::clause_learned(const clause_t &c) {
   for (literal_t l : c) {
-    activity[var(l)] += bump;
+    bump_variable(var(l));
   }
   std::for_each(std::begin(activity), std::end(activity),
                 [this](float &s) { s *= alpha; });

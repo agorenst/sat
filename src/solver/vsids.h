@@ -7,6 +7,7 @@ struct vsids_t {
   void clause_learned(const clause_t &c);
   void clear_activity();
   void static_activity();
+  void bump_variable(variable_t v);
 
   const float alpha = 0.95f;
   const float bump = 1.0f;

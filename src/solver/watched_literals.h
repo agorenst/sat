@@ -17,6 +17,7 @@
 //                       report a conflict.
 
 struct trace_t;
+struct solver_t;
 
 struct watched_literals_t {
   cnf_t &cnf;
@@ -25,6 +26,7 @@ struct watched_literals_t {
   literal_map_t<std::vector<std::pair<clause_id, literal_t>>>
       literals_to_watcher;
 
+  void install(solver_t &);
   watched_literals_t(cnf_t &cnf, trail_t &t, unit_queue_t &q);
   void watch_clause(clause_id cid);
   void literal_falsed(literal_t l);

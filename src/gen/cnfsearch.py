@@ -80,7 +80,7 @@ def find_slowest(seed_start, seed_end):
 
 
 def benchmark1(seed_start, seed_end, solver_name='./build/sat', flags=[]):
-    scale = 3.0
+    scale = 2.5
     start = time.time()
     for i in range(seed_start, seed_end):
         example_cnf = satgen.main(int(100*scale), int(426*scale), 3, i, 0)
@@ -94,13 +94,13 @@ def benchmark1(seed_start, seed_end, solver_name='./build/sat', flags=[]):
 
 def compare_benchmark():
     print("My solver naive:")
-    benchmark1(0, 10, './build/sat', ['--naive-vsids'])
-    print("My solver better:")
     benchmark1(0, 10, './build/sat')
-    print("My solver naive:")
-    benchmark1(0, 10, './build/sat', ['--naive-vsids'])
-    print("My solver better:")
-    benchmark1(0, 10, './build/sat')
+    # benchmark1(0, 10, './build/sat', ['--naive-vsids'])
+    # print("My solver better:")
+    # print("My solver naive:")
+    # benchmark1(0, 10, './build/sat', ['--naive-vsids'])
+    # print("My solver better:")
+    # benchmark1(0, 10, './build/sat')
 
     print("Minisat:")
     benchmark1(0, 10, 'minisat')

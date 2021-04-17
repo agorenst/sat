@@ -31,6 +31,7 @@ enum class solver_action {
   determined_conflict_clause,
   learned_clause,
   hash_false_positive,
+  conflict,
 };
 
 template <typename T>
@@ -58,6 +59,14 @@ inline void log_action_element(const clause_id& cid) {
 }
 template <>
 inline void log_action_element(const clause_t& c) {
+  printf("{ ");
+  for (auto l : c) {
+    printf("%d ", lit_to_dimacs(l));
+  }
+  printf("}");
+}
+template <>
+inline void log_action_element(const std::vector<literal_t>& c) {
   printf("{ ");
   for (auto l : c) {
     printf("%d ", lit_to_dimacs(l));

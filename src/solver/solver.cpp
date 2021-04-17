@@ -51,6 +51,7 @@ bool solver_t::solve() {
       }
 
       case state_t::conflict: {
+        conflict_enter();
         // This is the complicated state!
         // This is where we want to spend a lot of time being very careful
         // and thinking a lot, because it is information we use to guide our
@@ -130,7 +131,7 @@ solver_t::state_t solver_t::drain_unit_queue() {
 }
 
 clause_t solver_t::determine_conflict_clause() {
-  clause_t c = learn_clause(cnf, trail, stamped);
+  clause_t c = learn_clause();
   cond_log(settings::trace_clause_learning,
            solver_action::determined_conflict_clause, c.size());
   return c;
@@ -160,7 +161,7 @@ solver_t::solver_t(const cnf_t &CNF)
   trail.construct(max_var);
 
   install_core_plugins();
-  install_watched_literals();
+  watch.install(*this);
   install_lcm();  // we want LCM early on, to improve, e.g., LBD values.
   install_lbm();
   install_restart();
@@ -243,6 +244,14 @@ void solver_t::install_core_plugins() {
   if (settings::trace_decisions) {
     choose_literal_p.postcondition([&](literal_t l) {
       log_solver_action(solver_action::apply_decision, l);
+    });
+  }
+  if (settings::trace_conflicts) {
+    conflict_enter.add([&]() {
+      const clause_t &c = cnf[trail.rbegin()->get_clause()];
+      std::vector<literal_t> d(std::begin(c), std::end(c));
+      std::sort(std::begin(d), std::end(d));
+      log_solver_action(solver_action::conflict, d);
     });
   }
 }
@@ -398,6 +407,77 @@ std::string to_string(solver_t::state_t t) {
   }
 }
 
+clause_t solver_t::learn_clause() {
+  stamped.clear();
+
+  std::vector<literal_t> C;
+  const size_t D = trail.level();
+  auto it = trail.rbegin();
+
+  SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
+  const clause_t &c = cnf[it->get_clause()];
+  it++;
+
+  // This is the amount of things we know we'll be resolving against.
+  size_t counter = 0;
+  for (literal_t l : c) {
+    if (trail.level(l) == trail.level()) counter++;
+  }
+
+  for (literal_t l : c) {
+    stamped.set(neg(l));
+    if (trail.level(neg(l)) < D) {
+      // vsids.bump_variable(var(l));
+      C.push_back(l);
+    }
+  }
+
+  for (; counter > 1; it++) {
+    SAT_ASSERT(it->is_unit_prop());
+    literal_t L = it->get_literal();
+
+    // We don't expect to be able to resolve against this.
+    if (!stamped.get(L)) {
+      continue;
+    }
+
+    // L *is* stamped, so we *can* resolve against it!
+    counter--;  // track the number of resolutions we're doing.
+
+    const clause_t &d = cnf[it->get_clause()];
+
+    // vsids.bump_variable(var(L));
+    for (literal_t a : d) {
+      if (a == L) continue;
+      // We care about future resolutions, so we negate a
+      if (!stamped.get(neg(a))) {
+        stamped.set(neg(a));
+        // vsids.bump_variable(var(a));
+        if (trail.level(neg(a)) < D) {
+          C.push_back(a);
+        } else {
+          counter++;
+        }
+      }
+    }
+  }
+
+  while (!stamped.get(it->get_literal())) it++;
+
+  SAT_ASSERT(it->has_literal());
+  C.push_back(neg(it->get_literal()));
+  // vsids.bump_variable(var(it->get_literal()));
+
+  SAT_ASSERT(count_level_literals(C) == 1);
+  SAT_ASSERT(counter == 1);
+
+  // std::cout << "Counter: " << counter << std::endl;
+  // std::cout << "Learned: " << C << std::endl;
+  std::sort(std::begin(C), std::end(C));
+
+  return clause_t{C};
+}
+
 // LibFuzzer support:
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
   cnf_t cnf;
@@ -421,3 +501,45 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
   solver.solve();
   return 0;  // Non-zero return values are reserved for future use.
 }
+
+/*
+solver_state_t::solver_state_t(cnf_t &cnf) : cnf(cnf) {
+  variable_t max_var = max_variable(cnf);
+  trail.construct(max_var);
+
+  // Core functionality
+  decision_apply.add([&](literal_t l) { trail.append(make_decision(l)); });
+  unit_apply.add([&](literal_t l, clause_id cid) {
+    trail.append(make_unit_prop(l, cid));
+  });
+
+  restart_p.add_listener([&]() {
+    while (trail.level()) trail.pop();
+  });
+
+  // Invariants!
+  if (settings::debug_max) {
+    decision_before.pre([&](const cnf_t &cnf) {
+      trail_t::validate(cnf, trail);
+      assert(!trail_t::is_conflicted(cnf, trail));
+    });
+    unit_apply.pre([&](literal_t l, clause_id cid) {
+      assert(trail.count_unassigned_literals(cnf[cid]) == 1);
+      assert(trail.find_unassigned_literal(cnf[cid]) == l);
+      assert(!trail_t::is_conflicted(cnf, trail));
+    });
+    decision_choose.post([&](literal_t &l) {
+      assert(trail.literal_unassigned(l));
+      assert(!trail_t::has_unit(cnf, trail));
+    });
+  }
+
+  // Logging!
+  if (settings::trace_decisions) {
+    decision_choose.post([&](literal_t &l) {
+      log_solver_action(solver_action::apply_decision, l);
+    });
+  }
+}
+
+*/

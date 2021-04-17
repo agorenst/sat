@@ -35,6 +35,8 @@ struct trail_t {
   const action_t *begin() const { return &(mem[0]); }
   const action_t *end() const { return &(mem[next_index]); }
 
+  using iterator = action_t *;
+
   auto rbegin() { return std::make_reverse_iterator(end()); }
   auto rend() { return std::make_reverse_iterator(begin()); }
   auto crbegin() const { return std::make_reverse_iterator(cend()); }

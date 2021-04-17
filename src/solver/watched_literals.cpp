@@ -1,8 +1,44 @@
 #include "watched_literals.h"
+#include "solver.h"
 #include "subsumption.h"
 
 #include <iterator>
 #include "measurements.h"
+
+void watched_literals_t::install(solver_t &s)
+//: cnf(s.cnf),
+// trail(s.trail),
+// units(s.unit_queue),
+// literals_to_watcher(max_variable(s.cnf))
+{
+  for (clause_id cid : s.cnf) {
+    watch_clause(cid);
+  }
+
+  s.apply_decision_p.add_listener([&](literal_t l) {
+    literal_falsed(l);
+    SAT_ASSERT(halted() || validate_state());
+  });
+  s.apply_unit_p.add_listener([&](literal_t l, clause_id cid) {
+    literal_falsed(l);
+    SAT_ASSERT(halted() || validate_state());
+  });
+  s.remove_clause_p.add_listener([&](clause_id cid) { remove_clause(cid); });
+
+  s.process_added_clause_p.add_listener([&](clause_id cid) {
+    const clause_t &c = cnf[cid];
+    if (c.size() > 1) watch_clause(cid);
+    SAT_ASSERT(validate_state());
+  });
+  s.remove_literal_p.add_listener([&](clause_id cid, literal_t l) {
+    remove_clause(cid);
+    if (cnf[cid].size() > 1) {
+      watch_clause(cid);
+    }
+  });
+
+  SAT_ASSERT(validate_state());
+}
 
 watched_literals_t::watched_literals_t(cnf_t &cnf, trail_t &trail,
                                        unit_queue_t &units)

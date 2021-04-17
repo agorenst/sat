@@ -12,6 +12,7 @@ extern bool trace_applications;
 
 extern bool trace_clause_learning;
 extern bool trace_hash_collisions;
+extern bool trace_conflicts;
 
 extern bool debug_max;
 

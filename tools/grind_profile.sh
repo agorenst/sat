@@ -1,16 +1,16 @@
 #!/bin/bash
 
+testname=satgen.300
 rm $testname*
 rm asm.txt
 rm callgrind*
 
-python3 ./../src/gen/satgen.py -v 250 -s 100 | valgrind --tool=callgrind --dump-instr=yes ./../build/sat
+python3 ./../src/gen/satgen.py -v 300 | valgrind --tool=callgrind --dump-instr=yes ./../build/sat --naive-vsids
 
 filename=$(ls callgrind*)
 extension=${filename##*.}
 echo $filename
 echo $extension
-testname=satgen.250
 
 
 gprof2dot --format=callgrind --output=$testname.$extension.dot $filename
