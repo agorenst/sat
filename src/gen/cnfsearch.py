@@ -93,17 +93,19 @@ def benchmark1(seed_start, seed_end, solver_name='./build/sat', flags=[]):
 
 
 def compare_benchmark():
+    l = 10
+    u = 30
     print("My solver naive:")
-    benchmark1(0, 10, './build/sat')
-    # benchmark1(0, 10, './build/sat', ['--naive-vsids'])
+    benchmark1(l, u, './build/sat')
+    # benchmark1(l, u, './build/sat', ['--naive-vsids'])
     # print("My solver better:")
     # print("My solver naive:")
-    # benchmark1(0, 10, './build/sat', ['--naive-vsids'])
+    # benchmark1(l, u, './build/sat', ['--naive-vsids'])
     # print("My solver better:")
-    # benchmark1(0, 10, './build/sat')
+    # benchmark1(l, u, './build/sat')
 
     print("Minisat:")
-    benchmark1(0, 10, 'minisat')
+    benchmark1(l, u, 'minisat')
 
 
 def single_big_one():

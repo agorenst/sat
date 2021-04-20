@@ -32,6 +32,7 @@ enum class solver_action {
   learned_clause,
   hash_false_positive,
   conflict,
+  cdcl_interior_resolution,
 };
 
 template <typename T>
@@ -56,6 +57,10 @@ inline void log_action_element(const literal_t& l) {
 template <>
 inline void log_action_element(const clause_id& cid) {
   printf("%p ", cid);
+}
+template <>
+inline void log_action_element(const char& c) {
+  printf("%c ", c);
 }
 template <>
 inline void log_action_element(const clause_t& c) {

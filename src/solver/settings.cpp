@@ -1,5 +1,6 @@
 #include "settings.h"
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -17,6 +18,7 @@ bool trace_clause_learning = false;
 bool trace_hash_collisions = false;
 bool trace_decisions = false;
 bool trace_conflicts = false;
+bool trace_cdcl = false;
 
 bool print_certificate = false;
 
@@ -27,6 +29,7 @@ struct flag_t {
   std::string name;
   std::string description;
   bool& value;
+  std::string param = "";
 };
 std::vector<flag_t> options{
     {"print-parse", "Output CNF just after parsing (mainly for debugging)",
@@ -52,10 +55,17 @@ std::vector<flag_t> options{
     {"trace-conflicts", "Trace conflicts", trace_conflicts},
 
     {"naive-vsids", "Use the original vsids algorithm", naive_vsids},
+    {"trace-cdcl", "Emit the CDCL resolution for this clause", trace_cdcl},
 };
+const char* trace_cdcl_clause() {
+  auto flag =
+      std::find_if(std::begin(options), std::end(options),
+                   [&](const flag_t& o) { return o.name == "trace-cdcl"; });
+  return flag->param.c_str();
+}
 int parse(int argc, char* argv[]) {
   for (int i = 1; i < argc; i++) {
-    const char* arg = argv[i];
+    char* arg = argv[i];
     auto n = strlen(arg);
     if (n < 2) {
       return i;  // error
@@ -66,12 +76,22 @@ int parse(int argc, char* argv[]) {
     arg++;
     arg++;
 
+    char* argend = &arg[strlen(arg)];
+
+    auto param_ptr = std::find(arg, argend, '=');
+    std::string param_value = "";
+    if (param_ptr != argend) {
+      *param_ptr = '\0';  // remove the '=';
+      std::copy(param_ptr + 1, argend, std::back_inserter(param_value));
+    }
+
     bool found = false;
     for (auto& p : options) {
       if (!strcmp(p.name.c_str(), arg)) {
         // This is a flag, flip it from default
         p.value = !p.value;
         found = true;
+        if (param_value != "") p.param = param_value;
         break;
       }
     }

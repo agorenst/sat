@@ -112,6 +112,9 @@ struct solver_t {
   plugin<> start_solve_p;
   plugin<> end_solve_p;
 
+  clause_id conflict_clause_id;
+  plugin<literal_t, clause_id> cdcl_resolve;
+
   // This are listeners for actions that occur at
   // various independent points in evolving the CNF
   plugin<clause_id> remove_clause_p;

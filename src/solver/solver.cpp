@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <iostream>
+#include <sstream>
 
 #include "solver.h"
 
@@ -253,6 +255,11 @@ void solver_t::install_core_plugins() {
       std::sort(std::begin(d), std::end(d));
       log_solver_action(solver_action::conflict, d);
     });
+
+    // Add a verbose option that listens in to other conflict parts
+    // that will list out the implication graph stemming from this conflict
+    // clause. That means we need to be able to generate such an implication
+    // graph!
   }
 }
 
@@ -337,6 +344,35 @@ void solver_t::install_literal_chooser() {
   if (settings::naive_vsids) {
     learned_clause_p.add_listener(
         [&](const clause_t &c, const trail_t &t) { vsids.clause_learned(c); });
+    cdcl_resolve.add(
+        [&](literal_t l, clause_id c) { vsids.bump_variable(var(l)); });
+
+    if (settings::trace_cdcl) {
+      static std::vector<literal_t> to_compare;
+      std::string to_parse(settings::trace_cdcl_clause());
+
+      std::istringstream ws(to_parse);
+      std::vector<std::string> words;
+      std::copy(std::istream_iterator<std::string>(ws),
+                std::istream_iterator<std::string>(),
+                std::back_inserter(words));
+      std::transform(
+          std::begin(words), std::end(words), std::back_inserter(to_compare),
+          [](const std::string &s) { return dimacs_to_lit(std::stol(s)); });
+
+      cdcl_resolve.add([&](literal_t l, clause_id cid) {
+        std::vector<literal_t> cc_tmp(cnf[conflict_clause_id].begin(),
+                                      cnf[conflict_clause_id].end());
+        std::sort(std::begin(cc_tmp), std::end(cc_tmp));
+
+        if (cc_tmp == to_compare) {
+          const auto &c = cnf[cid];
+          std::vector<literal_t> tmp(c.begin(), c.end());
+          std::sort(std::begin(tmp), std::end(tmp));
+          log_solver_action('\t', lit_to_dimacs(l), tmp);
+        }
+      });
+    }
 
     choose_literal_p.add_listener([&](literal_t &d) { d = vsids.choose(); });
     restart_p.add_listener([&]() { vsids.static_activity(); });
@@ -415,6 +451,7 @@ clause_t solver_t::learn_clause() {
   auto it = trail.rbegin();
 
   SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
+  conflict_clause_id = it->get_clause();
   const clause_t &c = cnf[it->get_clause()];
   it++;
 
@@ -440,6 +477,8 @@ clause_t solver_t::learn_clause() {
     if (!stamped.get(L)) {
       continue;
     }
+
+    cdcl_resolve(L, it->get_clause());
 
     // L *is* stamped, so we *can* resolve against it!
     counter--;  // track the number of resolutions we're doing.
