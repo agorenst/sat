@@ -18,8 +18,6 @@ struct lbm_t {
   // Don't erase anything here!
   // std::priority_queue<lbm_entry> worklist;
   std::vector<lbm_entry> worklist;
-
-  clause_map_t<size_t> lbm;
   size_t value_cache = 0;
 
   size_t max_size = 0;

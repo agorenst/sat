@@ -47,7 +47,7 @@ literal_t vsids_t::choose() const {
 }
 
 vsids_heap_t::vsids_heap_t(const cnf_t &cnf, const trail_t &trail)
-    : cnf(cnf), vars(cnf.var_range()), trail(trail) {
+    : trail(trail), cnf(cnf), vars(cnf.var_range()) {
   mem = std::make_unique<heap_node[]>(vars.max_var);
   activity.construct(max_variable(cnf));
   for (variable_t v : vars) {

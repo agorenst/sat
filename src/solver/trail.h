@@ -54,6 +54,9 @@ struct trail_t {
   size_t level(literal_t l) const;
   size_t level(action_t a) const;
   size_t level() const { return dlevel; }
+  bool conflicted() const {
+    return rbegin() != rend() && rbegin()->is_conflict();
+  }
   bool literal_true(const literal_t l) const;
   bool literal_false(const literal_t l) const;
   bool literal_unassigned(const literal_t l) const;

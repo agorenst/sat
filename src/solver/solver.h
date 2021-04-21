@@ -68,6 +68,7 @@ struct solver_t {
 
   // This is the TWL scheme first implemented in chaff.
   watched_literals_t watch;
+  const_watched_literals_t const_watch;
 
   // This is our queue of "pending" units that we need to prop.
   // We separate this rather than put things on the trail directly
@@ -142,7 +143,6 @@ struct solver_t {
 
   void install_complete_tracker();
 
-  void install_watched_literals();
   void install_lcm();
   void install_lbm();
   void install_restart();

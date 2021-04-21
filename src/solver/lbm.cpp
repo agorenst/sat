@@ -31,7 +31,7 @@ void lbm_t::flush_value(clause_id cid) {
   // value_cache = 0; this isn't needed, and is actually a problem.
 }
 
-lbm_t::lbm_t(const cnf_t &cnf) : lbm(cnf.live_clause_count()) {
+lbm_t::lbm_t(const cnf_t &cnf) {
   max_size = static_cast<size_t>(cnf.live_clause_count() * start_growth);
 }
 

@@ -1,8 +1,9 @@
 CXX=clang++
 CC=clang++
 INCLUDES=-I ./../src/repr -I ./../src/solver
-CXXFLAGS=-Wall -std=c++17 -g -O2 -flto -ffast-math $(INCLUDES)
-DBGFLAGS=-Wall -std=c++17 -g -DSAT_DEBUG_MODE $(INCLUDES)
+WARNINGS=-Wall -Werror -Wno-unused-parameter
+CXXFLAGS=$(WARNINGS) -std=c++17 -g -O2 -flto -ffast-math $(INCLUDES)
+DBGFLAGS=$(WARNINGS) -std=c++17 -g -DSAT_DEBUG_MODE $(INCLUDES)
 AFL=afl-clang-fast++
 SHELL=/bin/bash
 
@@ -55,7 +56,7 @@ $(BUILDDIR)/sat.dbg : $(SOLVERDBGOBJECTS) $(DRIVEROBJECTS) $(REPROBJECTS)
 	$(CC) $(DBGFLAGS) $^ -o $@
 
 clean:
-	rm -f $(SOLVERSANOBJECTS) $(SOLVEROBJECTS) $(SOLVERAFLOBJECTS) $(SOLVERDBGOBJECTS) $(DRIVEROBJECTS) sat.dbg sat.afl sat sat.san
+	rm -f $(SOLVERSANOBJECTS) $(SOLVEROBJECTS) $(SOLVERAFLOBJECTS) $(SOLVERDBGOBJECTS) $(REPROBJECTS) $(DRIVEROBJECTS) sat.dbg sat.afl sat sat.san
 
 # $(info $(VARNAME))
 

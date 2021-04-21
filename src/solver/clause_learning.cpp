@@ -11,7 +11,6 @@ bool verify_resolution_expected(const clause_t &c, const trail_t &actions) {
     // correctness checks:
     // reset our iterator
     int counter = 0;
-    literal_t new_implied = 0;
     auto it = std::next(actions.rbegin());
 
     for (; it != std::rend(actions) &&
@@ -24,14 +23,12 @@ bool verify_resolution_expected(const clause_t &c, const trail_t &actions) {
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::unit_prop);
       if (contains(c, neg(it->get_literal()))) {
         counter++;
-        new_implied = it->get_literal();
       }
     }
     if (it != std::rend(actions)) {
       SAT_ASSERT(it->action_kind == action_t::action_kind_t::decision);
       if (contains(c, neg(it->get_literal()))) {
         counter++;
-        new_implied = neg(it->get_literal());
       }
     }
 

@@ -156,6 +156,7 @@ solver_t::solver_t(const cnf_t &CNF)
       literal_to_clauses_complete(max_variable(cnf)),
       stamped(max_variable(cnf)),
       watch(cnf, trail, unit_queue),
+      const_watch(cnf, trail, unit_queue),
       vsids(cnf, trail),
       vsids_heap(cnf, trail),
       lbm(cnf) {
@@ -164,6 +165,7 @@ solver_t::solver_t(const cnf_t &CNF)
 
   install_core_plugins();
   watch.install(*this);
+  // const_watch.install(*this);
   install_lcm();  // we want LCM early on, to improve, e.g., LBD values.
   install_lbm();
   install_restart();
@@ -245,7 +247,7 @@ void solver_t::install_core_plugins() {
 
   if (settings::trace_decisions) {
     choose_literal_p.postcondition([&](literal_t l) {
-      log_solver_action(solver_action::apply_decision, l);
+      if (l) log_solver_action(solver_action::apply_decision, lit_to_dimacs(l));
     });
   }
   if (settings::trace_conflicts) {
@@ -261,38 +263,6 @@ void solver_t::install_core_plugins() {
     // clause. That means we need to be able to generate such an implication
     // graph!
   }
-}
-
-void solver_t::install_watched_literals() {
-  // Do the initial thing.
-  for (clause_id cid : cnf) {
-    watch.watch_clause(cid);
-  }
-
-  apply_decision_p.add_listener([&](literal_t l) {
-    watch.literal_falsed(l);
-    SAT_ASSERT(halted() || watch.validate_state());
-  });
-  apply_unit_p.add_listener([&](literal_t l, clause_id cid) {
-    watch.literal_falsed(l);
-    SAT_ASSERT(halted() || watch.validate_state());
-  });
-  remove_clause_p.add_listener(
-      [&](clause_id cid) { watch.remove_clause(cid); });
-
-  process_added_clause_p.add_listener([&](clause_id cid) {
-    const clause_t &c = cnf[cid];
-    if (c.size() > 1) watch.watch_clause(cid);
-    SAT_ASSERT(watch.validate_state());
-  });
-  remove_literal_p.add_listener([&](clause_id cid, literal_t l) {
-    watch.remove_clause(cid);
-    if (cnf[cid].size() > 1) {
-      watch.watch_clause(cid);
-    }
-  });
-
-  SAT_ASSERT(watch.validate_state());
 }
 
 void solver_t::install_lcm() {
@@ -441,6 +411,7 @@ std::string to_string(solver_t::state_t t) {
     case solver_t::state_t::unsat:
       return "unsat";
   }
+  return "";
 }
 
 clause_t solver_t::learn_clause() {
@@ -507,7 +478,7 @@ clause_t solver_t::learn_clause() {
   C.push_back(neg(it->get_literal()));
   // vsids.bump_variable(var(it->get_literal()));
 
-  SAT_ASSERT(count_level_literals(C) == 1);
+  // SAT_ASSERT(count_level_literals(C) == 1);
   SAT_ASSERT(counter == 1);
 
   // std::cout << "Counter: " << counter << std::endl;

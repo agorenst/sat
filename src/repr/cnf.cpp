@@ -250,9 +250,9 @@ bool load_cnf(const char *buffer, size_t s, cnf_t &cnf) {
       literal_t l = 0;
       try {
         l = std::stol(w, &chars_read);
-      } catch (std::invalid_argument) {
+      } catch (std::invalid_argument &) {
         return false;
-      } catch (std::out_of_range) {
+      } catch (std::out_of_range &) {
         return false;
       }
 

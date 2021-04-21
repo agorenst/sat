@@ -3,6 +3,7 @@
 #include <array>
 #include <cassert>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <numeric>
 
@@ -167,7 +168,8 @@ struct cache_storage {
 };
 
 struct clause_t {
-  cache_storage<literal_t, 16> mem;
+  // cache_storage<literal_t, 16> mem;
+  std::vector<literal_t> mem;
   clause_t(std::vector<literal_t> m) : mem(m) {}
 
   // no copy constructor
@@ -194,7 +196,7 @@ struct clause_t {
   auto &operator[](size_t i) const { return mem[i]; }
   void pop_back() {
     mem.pop_back();
-    mem[mem.len] = 0;
+    // mem[mem.len] = 0;
   }
   bool operator==(const clause_t &that) const { return mem == that.mem; }
   bool operator!=(const clause_t &that) const { return mem != that.mem; }
@@ -237,28 +239,30 @@ struct std::iterator_traits<
 };
 
 template <typename T>
-struct clause_map_t {
-  typedef size_t key_t;
-  std::vector<T> mem;
-  clause_map_t(size_t s) : mem(s) {}
-  T &operator[](key_t k) {
-    if (k == mem.size()) {
-      mem.push_back(T{});
-    } else if (k > mem.size()) {
-      mem.resize(k + 1);
-    }
-    return mem[k];
-  }
-  const T &operator[](key_t k) const {
-    if (k == mem.size()) {
-      mem.push_back(T{});
-    } else if (k > mem.size()) {
-      mem.resize(k + 1);
-    }
-    return mem[k];
-  }
-  size_t size() const { return mem.size(); }
-};
+using clause_map_t = std::map<clause_id, T>;
+// template <typename T>
+// struct clause_map_t {
+//  typedef size_t key_t;
+//  std::vector<T> mem;
+//  clause_map_t(size_t s) : mem(s) {}
+//  T &operator[](key_t k) {
+//    if (k == mem.size()) {
+//      mem.push_back(T{});
+//    } else if (k > mem.size()) {
+//      mem.resize(k + 1);
+//    }
+//    return mem[k];
+//  }
+//  const T &operator[](key_t k) const {
+//    if (k == mem.size()) {
+//      mem.push_back(T{});
+//    } else if (k > mem.size()) {
+//      mem.resize(k + 1);
+//    }
+//    return mem[k];
+//  }
+//  size_t size() const { return mem.size(); }
+//};
 
 // Really a "clause set", we don't promise anything about order.
 // Using a vector is faster (?!) than just the array. Presumably I'm doing
