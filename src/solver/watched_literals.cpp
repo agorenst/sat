@@ -483,7 +483,9 @@ void const_watched_literals_t::literal_falsed(literal_t l) {
     }
   }
   watchers.resize(j);
-  MAX_ASSERT(trail.conflicted() || validate_state());
+  // For the vivification case, we need to somehow pass the "except-this-one"
+  // CID, so for now we comment this.
+  // MAX_ASSERT(trail.conflicted() || validate_state());
 }
 
 void const_watched_literals_t::unwatch_clause(literal_t l, clause_id cid) {
@@ -539,6 +541,7 @@ bool const_watched_literals_t::validate_state(clause_id skip_id) {
   };
   for (auto cid : cnf) {
     if (!clause_watched(cid)) continue;
+    if (cid == skip_id) continue;
     const watcher_t &w = watched_literals[cid];
     const auto &wl1 = literals_to_watcher[w.l1];
     const auto &wl2 = literals_to_watcher[w.l2];

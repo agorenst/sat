@@ -14,6 +14,7 @@ extern bool trace_clause_learning;
 extern bool trace_hash_collisions;
 extern bool trace_conflicts;
 extern bool trace_cdcl;
+extern bool trace_vivification;
 const char* trace_cdcl_clause();
 
 extern bool debug_max;
@@ -21,6 +22,9 @@ extern bool debug_max;
 extern bool print_certificate;
 
 extern bool naive_vsids;
+
+extern bool only_preprocess;
+extern bool no_viv_preprocess;
 
 int parse(int argc, char* argv[]);
 void print_help();

@@ -131,11 +131,10 @@ void preprocess(cnf_t &cnf) {
     did_work |= cnf::transform::apply_trivial_units(cnf) > 0;
 
     bool VIV(cnf_t & cnf);
-    // if (VIV(cnf)) {
-    // this has correctness issues?
-    // std::cerr << "VIV" << std::endl;
-    // did_work = true;
-    //}
+    if (!settings::no_viv_preprocess && VIV(cnf)) {
+      // this has correctness issues?
+      did_work = true;
+    }
 
     did_work |= cnf::transform::apply_trivial_units(cnf) > 0;
 

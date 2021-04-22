@@ -86,6 +86,7 @@ def benchmark1(seed_start, seed_end, solver_name='./build/sat', flags=[]):
         example_cnf = satgen.main(int(100*scale), int(426*scale), 3, i, 0)
         cnf_string = satgen.cnf_to_string(example_cnf)
         p = subprocess.Popen(
+            # [solver_name] + flags, stdin=subprocess.PIPE)
             [solver_name] + flags, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
         p.communicate(cnf_string.encode())
     end = time.time()

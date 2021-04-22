@@ -69,6 +69,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  if (settings::only_preprocess) {
+    return 0;
+  }
+
   // TODO(aaron): fold this into a more general case, if possible.
   if (cnf::search::immediately_unsat(cnf)) {
     printf("UNSATISFIABLE\n");

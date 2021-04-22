@@ -19,6 +19,10 @@ bool trace_hash_collisions = false;
 bool trace_decisions = false;
 bool trace_conflicts = false;
 bool trace_cdcl = false;
+bool trace_vivification = false;
+
+bool only_preprocess = false;
+bool no_viv_preprocess = false;
 
 bool print_certificate = false;
 
@@ -56,6 +60,12 @@ std::vector<flag_t> options{
 
     {"naive-vsids", "Use the original vsids algorithm", naive_vsids},
     {"trace-cdcl", "Emit the CDCL resolution for this clause", trace_cdcl},
+    {"trace-vivification", "Trace what our viv algorithms do",
+     trace_vivification},
+    {"no-viv-preprocess", "Turn off vivification in the preprocessor",
+     no_viv_preprocess},
+
+    {"only-preprocess", "Quit after preprocessing", only_preprocess},
 };
 const char* trace_cdcl_clause() {
   auto flag =

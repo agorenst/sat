@@ -3,9 +3,9 @@
 #include <array>
 #include <cassert>
 #include <iterator>
-#include <map>
 #include <memory>
 #include <numeric>
+#include <unordered_map>
 
 #include "variable.h"
 
@@ -239,7 +239,7 @@ struct std::iterator_traits<
 };
 
 template <typename T>
-using clause_map_t = std::map<clause_id, T>;
+using clause_map_t = std::unordered_map<clause_id, T>;
 // template <typename T>
 // struct clause_map_t {
 //  typedef size_t key_t;

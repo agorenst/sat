@@ -5,7 +5,7 @@ rm $testname*
 rm asm.txt
 rm callgrind*
 
-python3 ./../src/gen/satgen.py -v 300 | valgrind --tool=callgrind --dump-instr=yes ./../build/sat --naive-vsids
+python3 ./../src/gen/satgen.py -v 300 | valgrind --tool=callgrind --dump-instr=yes ./../build/sat --only-preprocess
 
 filename=$(ls callgrind*)
 extension=${filename##*.}

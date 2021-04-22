@@ -1,3 +1,6 @@
+#include <chrono>
+#include "measurements.h"
+#include "settings.h"
 #include "solver.h"
 
 // Takes a CNF, and vivifies all the clauses
@@ -7,7 +10,7 @@ struct vivifier_t {
   cnf_t &cnf;
   clause_id to_skip = nullptr;
   trail_t trail;
-  watched_literals_t watch;
+  const_watched_literals_t watch;
   unit_queue_t unit_queue;
 
   plugin<literal_t> apply_decision;
@@ -27,11 +30,11 @@ struct vivifier_t {
     }
     apply_decision.add_listener([&](literal_t l) {
       watch.literal_falsed(l);
-      SAT_ASSERT(halted() || watch.validate_state(to_skip));
+      MAX_ASSERT(halted() || watch.validate_state(to_skip));
     });
     apply_unit.add_listener([&](literal_t l, clause_id cid) {
       watch.literal_falsed(l);
-      SAT_ASSERT(halted() || watch.validate_state(to_skip));
+      MAX_ASSERT(halted() || watch.validate_state(to_skip));
     });
   }
   bool halt_state(const action_t action) const {
@@ -63,7 +66,6 @@ struct vivifier_t {
   }
 
   bool vivify(clause_id cid) {
-    assert(watch.validate_state());
     if (!watch.clause_watched(cid)) return false;
 
     clause_t &c = cnf[cid];
@@ -76,10 +78,9 @@ struct vivifier_t {
 
     bool did_work = false;
     auto it = std::begin(c);
-    assert(trail.next_index == 0);
+    MAX_ASSERT(trail.next_index == 0);
     for (; it != std::end(c); it++) {
-      // std::cerr << "XXX" << std::endl;
-      assert(watch.validate_state(to_skip));
+      MAX_ASSERT(watch.validate_state(to_skip));
       literal_t l = neg(*it);
       apply_decision(l);
       bool did_prop = drain_units();
@@ -87,8 +88,8 @@ struct vivifier_t {
 
       // Case 1: there's a conflict:
       if (halted()) {
-        assert(trail.crbegin()->action_kind ==
-               action_t::action_kind_t::halt_conflict);
+        MAX_ASSERT(trail.crbegin()->action_kind ==
+                   action_t::action_kind_t::halt_conflict);
 
         if (std::next(it) != std::end(c)) {
           // std::cerr << "Case 1: " << c << " into ";
@@ -168,6 +169,7 @@ struct vivifier_t {
       continue_iterating = false;
       for (auto cid : cnf) {
         if (vivify(cid)) {
+          cond_log(settings::trace_vivification, cnf[cid]);
           change = true;
           continue_iterating = true;
         }
