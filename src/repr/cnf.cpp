@@ -70,6 +70,10 @@ void cnf_t::restore_clause(clause_id cid) {
   cid->is_alive = true;
   live_count++;
 
+  // Don't remove this!
+  auto it = std::remove(std::begin(to_erase), std::end(to_erase), cid);
+  to_erase.erase(it, std::end(to_erase));
+
   if (!head) {
     head = cid;
   } else {

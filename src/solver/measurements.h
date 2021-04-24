@@ -33,6 +33,13 @@ enum class solver_action {
   hash_false_positive,
   conflict,
   cdcl_interior_resolution,
+
+  vivification_case_1_pre,
+  vivification_case_1_post,
+  vivification_case_2a_pre,
+  vivification_case_2a_post,
+  vivification_case_2b_pre,
+  vivification_case_2b_post,
 };
 
 template <typename T>
@@ -53,6 +60,10 @@ inline void log_action_element(const solver_action& a) {
 template <>
 inline void log_action_element(const literal_t& l) {
   printf("%d ", l);
+}
+template <>
+inline void log_action_element(const size_t& l) {
+  printf("%zu ", l);
 }
 template <>
 inline void log_action_element(const clause_id& cid) {

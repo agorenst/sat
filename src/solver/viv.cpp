@@ -6,12 +6,15 @@
 // Takes a CNF, and vivifies all the clauses
 
 // Sort of like a solver, but not really.
+// This supports inprocessing (you pass in the solver state), but I can't find a
+// situation where it's worth it. Maybe with better filtering/heuristics.
 struct vivifier_t {
   cnf_t &cnf;
   clause_id to_skip = nullptr;
   trail_t trail;
   const_watched_literals_t watch;
   unit_queue_t unit_queue;
+  solver_t *solver = nullptr;
 
   plugin<literal_t> apply_decision;
   plugin<literal_t, clause_id> apply_unit;
@@ -68,11 +71,20 @@ struct vivifier_t {
   bool vivify(clause_id cid) {
     if (!watch.clause_watched(cid)) return false;
 
+    // Optimizations: what are things that are likely to not be vivified?
+    cond_log(settings::trace_vivification, cnf[cid].size());
+
     clause_t &c = cnf[cid];
     // std::cerr << "[VIV][VERBOSE] Starting to viv " << c << std::endl;
 
     // Provisionally stop watching c.
     // This is simulating "cnf \ c".
+    if (solver) {
+      // if this is on the "real" trail, dont use it.
+      if (solver->trail.uses_clause(cid)) return false;
+      // solver->remove_clause(cid);
+      solver->watch.remove_clause(cid);
+    }
     watch.remove_clause(cid);
     to_skip = cid;
 
@@ -92,14 +104,15 @@ struct vivifier_t {
                    action_t::action_kind_t::halt_conflict);
 
         if (std::next(it) != std::end(c)) {
-          // std::cerr << "Case 1: " << c << " into ";
+          cond_log(settings::trace_vivification,
+                   solver_action::vivification_case_1_pre, c);
           auto to_erase = std::distance(std::next(it), std::end(c));
           for (auto i = 0; i < to_erase; i++) {
             c.pop_back();
           }
-          // std::cerr << c << std::endl;
+          cond_log(settings::trace_vivification,
+                   solver_action::vivification_case_1_post, c);
           did_work = true;
-          // std::cerr << trail << std::endl;
         }
 
         break;
@@ -117,11 +130,12 @@ struct vivifier_t {
 
       literal_t j = *jt;
       if (trail.literal_false(j)) {
-        // case 1, we can exactly remove j.
-        // std::cerr << "Case 2a: " << c << " into ";
+        cond_log(settings::trace_vivification,
+                 solver_action::vivification_case_2a_pre, c);
         std::iter_swap(jt, std::prev(std::end(c)));
         c.pop_back();
-        // std::cerr << c << std::endl;
+        cond_log(settings::trace_vivification,
+                 solver_action::vivification_case_2a_post, c);
         did_work = true;
         break;
       } else {
@@ -130,7 +144,8 @@ struct vivifier_t {
 
         // Include j in our clause
         if (std::next(std::next(it)) != std::end(c)) {
-          // std::cerr << "Case 2b: " << c << " into ";
+          cond_log(settings::trace_vivification,
+                   solver_action::vivification_case_2b_pre, c);
           std::iter_swap(jt, std::next(it));
           it++;
 
@@ -140,7 +155,8 @@ struct vivifier_t {
           for (auto i = 0; i < to_erase; i++) {
             c.pop_back();
           }
-          // std::cerr << c << std::endl;
+          cond_log(settings::trace_vivification,
+                   solver_action::vivification_case_2b_post, c);
           did_work = true;
         }
         break;
@@ -152,6 +168,10 @@ struct vivifier_t {
     unit_queue.clear();
 
     if (c.size() > 1) watch.watch_clause(cid);
+    if (solver) {
+      // solver->cnf.restore_clause(cid);
+      if (c.size() > 1) solver->watch.watch_clause(cid);
+    }
 
     // cnf.restore_clause(cid);
 
@@ -167,7 +187,8 @@ struct vivifier_t {
     bool continue_iterating = true;
     while (continue_iterating) {
       continue_iterating = false;
-      for (auto cid : cnf) {
+      std::vector<clause_id> worklist{std::begin(cnf), std::end(cnf)};
+      for (auto cid : worklist) {
         if (vivify(cid)) {
           cond_log(settings::trace_vivification, cnf[cid]);
           change = true;
@@ -178,7 +199,8 @@ struct vivifier_t {
     return change;
   }
 
-  vivifier_t(cnf_t &CNF) : cnf(CNF), watch(cnf, trail, unit_queue) {
+  vivifier_t(cnf_t &CNF, solver_t *solver = nullptr)
+      : cnf(CNF), watch(cnf, trail, unit_queue), solver(solver) {
     variable_t max_var = max_variable(cnf);
     trail.construct(max_var);
     install_core_plugins();
@@ -189,6 +211,12 @@ struct vivifier_t {
 
 bool VIV(cnf_t &cnf) {
   vivifier_t viv(cnf);
+  bool result = viv.vivify();
+  return result;
+}
+
+bool VIV(cnf_t &cnf, solver_t *solver = nullptr) {
+  vivifier_t viv(cnf, solver);
   bool result = viv.vivify();
   return result;
 }

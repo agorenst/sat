@@ -185,6 +185,7 @@ template <>
 struct std::iterator_traits<cnf_t::clause_iterator> {
   typedef clause_id value_type;
   typedef clause_id &reference_type;
+  typedef clause_id &reference;
   typedef clause_id *pointer;
   typedef int difference_type;
   typedef std::bidirectional_iterator_tag iterator_category;
@@ -194,6 +195,7 @@ template <>
 struct std::iterator_traits<clauses::iterator> {
   typedef clause_t value_type;
   typedef clause_t &reference_type;
+  typedef clause_t &reference;
   typedef clause_t *pointer;
   typedef int difference_type;
   typedef std::forward_iterator_tag iterator_category;
@@ -202,6 +204,7 @@ template <>
 struct std::iterator_traits<const_clauses::iterator> {
   typedef const clause_t value_type;
   typedef const clause_t &reference_type;
+  typedef const clause_t &reference;
   typedef const clause_t *pointer;
   typedef int difference_type;
   typedef std::forward_iterator_tag iterator_category;

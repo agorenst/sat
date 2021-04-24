@@ -10,6 +10,7 @@
 #include "measurements.h"
 #include "preprocess.h"
 #include "subsumption.h"
+#include "viv.h"
 
 // The implementation model our solver uses, for editing and modularity, is a
 // "plugin" model. Each algorithm is maintained by an implementation object,
