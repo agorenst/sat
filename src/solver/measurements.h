@@ -28,8 +28,8 @@ enum class solver_action {
   skip_unit,
   apply_decision,
   restart,
-  determined_conflict_clause,
-  learned_clause,
+  determined_conflict_clause,  // 6
+  learned_clause,              // 7
   hash_false_positive,
   conflict,
   cdcl_interior_resolution,

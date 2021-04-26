@@ -26,6 +26,13 @@ extern bool naive_vsids;
 extern bool only_preprocess;
 extern bool no_viv_preprocess;
 
+extern bool learned_clause_minimization;
+extern bool lbd_cleaning;
+extern bool ema_restart;
+extern bool backtrack_subsumption;
+
+extern bool only_positive_choices;
+
 int parse(int argc, char* argv[]);
 void print_help();
 }  // namespace settings

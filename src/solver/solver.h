@@ -2,6 +2,7 @@
 #include "cnf.h"
 #include "lbm.h"
 #include "plugins.h"
+#include "positive_only_literal_chooser.h"
 #include "unit_queue.h"
 #include "vsids.h"
 #include "watched_literals.h"
@@ -79,6 +80,7 @@ struct solver_t {
   // This VSIDS object is how we choose our literals.
   vsids_t vsids;
   vsids_heap_t vsids_heap;
+  positive_only_literal_chooser_t polc;
 
   // Our main clause-removal heuristic:
   lbm_t lbm;

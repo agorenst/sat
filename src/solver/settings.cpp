@@ -28,6 +28,13 @@ bool print_certificate = false;
 
 bool naive_vsids = true;
 
+bool learned_clause_minimization = true;
+bool lbd_cleaning = true;
+bool ema_restart = true;
+bool backtrack_subsumption = true;
+
+bool only_positive_choices = false;
+
 bool debug_max = false;  // this should ultimately be an integer or osmething.
 struct flag_t {
   std::string name;
@@ -64,6 +71,17 @@ std::vector<flag_t> options{
      trace_vivification},
     {"no-viv-preprocess", "Turn off vivification in the preprocessor",
      no_viv_preprocess},
+
+    {"learned-clause-minimization-", "Turn off LCM",
+     learned_clause_minimization},
+    {"lbd_cleaning-", "Turn off LBD", lbd_cleaning},
+    {"ema_restart-", "Turn off EMA restart strategy", ema_restart},
+    {"only-positive-choices",
+     "Use a naive literal-choosing strategy that can only return positive "
+     "literals",
+     only_positive_choices},
+    {"backtrack-subsumption-", "Turn off backtrack subsumption",
+     backtrack_subsumption},
 
     {"only-preprocess", "Quit after preprocessing", only_preprocess},
 };

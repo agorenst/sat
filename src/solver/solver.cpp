@@ -28,6 +28,7 @@ bool solver_t::solve() {
   start_solve();
 
   for (;;) {
+    // std::cout << trail << std::endl;
     switch (state) {
       case state_t::quiescent: {
         // This may be where we decide, e.g., to restart.
@@ -81,6 +82,14 @@ bool solver_t::solve() {
         // such.
         process_backtrack_level(c, target);
 
+        // without LCM, sometimes we can learn a unit clause that is still
+        // contradicted on the trail!
+        // CF: cat interesting_pm_graphs/trivalent_no_pm.txt | python
+        // graph_enum.py --reduce-graph --dot | valgrind ./../build/sat
+        // --only-positive-choices --trace-decisions --preprocessor-
+        // --trace-clause-learning --backtrack-subsumption- --print-certificate
+        // --trace-conflicts --trace-cdcl --learned-clause-minimization-
+
         // High-level assert:
         // // the clause is unique
         // // the clause contains no literals that are level 0 (proven-fixed)
@@ -91,7 +100,7 @@ bool solver_t::solve() {
         clause_id cid = cnf.add_clause(std::move(c));
         // Commit the clause, the LBM score of that clause, and so on.
         process_added_clause(cid);
-        SAT_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
+        MAX_ASSERT(trail.count_unassigned_literals(cnf[cid]) == 1);
         literal_t u = trail.find_unassigned_literal(cnf[cid]);
         // SAT_ASSERT(trail.literal_unassigned(cnf[cid][0]));
 
@@ -136,7 +145,7 @@ solver_t::state_t solver_t::drain_unit_queue() {
 clause_t solver_t::determine_conflict_clause() {
   clause_t c = learn_clause();
   cond_log(settings::trace_clause_learning,
-           solver_action::determined_conflict_clause, c.size());
+           solver_action::determined_conflict_clause, c);
   return c;
 }
 
@@ -146,7 +155,9 @@ action_t *solver_t::determine_backtrack_level(const clause_t &c) {
 }
 
 void solver_t::process_backtrack_level(clause_t &c, action_t *target) {
-  backtrack_subsumption(c, target, std::end(trail));
+  if (settings::backtrack_subsumption) {
+    backtrack_subsumption(c, target, std::end(trail));
+  }
   trail.drop_from(target);
   unit_queue.clear();
 }
@@ -160,6 +171,7 @@ solver_t::solver_t(const cnf_t &CNF)
       const_watch(cnf, trail, unit_queue),
       vsids(cnf, trail),
       vsids_heap(cnf, trail),
+      polc(max_variable(cnf), trail),
       lbm(cnf) {
   variable_t max_var = max_variable(cnf);
   trail.construct(max_var);
@@ -167,9 +179,16 @@ solver_t::solver_t(const cnf_t &CNF)
   install_core_plugins();
   watch.install(*this);
   // const_watch.install(*this);
-  install_lcm();  // we want LCM early on, to improve, e.g., LBD values.
-  install_lbm();
-  install_restart();
+  if (settings::learned_clause_minimization) {
+    install_lcm();  // we want LCM early on, to improve, e.g., LBD values.
+  }
+
+  if (settings::lbd_cleaning) {
+    install_lbm();
+  }
+  if (settings::ema_restart) {
+    install_restart();
+  }
   install_literal_chooser();
 
   remove_clause_p.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
@@ -246,6 +265,13 @@ void solver_t::install_core_plugins() {
     });
   }
 
+  // Not guarded under a flag...
+  start_solve_p.pre([&]() {
+    assert(!trail_t::has_unit(cnf, trail));
+    assert(!trail_t::is_satisfied(cnf, trail));
+    assert(!trail_t::is_conflicted(cnf, trail));
+  });
+
   if (settings::trace_decisions) {
     choose_literal_p.postcondition([&](literal_t l) {
       if (l) log_solver_action(solver_action::apply_decision, lit_to_dimacs(l));
@@ -258,11 +284,18 @@ void solver_t::install_core_plugins() {
       std::sort(std::begin(d), std::end(d));
       log_solver_action(solver_action::conflict, d);
     });
+  }
+  if (settings::trace_cdcl) {
+    cdcl_resolve.add([&](literal_t l, clause_id cid) {
+      std::vector<literal_t> cc_tmp(cnf[conflict_clause_id].begin(),
+                                    cnf[conflict_clause_id].end());
+      std::sort(std::begin(cc_tmp), std::end(cc_tmp));
 
-    // Add a verbose option that listens in to other conflict parts
-    // that will list out the implication graph stemming from this conflict
-    // clause. That means we need to be able to generate such an implication
-    // graph!
+      const auto &c = cnf[cid];
+      std::vector<literal_t> tmp(c.begin(), c.end());
+      std::sort(std::begin(tmp), std::end(tmp));
+      log_solver_action('\t', lit_to_dimacs(l), tmp);
+    });
   }
 }
 
@@ -312,7 +345,9 @@ void solver_t::install_restart() {
 }
 
 void solver_t::install_literal_chooser() {
-  if (settings::naive_vsids) {
+  if (settings::only_positive_choices) {
+    choose_literal_p.add_listener([&](literal_t &d) { d = polc.choose(); });
+  } else if (settings::naive_vsids) {
     learned_clause_p.add_listener(
         [&](const clause_t &c, const trail_t &t) { vsids.clause_learned(c); });
     cdcl_resolve.add(
