@@ -34,6 +34,8 @@ bool ema_restart = true;
 bool backtrack_subsumption = true;
 
 bool only_positive_choices = false;
+bool preprocess_bve = false;
+bool preprocess_bce = false;
 
 bool debug_max = false;  // this should ultimately be an integer or osmething.
 struct flag_t {
@@ -83,6 +85,10 @@ std::vector<flag_t> options{
     {"backtrack-subsumption-", "Turn off backtrack subsumption",
      backtrack_subsumption},
 
+    {"preprocess-bve-", "Turn off the BVE optimization in the preprocessor",
+     preprocess_bve},
+    {"preprocess-bce-", "Turn off the BCE optimization in the preprocessor",
+     preprocess_bce},
     {"only-preprocess", "Quit after preprocessing", only_preprocess},
 };
 const char* trace_cdcl_clause() {

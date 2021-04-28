@@ -1,3 +1,4 @@
+from __future__ import print_function
 import re
 import subprocess
 import sys
@@ -8,7 +9,11 @@ import argparse
 parser = argparse.ArgumentParser(description='Run a sat solver many times')
 parser.add_argument('--print-unsat', action='store_true',
                     help='Print out CNFs for which we are unsat')
+parser.add_argument('--print-sat', action='store_true',
+                    help='Print out CNFs for which we are sat')
 parser.add_argument('--print-unsat-index', action='store_true',
+                    help='Print out the index of the currently-processing input when its unsat')
+parser.add_argument('--print-unsat-count', action='store_true',
                     help='Print out the index of the currently-processing input when its unsat')
 parser.add_argument('--print-index', action='store_true',
                     help='Print out the index of the currently-processing input')
@@ -48,6 +53,7 @@ def validate_pm_reduction_assumption(cnf_string):
 
 if __name__ == "__main__":
     c = 0
+    unsat_count = 0
     for cnf in isolate_stream(sys.stdin):
         # Skip empty ones, don't count them
         if cnf.strip() == '':
@@ -57,11 +63,17 @@ if __name__ == "__main__":
             continue
 
         result = run_solver_on_input(cnf)
-        if args.print_unsat_index and result == 'UNSATISFIABLE':
-            print('count:', c)
-        if args.print_unsat and result == 'UNSATISFIABLE':
-            print(cnf)
+        if result == 'SATISFIABLE':
+            if args.print_sat:
+                print(cnf)
+        if result == 'UNSATISFIABLE':
+            unsat_count += 1
+            if args.print_unsat_index:
+                print('count:', c)
+            if args.print_unsat:
+                print(cnf)
 
-        # Note count is always yeah
         c += 1
         # validate_pm_reduction_assumption(cnf)
+    if args.print_unsat_count:
+        print('UNSAT count:', unsat_count)

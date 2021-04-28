@@ -33,6 +33,9 @@ extern bool backtrack_subsumption;
 
 extern bool only_positive_choices;
 
+extern bool preprocess_bve;
+extern bool preprocess_bce;
+
 int parse(int argc, char* argv[]);
 void print_help();
 }  // namespace settings

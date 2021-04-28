@@ -144,8 +144,8 @@ solver_t::state_t solver_t::drain_unit_queue() {
 
 clause_t solver_t::determine_conflict_clause() {
   clause_t c = learn_clause();
-  cond_log(settings::trace_clause_learning,
-           solver_action::determined_conflict_clause, c);
+  // cond_log(settings::trace_clause_learning,
+  // solver_action::determined_conflict_clause, c);
   return c;
 }
 

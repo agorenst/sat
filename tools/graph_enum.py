@@ -5,31 +5,6 @@ import itertools
 
 # For my experiments, let's enumerate every labeled graph of size n
 
-parser = argparse.ArgumentParser(description='Generate graphs')
-parser.add_argument('--number-of-nodes', metavar="N", type=int, default='8',
-                    help='The number of nodes in the generated graph')
-parser.add_argument('--produce-one-graph', action='store_true',
-                    help='Different mode, where we produce 1 graph of size N')
-parser.add_argument('--seed', metavar="S", type=int, default=0,
-                    help='Random number generator seed')
-parser.add_argument('--dot', action='store_true',
-                    help='Output graphviz format for (single) graph')
-parser.add_argument('--reduce-graph', action='store_true',
-                    help='Reduce graph fed in from stdin')
-
-args = parser.parse_args()
-
-n = args.number_of_nodes
-
-
-# Define all possible edges (given n) and map each one to a CNF variable
-edges = [(i, j) for i in range(n) for j in range(n) if j > i]
-edge_number = 1
-reduction_map = {}
-for e in edges:
-    reduction_map[e] = str(edge_number)
-    edge_number += 1
-
 
 # What edges in g touch u?
 def incident_edges(g, u):
@@ -38,8 +13,20 @@ def incident_edges(g, u):
             yield (w, v)
 
 
+def make_reduction_map(g):
+    edge_number = 1
+    reduction_map = {}
+    for e in g:
+        reduction_map[e] = str(edge_number)
+        edge_number += 1
+    return reduction_map
+
+
 # Given a graph, print the reduction of its PM problem to CNF
+
+
 def reduction(g):
+    reduction_map = make_reduction_map(g)
     ns = set([])
     for u, v in g:
         ns.add(u)
@@ -110,6 +97,24 @@ def produce_one_graph():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generate graphs')
+    parser.add_argument('--number-of-nodes', metavar="N", type=int, default='8',
+                        help='The number of nodes in the generated graph')
+    parser.add_argument('--produce-one-graph', action='store_true',
+                        help='Different mode, where we produce 1 graph of size N')
+    parser.add_argument('--seed', metavar="S", type=int, default=0,
+                        help='Random number generator seed')
+    parser.add_argument('--dot', action='store_true',
+                        help='Output graphviz format for (single) graph')
+    parser.add_argument('--reduce-graph', action='store_true',
+                        help='Reduce graph fed in from stdin')
+
+    args = parser.parse_args()
+
+    n = args.number_of_nodes
+
+    # Define all possible edges (given n) and map each one to a CNF variable
+    edges = [(i, j) for i in range(n) for j in range(n) if j > i]
     if args.produce_one_graph:
         produce_one_graph()
     elif args.reduce_graph:

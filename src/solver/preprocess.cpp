@@ -123,7 +123,7 @@ void preprocess(cnf_t &cnf) {
     did_work |= cnf::transform::apply_trivial_units(cnf) > 0;
 
     bool BVE(cnf_t & cnf);
-    if (BVE(cnf)) {
+    if (settings::preprocess_bve && BVE(cnf)) {
       // std::cerr << "BVE" << std::endl;
       did_work = true;
     }
