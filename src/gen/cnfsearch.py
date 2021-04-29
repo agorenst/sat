@@ -101,7 +101,7 @@ def compare_benchmark():
     print("My solver without backtrack subsumption (but on the fly)")
     benchmark1(l, u, './build/sat', ['--backtrack-subsumption-'])
     print("My solver without either")
-    benchmark1(l, u, './build/sat', ['--backtrack-subsumption-', '--on-the-fly-subsumption-'])
+    benchmark1(l, u, './build/sat', [])
     print("My solver with both!")
     benchmark1(l, u, './build/sat', ['--backtrack-subsumption-', '--on-the-fly-subsumption-'])
     # benchmark1(l, u, './build/sat', ['--naive-vsids'])

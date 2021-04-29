@@ -80,8 +80,8 @@ literal_t watched_literals_t::find_initial_watcher(const clause_t &c,
     return false;
   });
   // we have to find something.
-  assert(jt != std::rend(trail));
-  assert(jt->has_literal());
+  MAX_ASSERT(jt != std::rend(trail));
+  MAX_ASSERT(jt->has_literal());
   return neg(jt->get_literal());
 }
 
@@ -397,7 +397,7 @@ void const_watched_literals_t::watch_clause(clause_id cid) {
   // Find a non-false watcher; one should exist.
   auto it = find_watcher(c, 0);
   literal_t l1 = *it;
-  assert(it != std::end(c));
+  MAX_ASSERT(it != std::end(c));
 
   // Find the second watcher:
   auto it2 = find_watcher(c, l1);

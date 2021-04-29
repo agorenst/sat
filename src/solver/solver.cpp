@@ -485,8 +485,10 @@ clause_t solver_t::learn_clause() {
                     [&](literal_t l) { return trail.level(l) == D; });
   MAX_ASSERT(counter > 1);
 
+  size_t resolvent_size = 0;
   for (literal_t l : conflict_clause) {
     stamped.set(neg(l));
+    resolvent_size++;
     if (trail.level(neg(l)) < D) {
       C.push_back(l);
     }
@@ -510,6 +512,8 @@ clause_t solver_t::learn_clause() {
 
     counter--;  // track the number of resolutions we're doing.
     stamped.clear(L);
+    MAX_ASSERT(resolvent_size > 0);
+    resolvent_size--;
 
     const clause_t &d = cnf[it->get_clause()];
     // resolvent = resolve_ref(resolvent, d, neg(L));
@@ -518,6 +522,7 @@ clause_t solver_t::learn_clause() {
       if (a == L) continue;
       // We care about future resolutions, so we negate "a"
       if (!stamped.get(neg(a))) {
+        resolvent_size++;
         stamped.set(neg(a));
         if (trail.level(neg(a)) < D) {
           C.push_back(a);
@@ -533,8 +538,10 @@ clause_t solver_t::learn_clause() {
     //}
 
     if (settings::on_the_fly_subsumption) {
-      if (counter > 1 && d.size() - 1 == stamped.count()) {
+      if (counter > 1 && d.size() - 1 == resolvent_size) {
         remove_literal(it->get_clause(), it->get_literal());
+        cond_log(settings::trace_otf_subsumption, cnf[it->get_clause()],
+                 lit_to_dimacs(it->get_literal()));
         MAX_ASSERT(std::find(std::begin(d), std::end(d), L) == std::end(d));
       }
     }
@@ -545,7 +552,6 @@ clause_t solver_t::learn_clause() {
   MAX_ASSERT(it->has_literal());
   C.push_back(neg(it->get_literal()));
 
-  // MAX_ASSERT(count_level_literals(C) == 1);
   MAX_ASSERT(counter == 1);
   MAX_ASSERT(C.size() == stamped.count());
 

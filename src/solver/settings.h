@@ -31,6 +31,7 @@ extern bool lbd_cleaning;
 extern bool ema_restart;
 extern bool backtrack_subsumption;
 extern bool on_the_fly_subsumption;
+extern bool trace_otf_subsumption;
 
 extern bool only_positive_choices;
 
