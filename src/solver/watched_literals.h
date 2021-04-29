@@ -36,7 +36,7 @@ struct watched_literals_t {
   void unwatch_clause(literal_t l, clause_id cid);
   void remove_clause(clause_id cid);
 
-  literal_t find_first_watcher(const clause_t &c);
+  literal_t find_initial_watcher(const clause_t &c, literal_t alt = 0);
   auto find_watcher(const clause_t &c, literal_t o = 0);
   bool validate_state(clause_id skip_id = nullptr);
   void print_watch_state();
@@ -63,7 +63,6 @@ struct const_watched_literals_t {
   void unwatch_clause(literal_t l, clause_id cid);
   void remove_clause(clause_id cid);
 
-  literal_t find_first_watcher(const clause_t &c);
   auto find_watcher(const clause_t &c, literal_t o = 0);
   void print_watch_state();
   bool validate_state(clause_id skip_id = nullptr);

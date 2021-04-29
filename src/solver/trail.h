@@ -47,7 +47,7 @@ struct trail_t {
   bool empty() const { return next_index == 0; }
 
   void append(action_t a);
-  void pop();
+  action_t pop();
 
   void drop_from(action_t *it);
 
@@ -79,6 +79,7 @@ struct trail_t {
   void print_certificate() const;
 
   static bool has_unit(const cnf_t &cnf, const trail_t &t);
+  static literal_t is_asserting(const trail_t &trail, const clause_t &c);
   static bool is_satisfied(const cnf_t &cnf, const trail_t &t);
   static bool is_conflicted(const cnf_t &cnf, const trail_t &t);
   static bool is_indeterminate(const cnf_t &cnf, const trail_t &t);

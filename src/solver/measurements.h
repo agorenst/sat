@@ -62,6 +62,10 @@ inline void log_action_element(const literal_t& l) {
   printf("%d ", l);
 }
 template <>
+inline void log_action_element(const bool& b) {
+  printf("%s ", b ? "true" : "false");
+}
+template <>
 inline void log_action_element(const size_t& l) {
   printf("%zu ", l);
 }

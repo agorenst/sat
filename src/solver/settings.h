@@ -30,6 +30,7 @@ extern bool learned_clause_minimization;
 extern bool lbd_cleaning;
 extern bool ema_restart;
 extern bool backtrack_subsumption;
+extern bool on_the_fly_subsumption;
 
 extern bool only_positive_choices;
 

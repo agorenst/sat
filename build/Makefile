@@ -2,7 +2,7 @@ CXX=clang++
 CC=clang++
 INCLUDES=-I ./../src/repr -I ./../src/solver
 WARNINGS=-Wall -Werror -Wno-unused-parameter
-CXXFLAGS=$(WARNINGS) -std=c++17 -g -O2 -flto -ffast-math $(INCLUDES)
+CXXFLAGS=$(WARNINGS) -std=c++17 -g -flto -O2 -ffast-math $(INCLUDES)
 DBGFLAGS=$(WARNINGS) -std=c++17 -g -DSAT_DEBUG_MODE $(INCLUDES)
 AFL=afl-clang-fast++
 SHELL=/bin/bash

@@ -32,6 +32,7 @@ bool learned_clause_minimization = true;
 bool lbd_cleaning = true;
 bool ema_restart = true;
 bool backtrack_subsumption = true;
+bool on_the_fly_subsumption = true;
 
 bool only_positive_choices = false;
 bool preprocess_bve = false;
@@ -90,6 +91,8 @@ std::vector<flag_t> options{
     {"preprocess-bce-", "Turn off the BCE optimization in the preprocessor",
      preprocess_bce},
     {"only-preprocess", "Quit after preprocessing", only_preprocess},
+    {"on-the-fly-subsumption-", "Turn off the optimization",
+     on_the_fly_subsumption},
 };
 const char* trace_cdcl_clause() {
   auto flag =

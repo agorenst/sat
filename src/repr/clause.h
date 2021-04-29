@@ -172,13 +172,15 @@ struct clause_t {
   std::vector<literal_t> mem;
   clause_t(std::vector<literal_t> m) : mem(m) {}
 
-  // no copy constructor
+  // no copy constructor, only "clone"
   clause_t(clause_t &&that) = default;
   clause_t &operator=(clause_t &&that) = default;
 
   clause_t *left = nullptr;
   clause_t *right = nullptr;
   bool is_alive = true;
+
+  clause_t clone() const { return clause_t{mem}; }
 
   // clause_t() {}
   // void push_back(literal_t l) { mem.push_back(l); }

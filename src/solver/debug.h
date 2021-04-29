@@ -6,12 +6,6 @@
 #define INLINESTATE
 //#define INLINESTATE __attribute__((noinline))
 
-#ifdef SAT_DEBUG_MODE
-#define SAT_ASSERT(expr) assert(expr)
-#else
-#define SAT_ASSERT(expr)
-#endif
-
 #define COND_ASSERT(b, x) \
   {                       \
     if (b) {              \
@@ -19,3 +13,4 @@
     }                     \
   }
 #define MAX_ASSERT(x) COND_ASSERT(settings::debug_max, (x))
+#define SAT_ASSERT(expr) MAX_ASSERT(expr)

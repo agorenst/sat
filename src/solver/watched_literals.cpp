@@ -30,8 +30,9 @@ void watched_literals_t::install(solver_t &s)
     if (c.size() > 1) watch_clause(cid);
     MAX_ASSERT(validate_state());
   });
-  s.remove_literal_p.add_listener([&](clause_id cid, literal_t l) {
-    remove_clause(cid);
+  s.remove_literal_p.pre(
+      [&](clause_id cid, literal_t l) { remove_clause(cid); });
+  s.remove_literal_p.post([&](clause_id cid, literal_t l) {
     if (cnf[cid].size() > 1) {
       watch_clause(cid);
     }
@@ -57,6 +58,33 @@ auto watched_literals_t::find_watcher(const clause_t &c, literal_t o /*= 0*/) {
   return std::end(c);
 }
 
+literal_t watched_literals_t::find_initial_watcher(const clause_t &c,
+                                                   literal_t alt) {
+  // if there is a valid watcher, just return that.
+  auto it = find_watcher(c, alt);
+  if (it != std::end(c)) {
+    return *it;
+  }
+
+  // Otherwise, find the "last" falsified.
+  // We find the last one (rather than arbitrary ones) I think to maintain
+  // backtrack order in some fashion, but truth be told I only do this from
+  // empirical results (i.e., it fails if I don't do this).
+  auto jt = std::find_if(trail.rbegin(), trail.rend(), [&](action_t a) {
+    if (!a.has_literal()) return false;
+    literal_t l = a.get_literal();
+    if (neg(l) == alt) return false;
+    if (contains(c, neg(l))) {
+      return true;
+    }
+    return false;
+  });
+  // we have to find something.
+  assert(jt != std::rend(trail));
+  assert(jt->has_literal());
+  return neg(jt->get_literal());
+}
+
 // Add in a new clause to be watched
 void watched_literals_t::watch_clause(clause_id cid) {
   // SAT_ASSERT(!clause_watched(cid));
@@ -64,24 +92,12 @@ void watched_literals_t::watch_clause(clause_id cid) {
   SAT_ASSERT(c.size() > 1);
 
   // Find a non-false watcher; one should exist.
-  auto it = find_watcher(c, 0);
-  literal_t l1 = *it;
+  literal_t l1 = find_initial_watcher(c);
+  literal_t l2 = find_initial_watcher(c, l1);
 
-  // Find the second watcher:
-  auto it2 = find_watcher(c, l1);
-  literal_t l2 = 0;
-
-  // We may already be a unit. If so, to maintain backtracking
-  // we want to have our other watcher be the last-falsified thing
-  // if (it2 == std::end(c)) {
-  if (it2 == std::end(c)) {
-    literal_t l = trail.find_last_falsified(c);
-    l2 = l;
-  } else {
-    l2 = *it2;
-  }
-  SAT_ASSERT(l2);
-  SAT_ASSERT(l2 != l1);
+  MAX_ASSERT(l1);
+  MAX_ASSERT(l2);
+  MAX_ASSERT(l2 != l1);
 
   literals_to_watcher[l1].push_back({cid, l2});
   literals_to_watcher[l2].push_back({cid, l1});
@@ -310,6 +326,9 @@ bool watched_literals_t::validate_state(clause_id skip_id) {
     }
   }
   for (auto [cl, ct] : counter) {
+    if (!(ct == 0 || ct == 2)) {
+      fprintf(stderr, "\n%d\n", ct);
+    }
     MAX_ASSERT(ct == 0 || ct == 2);
   }
   return true;
@@ -340,8 +359,9 @@ void const_watched_literals_t::install(solver_t &s)
     if (c.size() > 1) watch_clause(cid);
     SAT_ASSERT(validate_state());
   });
-  s.remove_literal_p.add_listener([&](clause_id cid, literal_t l) {
-    remove_clause(cid);
+  s.remove_literal_p.pre(
+      [&](clause_id cid, literal_t l) { remove_clause(cid); });
+  s.remove_literal_p.post([&](clause_id cid, literal_t l) {
     if (cnf[cid].size() > 1) {
       watch_clause(cid);
     }
@@ -372,11 +392,12 @@ auto const_watched_literals_t::find_watcher(const clause_t &c,
 void const_watched_literals_t::watch_clause(clause_id cid) {
   // SAT_ASSERT(!clause_watched(cid));
   const clause_t &c = cnf[cid];
-  SAT_ASSERT(c.size() > 1);
+  MAX_ASSERT(c.size() > 1);
 
   // Find a non-false watcher; one should exist.
   auto it = find_watcher(c, 0);
   literal_t l1 = *it;
+  assert(it != std::end(c));
 
   // Find the second watcher:
   auto it2 = find_watcher(c, l1);

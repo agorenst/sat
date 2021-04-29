@@ -3,6 +3,7 @@
 // about variables (and literals) on their own.
 
 #include <cstdint>
+#include <numeric>
 #include <vector>
 #include "debug.h"
 
@@ -119,6 +120,7 @@ struct lit_bitset_t {
   void construct(variable_t m) {
     max_var = m;
     mem.resize(max_var * 2 + 2);
+    clear();
   }
   lit_bitset_t(variable_t m) { construct(m); }
 
@@ -134,6 +136,7 @@ struct lit_bitset_t {
 
  public:
   void clear() { std::fill(begin(), end(), 0); }
+  size_t count() const { return std::accumulate(begin(), end(), 0); }
 
   size_t literal_to_index(literal_t l) const { return l; }
 };

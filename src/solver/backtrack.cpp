@@ -2,10 +2,10 @@
 
 action_t *nonchronological_backtrack(const clause_t &c, trail_t &actions) {
   // std::cerr << "Backtracking with " << c << std::endl;
-  SAT_ASSERT(std::prev(actions.end())->action_kind ==
+  MAX_ASSERT(std::prev(actions.end())->action_kind ==
              action_t::action_kind_t::halt_conflict);
   actions.pop();
-  SAT_ASSERT(actions.clause_unsat(c));
+  MAX_ASSERT(actions.clause_unsat(c));
 
   // Find the most recent decision. If we pop "just" this, we'll have naive
   // backtracking (that somehow still doesn't work, in that there are unsat
@@ -25,7 +25,7 @@ action_t *nonchronological_backtrack(const clause_t &c, trail_t &actions) {
       });
 
   auto del_it = needed_for_implication.base() - 1;
-  SAT_ASSERT(&(*del_it) == &(*needed_for_implication));
+  MAX_ASSERT(&(*del_it) == &(*needed_for_implication));
 
   // Ok, we actually can get a win
   // std::cerr << "Case 1" << std::endl;
@@ -40,7 +40,7 @@ action_t *nonchronological_backtrack(const clause_t &c, trail_t &actions) {
       std::find_if(del_it + 1, std::end(actions),
                    [](const action_t &a) { return a.is_decision(); });
   // if (c.size() == 1) std::cerr << c << std::endl << actions << std::endl;
-  SAT_ASSERT(to_erase != std::end(actions));
+  MAX_ASSERT(to_erase != std::end(actions));
 
   // diagnostistic: how many levels can be pop back?
   // int popcount = std::count_if(to_erase, std::end(actions), [](const

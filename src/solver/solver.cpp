@@ -28,7 +28,6 @@ bool solver_t::solve() {
   start_solve();
 
   for (;;) {
-    // std::cout << trail << std::endl;
     switch (state) {
       case state_t::quiescent: {
         // This may be where we decide, e.g., to restart.
@@ -89,11 +88,24 @@ bool solver_t::solve() {
         // --only-positive-choices --trace-decisions --preprocessor-
         // --trace-clause-learning --backtrack-subsumption- --print-certificate
         // --trace-conflicts --trace-cdcl --learned-clause-minimization-
+        // I think the punchline really is that if we backtrack to level 0,
+        // that's also an UNSAT, but I want to be surer.
 
         // High-level assert:
         // // the clause is unique
         // // the clause contains no literals that are level 0 (proven-fixed)
         // TODO: ADD ABOVE TO MAX DEBUGGIN
+
+#if 0
+        MAX_ASSERT(std::is_sorted(std::begin(c), std::end(c)));
+        for (const auto &d : clauses(cnf)) {
+          std::vector<literal_t> D(std::begin(d), std::end(d));
+          std::sort(std::begin(D), std::end(D));
+          clause_t e(D);
+          MAX_ASSERT(std::is_sorted(std::begin(e), std::end(e)));
+          MAX_ASSERT(c != e);
+        }
+#endif
 
         // Actually add the learned clause, and (in many cases) that
         // induces a new unit.
@@ -158,8 +170,8 @@ void solver_t::process_backtrack_level(clause_t &c, action_t *target) {
   if (settings::backtrack_subsumption) {
     backtrack_subsumption(c, target, std::end(trail));
   }
-  trail.drop_from(target);
   unit_queue.clear();
+  trail.drop_from(target);
 }
 
 // We create a local copy of the CNF.
@@ -248,6 +260,15 @@ void solver_t::install_core_plugins() {
     while (trail.level()) trail.pop();
   });
 
+  remove_literal_p.add([&](clause_id cid, literal_t l) {
+    clause_t &c = cnf[cid];
+    auto it = std::find(std::begin(c), std::end(c), l);
+    MAX_ASSERT(it != std::end(c));
+    *it = c[c.size() - 1];
+    c.pop_back();
+    MAX_ASSERT(std::find(std::begin(c), std::end(c), l) == std::end(c));
+  });
+
   // Invariants!
   if (settings::debug_max) {
     before_decision_p.precondition([&](const cnf_t &cnf) {
@@ -259,10 +280,10 @@ void solver_t::install_core_plugins() {
       assert(trail.find_unassigned_literal(cnf[cid]) == l);
       assert(!trail_t::is_conflicted(cnf, trail));
     });
-    choose_literal_p.postcondition([&](literal_t l) {
-      assert(trail.literal_unassigned(l));
-      assert(!trail_t::has_unit(cnf, trail));
-    });
+    choose_literal_p.precondition(
+        [&](literal_t l) { assert(!trail_t::has_unit(cnf, trail)); });
+    choose_literal_p.postcondition(
+        [&](literal_t l) { assert(trail.literal_unassigned(l)); });
   }
 
   // Not guarded under a flag...
@@ -287,10 +308,6 @@ void solver_t::install_core_plugins() {
   }
   if (settings::trace_cdcl) {
     cdcl_resolve.add([&](literal_t l, clause_id cid) {
-      std::vector<literal_t> cc_tmp(cnf[conflict_clause_id].begin(),
-                                    cnf[conflict_clause_id].end());
-      std::sort(std::begin(cc_tmp), std::end(cc_tmp));
-
       const auto &c = cnf[cid];
       std::vector<literal_t> tmp(c.begin(), c.end());
       std::sort(std::begin(tmp), std::end(tmp));
@@ -367,6 +384,7 @@ void solver_t::install_literal_chooser() {
           [](const std::string &s) { return dimacs_to_lit(std::stol(s)); });
 
       cdcl_resolve.add([&](literal_t l, clause_id cid) {
+        /*
         std::vector<literal_t> cc_tmp(cnf[conflict_clause_id].begin(),
                                       cnf[conflict_clause_id].end());
         std::sort(std::begin(cc_tmp), std::end(cc_tmp));
@@ -377,6 +395,7 @@ void solver_t::install_literal_chooser() {
           std::sort(std::begin(tmp), std::end(tmp));
           log_solver_action('\t', lit_to_dimacs(l), tmp);
         }
+        */
       });
     }
 
@@ -393,10 +412,7 @@ void solver_t::install_literal_chooser() {
   }
 }
 
-// This is my poor-man's attempt at on-the-fly subsumption... to  be honest
 void solver_t::backtrack_subsumption(clause_t &c, action_t *a, action_t *e) {
-  // TODO: mesh this with on-the-fly subsumption?
-  // size_t counter = 0;
   for (; a != e; a++) {
     if (a->has_clause()) {
       const clause_t &d = cnf[a->get_clause()];
@@ -451,74 +467,88 @@ std::string to_string(solver_t::state_t t) {
 }
 
 clause_t solver_t::learn_clause() {
-  stamped.clear();
+  stamped.clear();  // This is, in effect, the current resolution clause
+  std::vector<literal_t> C;        // the clause to learn
+  const size_t D = trail.level();  // the conflict level
 
-  std::vector<literal_t> C;
-  const size_t D = trail.level();
+  // The end of our trail contains the conflicting clause and literal:
   auto it = trail.rbegin();
+  MAX_ASSERT(it->is_conflict());
 
-  SAT_ASSERT(it->action_kind == action_t::action_kind_t::halt_conflict);
-  conflict_clause_id = it->get_clause();
-  const clause_t &c = cnf[it->get_clause()];
+  // Get the conflict clause
+  const clause_t &conflict_clause = cnf[it->get_clause()];
+  // clause_t resolvent = conflict_clause.clone();
   it++;
 
-  // This is the amount of things we know we'll be resolving against.
-  size_t counter = 0;
-  for (literal_t l : c) {
-    if (trail.level(l) == trail.level()) counter++;
-  }
+  size_t counter =
+      std::count_if(std::begin(conflict_clause), std::end(conflict_clause),
+                    [&](literal_t l) { return trail.level(l) == D; });
+  MAX_ASSERT(counter > 1);
 
-  for (literal_t l : c) {
+  for (literal_t l : conflict_clause) {
     stamped.set(neg(l));
     if (trail.level(neg(l)) < D) {
-      // vsids.bump_variable(var(l));
       C.push_back(l);
     }
   }
 
   for (; counter > 1; it++) {
-    SAT_ASSERT(it->is_unit_prop());
+    MAX_ASSERT(it->is_unit_prop());
     literal_t L = it->get_literal();
 
     // We don't expect to be able to resolve against this.
+    // i.e., this literal (and its reason) don't play a role
+    // in resolution to derive a new clause.
     if (!stamped.get(L)) {
       continue;
     }
 
+    // L *is* stamped, so we *can* resolve against it!
+
+    // Report that we're about to resolve against this.
     cdcl_resolve(L, it->get_clause());
 
-    // L *is* stamped, so we *can* resolve against it!
     counter--;  // track the number of resolutions we're doing.
+    stamped.clear(L);
 
     const clause_t &d = cnf[it->get_clause()];
+    // resolvent = resolve_ref(resolvent, d, neg(L));
 
-    // vsids.bump_variable(var(L));
     for (literal_t a : d) {
       if (a == L) continue;
-      // We care about future resolutions, so we negate a
+      // We care about future resolutions, so we negate "a"
       if (!stamped.get(neg(a))) {
         stamped.set(neg(a));
-        // vsids.bump_variable(var(a));
         if (trail.level(neg(a)) < D) {
           C.push_back(a);
         } else {
+          // this is another thing to resolve against.
           counter++;
         }
+      }
+    }
+
+    // for (literal_t l : cnf.lit_range()) {
+    // assert(contains(resolvent, l) == stamped.get(neg(l)));
+    //}
+
+    if (settings::on_the_fly_subsumption) {
+      if (counter > 1 && d.size() - 1 == stamped.count()) {
+        remove_literal(it->get_clause(), it->get_literal());
+        MAX_ASSERT(std::find(std::begin(d), std::end(d), L) == std::end(d));
       }
     }
   }
 
   while (!stamped.get(it->get_literal())) it++;
 
-  SAT_ASSERT(it->has_literal());
+  MAX_ASSERT(it->has_literal());
   C.push_back(neg(it->get_literal()));
-  // vsids.bump_variable(var(it->get_literal()));
 
-  // SAT_ASSERT(count_level_literals(C) == 1);
-  SAT_ASSERT(counter == 1);
+  // MAX_ASSERT(count_level_literals(C) == 1);
+  MAX_ASSERT(counter == 1);
+  MAX_ASSERT(C.size() == stamped.count());
 
-  // std::cout << "Counter: " << counter << std::endl;
-  // std::cout << "Learned: " << C << std::endl;
   std::sort(std::begin(C), std::end(C));
 
   return clause_t{C};

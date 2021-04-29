@@ -96,8 +96,14 @@ def benchmark1(seed_start, seed_end, solver_name='./build/sat', flags=[]):
 def compare_benchmark():
     l = 10
     u = 30
-    print("My solver naive:")
-    benchmark1(l, u, './build/sat')
+    print("My solver without on the fly subsumption (but with backtrack subsumption):")
+    benchmark1(l, u, './build/sat', ['--on-the-fly-subsumption-'])
+    print("My solver without backtrack subsumption (but on the fly)")
+    benchmark1(l, u, './build/sat', ['--backtrack-subsumption-'])
+    print("My solver without either")
+    benchmark1(l, u, './build/sat', ['--backtrack-subsumption-', '--on-the-fly-subsumption-'])
+    print("My solver with both!")
+    benchmark1(l, u, './build/sat', ['--backtrack-subsumption-', '--on-the-fly-subsumption-'])
     # benchmark1(l, u, './build/sat', ['--naive-vsids'])
     # print("My solver better:")
     # print("My solver naive:")

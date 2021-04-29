@@ -98,7 +98,7 @@ literal_t trail_t::previously_assigned_literal(variable_t v) const {
   }
 }
 
-void trail_t::pop() {
+action_t trail_t::pop() {
   SAT_ASSERT(next_index > 0);
   next_index--;
   action_t a = mem[next_index];
@@ -113,6 +113,7 @@ void trail_t::pop() {
   if (a.is_decision()) {
     dlevel--;
   }
+  return a;
 }
 
 bool trail_t::clause_unsat(const clause_t &c) const {
@@ -346,4 +347,17 @@ bool trail_t::is_indeterminate(const cnf_t &cnf, const trail_t &trail) {
     if (!trail.clause_sat(cnf[cid])) indeterminated_clause_count++;
   }
   return indeterminated_clause_count > 0;
+}
+literal_t trail_t::is_asserting(const trail_t &trail, const clause_t &c) {
+  literal_t r = 0;
+  for (literal_t l : c) {
+    if (trail.literal_unassigned(l)) {
+      if (r) return 0;
+      r = l;
+    }
+    if (trail.literal_true(l)) {
+      return 0;
+    }
+  }
+  return r;
 }

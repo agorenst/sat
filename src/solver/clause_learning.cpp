@@ -92,14 +92,6 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
 
 clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
                           lit_bitset_t &stamped) {
-#ifdef SAT_DEBUG_MODE
-  auto count_level_literals = [&actions](const clause_t &c) {
-    return std::count_if(std::begin(c), std::end(c), [&actions](literal_t l) {
-      return actions.level(l) == actions.level();
-    });
-  };
-#endif
-
   stamped.clear();
 
   std::vector<literal_t> C;
@@ -156,7 +148,7 @@ clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
   SAT_ASSERT(it->has_literal());
   C.push_back(neg(it->get_literal()));
 
-  SAT_ASSERT(count_level_literals(C) == 1);
+  // SAT_ASSERT(count_level_literals(C) == 1);
   SAT_ASSERT(counter == 1);
 
   // std::cout << "Counter: " << counter << std::endl;
