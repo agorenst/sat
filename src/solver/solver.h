@@ -7,46 +7,6 @@
 #include "vsids.h"
 #include "watched_literals.h"
 
-// This isn't really a "solver" per se.
-// It is designed to be a container that holds a CNF,
-// and provides a series of entry points where objects can add new handlers.
-// The names aren't purely just for show: some maintain invariants.
-// We distinguish this object from the actual CDCL solver because it is also
-// used, e.g., for vivification and probing, or any other "heavy duty" view we
-// want to take with the CNF (particularly with unit prop).
-/*
-struct solver_state_t {
-  // These are the 3 fundamental objects.
-  cnf_t &cnf;
-  unit_queue_t unit_queue;
-  trail_t trail;
-
-  enum class state_t { quiescent, check_units, conflict, sat, unsat };
-  state_t state = state_t::quiescent;
-
-  // There are a few actions we're interested in with all solvers:
-  plugin<> decision_before;
-  plugin<literal_t &> decision_choose;
-  plugin<literal_t> decision_apply;
-  plugin<> decision_after;
-
-  plugin<literal_t &, clause_id &> unit_pop;
-  plugin<literal_t, clause_id> unit_apply;
-  plugin<> unit_after;  // after the whole unit queue.
-
-  plugin<trail_t::iterator> backtrack;
-
-  plugin<clause_t &> learn_clause;
-
-  plugin<> restart;
-  plugin<> backtrack;
-  plugin<> conflict;
-
-  // There are a couple algorithms that don't lend themselves to the plugin
-  // model.
-};
-*/
-
 struct solver_t {
   // The root data structure, the "true" CNF.
   // Currently we'll add learned clauses directly to this.
@@ -54,12 +14,6 @@ struct solver_t {
   // and "learned" clauses)
   cnf_t cnf;
 
-  // This is a helper data structure that maintains a mapping of
-  // literals to *all* clauses containing those literals. Much
-  // more expensive than watched literals.
-  literal_map_t<clause_set_t> literal_to_clauses_complete;
-
-  //
   lit_bitset_t stamped;
 
   // This is the history of committed actions we have.
@@ -107,6 +61,8 @@ struct solver_t {
 
   action_t *backtrack_level;
   plugin<> backtrack_level_process;
+
+  plugin<const trail_t &, clause_id> added_clause;
 
   plugin<clause_id> process_added_clause_p;
   plugin<clause_t &, trail_t &> learned_clause_p;
@@ -158,9 +114,9 @@ struct solver_t {
   bool solve();
 
   state_t drain_unit_queue();
-  clause_t determine_conflict_clause();
+  clause_id determine_conflict_clause();
   action_t *determine_backtrack_level(const clause_t &c);
-  void process_backtrack_level(clause_t &c, action_t *target);
+  void process_backtrack_level(const clause_t &c, action_t *target);
   state_t commit_learned_clause(clause_t &&c);
   void report_metrics();
 
@@ -235,6 +191,4 @@ struct solver_t {
     }
   };
   ema_restart_t ema_restart;
-
-  clause_t learn_clause();
 };

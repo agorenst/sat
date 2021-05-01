@@ -17,18 +17,14 @@ action_t *nonchronological_backtrack(const clause_t &c, trail_t &actions) {
 
   // Look backwards for the next trail entry that negates something in c.
   // /That's/ the actual thing we can't pop.
-  // Note if we actually pass a decision...
-  auto needed_for_implication =
-      std::find_if(bit + 1, std::rend(actions), [&](const action_t &a) {
-        // if (a.is_decision()) worth_it = true;
-        return contains(c, neg(a.get_literal()));
-      });
+  auto needed_for_implication = std::find_if(
+      bit + 1, std::rend(actions),
+      [&](const action_t &a) { return contains(c, neg(a.get_literal())); });
 
   auto del_it = needed_for_implication.base() - 1;
   MAX_ASSERT(&(*del_it) == &(*needed_for_implication));
 
   // Ok, we actually can get a win
-  // std::cerr << "Case 1" << std::endl;
   // Look forwards again, starting at the trail entry after that necessary
   // one.
   // We look for the first decision we find. We basically scanned backwards,
@@ -40,7 +36,9 @@ action_t *nonchronological_backtrack(const clause_t &c, trail_t &actions) {
       std::find_if(del_it + 1, std::end(actions),
                    [](const action_t &a) { return a.is_decision(); });
   // if (c.size() == 1) std::cerr << c << std::endl << actions << std::endl;
-  MAX_ASSERT(to_erase != std::end(actions));
+
+  // I think this is when we have a contradiction?
+  // MAX_ASSERT(to_erase != std::end(actions));
 
   // diagnostistic: how many levels can be pop back?
   // int popcount = std::count_if(to_erase, std::end(actions), [](const

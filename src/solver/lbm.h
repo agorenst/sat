@@ -14,6 +14,8 @@ static inline bool entry_cmp(const lbm_entry &e1, const lbm_entry &e2) {
   return e1.score < e2.score;
 }
 
+struct solver_t;
+
 struct lbm_t {
   // Don't erase anything here!
   // std::priority_queue<lbm_entry> worklist;
@@ -37,4 +39,5 @@ struct lbm_t {
   void flush_value(clause_id cid);
 
   lbm_t(const cnf_t &cnf);
+  void install(solver_t &);
 };

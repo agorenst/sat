@@ -25,10 +25,11 @@ void watched_literals_t::install(solver_t &s)
   });
   s.remove_clause_p.add_listener([&](clause_id cid) { remove_clause(cid); });
 
-  s.process_added_clause_p.add_listener([&](clause_id cid) {
+  s.added_clause.add_listener([&](const trail_t &trail, clause_id cid) {
     const clause_t &c = cnf[cid];
     if (c.size() > 1) watch_clause(cid);
-    MAX_ASSERT(validate_state());
+    if (!trail.conflicted()) fprintf(stderr, "doing work\n");
+    MAX_ASSERT(trail.conflicted() || validate_state());
   });
   s.remove_literal_p.pre(
       [&](clause_id cid, literal_t l) { remove_clause(cid); });
@@ -303,6 +304,16 @@ bool watched_literals_t::validate_state(clause_id skip_id) {
         // this suggests that
         // I don't know about this! something to synthesize.
       } else {
+        // It seems "important" that, relative to the trail, if there are not
+        // two valid watchers, then we choose watchers that are the "latest" to
+        // be falsified. This seems necessary to be consistent with
+        // backtracking, I think. This assert, very subtly, ties into that and
+        // helps catch it early. I can't say I was able to perfectly say why
+        // when I came upon this, and I only thought to actually comment it long
+        // after the fact, unfortunately.
+        if (w->second == l2) {
+          std::cerr << c << std::endl;
+        }
         MAX_ASSERT(w->second != l2);
       }
     } else {
@@ -354,7 +365,7 @@ void const_watched_literals_t::install(solver_t &s)
   });
   s.remove_clause_p.add_listener([&](clause_id cid) { remove_clause(cid); });
 
-  s.process_added_clause_p.add_listener([&](clause_id cid) {
+  s.added_clause.add_listener([&](const trail_t &trail, clause_id cid) {
     const clause_t &c = cnf[cid];
     if (c.size() > 1) watch_clause(cid);
     SAT_ASSERT(validate_state());

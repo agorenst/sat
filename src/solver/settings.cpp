@@ -78,8 +78,8 @@ std::vector<flag_t> options{
 
     {"learned-clause-minimization-", "Turn off LCM",
      learned_clause_minimization},
-    {"lbd_cleaning-", "Turn off LBD", lbd_cleaning},
-    {"ema_restart-", "Turn off EMA restart strategy", ema_restart},
+    {"lbd-cleaning-", "Turn off LBD", lbd_cleaning},
+    {"ema-restart-", "Turn off EMA restart strategy", ema_restart},
     {"only-positive-choices",
      "Use a naive literal-choosing strategy that can only return positive "
      "literals",

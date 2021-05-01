@@ -1,6 +1,33 @@
 #include "lbm.h"
+#include "solver.h"
 
 #include <vector>
+
+void lbm_t::install(solver_t &s) {
+  // This is when we (may) clean the DB
+  s.before_decision_p.add_listener([&](cnf_t &cnf) {
+    if (should_clean(cnf)) {
+      auto to_remove = clean();
+      // don't remove things on the trail
+      auto et = std::remove_if(
+          std::begin(to_remove), std::end(to_remove),
+          [&](clause_id cid) { return s.trail.uses_clause(cid); });
+
+      // erase those
+      while (std::end(to_remove) != et) to_remove.pop_back();
+
+      for (auto cid : to_remove) s.remove_clause(cid);
+
+      cnf.clean_clauses();
+    }
+  });
+
+  // This is when we note the LBD of the learned clause:
+  s.added_clause.add([&](const trail_t &trail, clause_id cid) {
+    push_value(s.cnf[cid], trail);
+    flush_value(cid);
+  });
+}
 
 bool lbm_t::should_clean(const cnf_t &cnf) {
   return max_size <= cnf.live_clause_count();
