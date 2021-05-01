@@ -64,10 +64,12 @@ int64_t clause_t::signature() const {
     return sig;
   }
   sig_computed = true;
-  //auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
-  //auto h = [](literal_t l) { return var(l) % 64; };
-  //auto h = [](literal_t l) -> int64_t { return 1 << (var(l) % 64); };
-  auto h = [](literal_t l) -> int64_t { return (1 << (var(l) % 64)) | (1 << ((var(l) * 37) % 64)); };
+  // auto h = [](literal_t l) { return std::hash<literal_t>{}(l); };
+  // auto h = [](literal_t l) { return var(l) % 64; };
+  // auto h = [](literal_t l) -> int64_t { return 1 << (var(l) % 64); };
+  auto h = [](literal_t l) -> int64_t {
+    return (int64_t(1) << (var(l) % 64)) | (int64_t(1) << ((var(l) * 37) % 64));
+  };
 
   for (auto l : (*this)) {
     sig |= h(l);

@@ -54,7 +54,6 @@ def find_slowest(seed_start, seed_end, scale, solver):
 
 
 def benchmark1(seed_start, seed_end, solver_name='./build/sat', flags=[], scale=2.5):
-    print(flags)
     start = time.time()
     for i in range(seed_start, seed_end):
         example_cnf = satgen.main(int(100*scale), int(426*scale), 3, i, 0)

@@ -1,3 +1,4 @@
+#if 0
 #include <iostream>
 #include <sstream>
 
@@ -169,3 +170,4 @@ int main() {
   print_conflict_graph(smallest_test->cnf, smallest_test->trail);
   return 0;
 }
+#endif
