@@ -33,6 +33,17 @@ bool lbm_t::should_clean(const cnf_t &cnf) {
   return max_size <= cnf.live_clause_count();
 }
 
+bool lbm_t::remove(clause_id cid) {
+  auto it = std::find_if(std::begin(worklist), std::end(worklist),
+                         [&](lbm_entry &e) { return e.id == cid; });
+  if (it != std::end(worklist)) {
+    *it = *std::prev(std::end(worklist));
+    worklist.pop_back();
+    return true;
+  }
+  return false;
+}
+
 size_t lbm_t::compute_value(const clause_t &c, const trail_t &trail) const {
   static std::vector<char> level_present(trail.level() + 1);
   level_present.resize(trail.level() + 1);

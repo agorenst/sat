@@ -38,6 +38,7 @@ struct lbm_t {
   void push_value(const clause_t &c, const trail_t &trail);
   void flush_value(clause_id cid);
 
+  bool remove(clause_id cid);
   lbm_t(const cnf_t &cnf);
   void install(solver_t &);
 };

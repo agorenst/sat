@@ -99,10 +99,6 @@ def compare_benchmark():
     u = 30
     print("My solver with both!")
     benchmark1(l, u, './build/sat', [])
-    print("My solver without on the fly subsumption (but with backtrack subsumption):")
-    benchmark1(l, u, './build/sat', ['--on-the-fly-subsumption-'])
-    print("My solver without backtrack subsumption (but on the fly)")
-    benchmark1(l, u, './build/sat', ['--backtrack-subsumption-'])
     print("My solver without either")
     benchmark1(l, u, './build/sat',
                ['--backtrack-subsumption-', '--on-the-fly-subsumption-'])
@@ -113,8 +109,8 @@ def compare_benchmark():
     # print("My solver better:")
     # benchmark1(l, u, './build/sat')
 
-    print("Minisat:")
-    benchmark1(l, u, 'minisat')
+    #print("Minisat:")
+    #benchmark1(l, u, 'minisat')
 
 
 def single_big_one():

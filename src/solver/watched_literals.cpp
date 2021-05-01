@@ -28,7 +28,6 @@ void watched_literals_t::install(solver_t &s)
   s.added_clause.add_listener([&](const trail_t &trail, clause_id cid) {
     const clause_t &c = cnf[cid];
     if (c.size() > 1) watch_clause(cid);
-    if (!trail.conflicted()) fprintf(stderr, "doing work\n");
     MAX_ASSERT(trail.conflicted() || validate_state());
   });
   s.remove_literal_p.pre(

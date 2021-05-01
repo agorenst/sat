@@ -261,6 +261,11 @@ void solver_t::install_core_plugins() {
       log_solver_action('\t', lit_to_dimacs(l), tmp);
     });
   }
+  if (settings::trace_clause_learning) {
+    added_clause.add([&](const trail_t &t, clause_id cid) {
+      std::cout << trail << std::endl << cnf[cid] << std::endl;
+    });
+  }
 }
 
 void solver_t::install_lbm() { lbm.install(*this); }
@@ -349,6 +354,7 @@ std::string to_string(solver_t::state_t t) {
   return "";
 }
 
+// This is a core subsidiary function. It is not a plugin. It calls plugins.
 clause_id solver_t::determine_conflict_clause() {
   stamped.clear();  // This is, in effect, the current resolution clause
   std::vector<literal_t> C;        // the clause to learn
@@ -369,6 +375,7 @@ clause_id solver_t::determine_conflict_clause() {
   MAX_ASSERT(counter > 1);
 
   size_t resolvent_size = 0;
+  auto last_subsumed = std::rend(trail);
   for (literal_t l : conflict_clause) {
     stamped.set(neg(l));
     resolvent_size++;
@@ -421,41 +428,72 @@ clause_id solver_t::determine_conflict_clause() {
     //}
 
     if (settings::on_the_fly_subsumption) {
-      if (counter > 1 && d.size() - 1 == resolvent_size) {
+      if (d.size() - 1 == resolvent_size) {
+        last_subsumed = it;
         remove_literal(it->get_clause(), it->get_literal());
         MAX_ASSERT(std::find(std::begin(d), std::end(d), L) == std::end(d));
         cond_log(settings::trace_otf_subsumption, cnf[it->get_clause()],
                  lit_to_dimacs(it->get_literal()));
+
+        // We are only good at detecting unit clauses if they're the thing we
+        // learned. If on-the-fly-subsumption is able to get an intermediate
+        // resolvand into unit form, we would miss that, and some core
+        // assumptions of our solver would be violated. So let's look for that.
+        // Experimentally things look good, but I am suspicious.
+        assert(resolvent_size != 1 || counter == 1);
       }
     }
   }
 
-  while (!stamped.get(it->get_literal())) it++;
+  clause_id to_return = nullptr;
+  bool to_lbm = true;
+  if (last_subsumed == std::prev(it)) {
+    to_return = last_subsumed->get_clause();
+    // hack: will be re-added with "added clause"
+    watch.remove_clause(to_return);
+    to_lbm = lbm.remove(to_return);
+    // QUESTION: how to "LCM" this? LCM with "remove_literal"?
+  } else {
+    while (!stamped.get(it->get_literal())) it++;
 
-  MAX_ASSERT(it->has_literal());
-  C.push_back(neg(it->get_literal()));
+    MAX_ASSERT(it->has_literal());
+    C.push_back(neg(it->get_literal()));
 
-  MAX_ASSERT(counter == 1);
-  MAX_ASSERT(C.size() == stamped.count());
+    MAX_ASSERT(counter == 1);
+    MAX_ASSERT(C.size() == stamped.count());
 
-  std::sort(std::begin(C), std::end(C));
+    // TODO: is there a "nice" sort we can do here that could be helpful? VSIDS,
+    // for instance?
+    std::sort(std::begin(C), std::end(C));
 
-  clause_t learned_clause{C};
+    clause_t learned_clause{C};
 
-  // Having learned the clause, now minimized it.
+    to_return = cnf.add_clause(std::move(learned_clause));
+  }
+  // Having learned the clause, now minimize it.
+  // Fun fact: there are some rare cases where we're able to minimize the
+  // already-existing clause, presumably thanks to our ever-smarter trail. This
+  // doesn't really give us a perf benefit in my motivating benchmarks, though.
   if (settings::learned_clause_minimization) {
-    learned_clause_minimization(cnf, learned_clause, trail, stamped);
+    learned_clause_minimization(cnf, cnf[to_return], trail, stamped);
   }
 
-  if (learned_clause.size() == 0) {
+  // Special, but crucial, case.
+  if (cnf[to_return].size() == 0) {
     return nullptr;
   }
 
-  auto cid = cnf.add_clause(std::move(learned_clause));
+  added_clause(trail, to_return);
 
-  added_clause(trail, cid);
+  if (!to_lbm) {
+    // this was an original clause, make it unremovable.
+    // This is a *really* painful hack; an artifact of how we want to
+    // remove literals in LCM without the pain of triggering constant updates
+    // in, e.g., watched literals or the like.
+    lbm.remove(to_return);
+  }
 
-  return cid;
+  return to_return;
 }
 
 // LibFuzzer support:
