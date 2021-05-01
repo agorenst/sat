@@ -61,3 +61,9 @@ tests: $(GENTESTS1000) $(GENTESTS100) $(GENTESTS10)
 	python3 ./../tools/satgen.py --vars 100 -s $(basename $@) | ./sat.san --debug-max | diff - <(python3 ./../tools/satgen.py --vars 100 -s $(basename $@) | minisat | tail -n 1)
 %.10minisat_diff: sat
 	python3 ./../tools/satgen.py --vars 250 -s $(basename $@) | ./sat | diff - <(python3 ./../tools/satgen.py --vars 250 -s $(basename $@) | minisat | tail -n 1)
+
+benchmark1: sat
+	echo "Minisat"
+	python3 ./../tools/cnfsearch.py -lower-bound 0 -upper-bound 25 -scale 2.5 benchmark -solver minisat
+	echo "My sat"
+	python3 ./../tools/cnfsearch.py -lower-bound 0 -upper-bound 25 -scale 2.5 benchmark -solver "./sat"

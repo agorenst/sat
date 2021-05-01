@@ -15,6 +15,7 @@ struct solver_t {
   // and "learned" clauses)
   cnf_t cnf;
 
+  // This is just kinda handy to have around, but it's vestigial.
   lit_bitset_t stamped;
 
   // This is the history of committed actions we have.
@@ -40,111 +41,47 @@ struct solver_t {
   // Our main clause-removal heuristic:
   lbd_t lbd;
 
+  // Our main restart heuristic
+  ema_restart_t ema_restart;
+
   // We model our solver as a state machine.
   // These are the fundamental states it can be in:
   enum class state_t { quiescent, check_units, conflict, sat, unsat };
   state_t state = state_t::quiescent;
 
-  // These are the various listeners for
-  literal_t decision_literal;
-  plugin<cnf_t &> before_decision_p;
-  plugin<literal_t &> choose_literal_p;
-  plugin<literal_t> apply_decision_p;
-
-  literal_t unit_literal;
-  clause_id unit_reason;
-  // plugin<> unit_pop;
-  plugin<literal_t, clause_id> apply_unit_p;
-
-  // clause_t conflict_clause;
+  // These are the various listeners for core actions. They are a bit
+  // in consistent development. They enable run-time plugins of tracing and
+  // correctness checks (though such things also exist outside the plugins, for
+  // now), as well as optional optimizations. Part of this exercise is to try to
+  // tease out (or see why we can't tease out) distinct optimizations that have
+  // been developed over the years. How much of a SAT solver is a collection of
+  // "different" optimizations, and how much of it is one big soup?
+  plugin<cnf_t &> before_decision;
+  plugin<literal_t &> choose_literal;
+  plugin<literal_t> apply_decision;
+  plugin<literal_t, clause_id> apply_unit;
   plugin<> conflict_enter;
-  plugin<> conflict_clause_process;
-
-  action_t *backtrack_level;
-  plugin<> backtrack_level_process;
-
   plugin<const trail_t &, clause_id> added_clause;
-
-  plugin<clause_id> process_added_clause_p;
-  plugin<clause_t &, trail_t &> learned_clause_p;
-  plugin<clause_id, literal_t> remove_literal_p;
-  plugin<> restart_p;
-  plugin<> start_solve_p;
-  plugin<> end_solve_p;
-
+  plugin<clause_id, literal_t> remove_literal;
+  plugin<> restart;
+  plugin<> start_solve;
+  plugin<> end_solve;
   plugin<literal_t, clause_id> cdcl_resolve;
-
-  // This are listeners for actions that occur at
-  // various independent points in evolving the CNF
-  plugin<clause_id> remove_clause_p;
-  // plugin<> clause_add;
-
-  plugin<> print_metrics_plugins_p;
-
-  // And instead, let's try doing function stuff.
-  void before_decision(cnf_t &);
-  void apply_unit(literal_t, clause_id);
-  void apply_decision(literal_t);
-  void remove_clause(clause_id);
-  void process_learned_clause(clause_t &, trail_t &);
-  void process_added_clause(clause_id);
-  void remove_literal(clause_id, literal_t);
-  void restart();
-  void choose_literal(literal_t &);
-  void start_solve();
-  void end_solve();
-
-  void backtrack_subsumption(clause_t &c, action_t *a, action_t *e);
+  plugin<clause_id> remove_clause;
 
   // These install the fundamental actions.
   void install_core_plugins();
-
-  void install_complete_tracker();
-
   void install_lcm();
   void install_lbd();
   void install_restart();
   void install_literal_chooser();
 
-  // These install various counters to track interesting things.
-  void install_metrics_plugins();
-
   // We create a local copy of the CNF.
   solver_t(const cnf_t &cnf);
-  // This is the core method:
+  // These are the core methods. Solve is the only real entry point,
+  // the others are key helper methods.
   bool solve();
-
   state_t drain_unit_queue();
   clause_id determine_conflict_clause();
   action_t *determine_backtrack_level(const clause_t &c);
-  void process_backtrack_level(const clause_t &c, action_t *target);
-  state_t commit_learned_clause(clause_t &&c);
-  void report_metrics();
-
-  bool halt_state(const action_t action) const {
-    return action.action_kind == action_t::action_kind_t::halt_conflict ||
-           action.action_kind == action_t::action_kind_t::halt_unsat ||
-           action.action_kind == action_t::action_kind_t::halt_sat;
-  }
-
-  bool halted() const {
-    // std::cout << "Debug: current trace is: " << *this << std::endl;
-    bool result = !trail.empty() && halt_state(*trail.crbegin());
-    // std::cout << "[DBG](halted): " << result << " with " <<
-    // *actions.crbegin()
-    // << std::endl;
-    return result;
-  }
-  bool final_state() {
-    // std::cout << "Testing final state: " << *this << std::endl;
-    if (trail.empty()) {
-      return false;
-    }
-    action_t action = *trail.rbegin();
-
-    return action.action_kind == action_t::action_kind_t::halt_unsat ||
-           action.action_kind == action_t::action_kind_t::halt_sat;
-  }
-
-  ema_restart_t ema_restart;
 };

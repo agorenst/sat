@@ -15,24 +15,23 @@ void watched_literals_t::install(solver_t &s)
     watch_clause(cid);
   }
 
-  s.apply_decision_p.add_listener([&](literal_t l) {
+  s.apply_decision.add_listener([&](literal_t l) {
     literal_falsed(l);
     MAX_ASSERT(trail.conflicted() || validate_state());
   });
-  s.apply_unit_p.add_listener([&](literal_t l, clause_id cid) {
+  s.apply_unit.add_listener([&](literal_t l, clause_id cid) {
     literal_falsed(l);
     MAX_ASSERT(trail.conflicted() || validate_state());
   });
-  s.remove_clause_p.add_listener([&](clause_id cid) { remove_clause(cid); });
+  s.remove_clause.add_listener([&](clause_id cid) { remove_clause(cid); });
 
   s.added_clause.add_listener([&](const trail_t &trail, clause_id cid) {
     const clause_t &c = cnf[cid];
     if (c.size() > 1) watch_clause(cid);
     MAX_ASSERT(trail.conflicted() || validate_state());
   });
-  s.remove_literal_p.pre(
-      [&](clause_id cid, literal_t l) { remove_clause(cid); });
-  s.remove_literal_p.post([&](clause_id cid, literal_t l) {
+  s.remove_literal.pre([&](clause_id cid, literal_t l) { remove_clause(cid); });
+  s.remove_literal.post([&](clause_id cid, literal_t l) {
     if (cnf[cid].size() > 1) {
       watch_clause(cid);
     }
@@ -354,24 +353,23 @@ void const_watched_literals_t::install(solver_t &s)
     watch_clause(cid);
   }
 
-  s.apply_decision_p.add_listener([&](literal_t l) {
+  s.apply_decision.add_listener([&](literal_t l) {
     literal_falsed(l);
     MAX_ASSERT(trail.conflicted() || validate_state());
   });
-  s.apply_unit_p.add_listener([&](literal_t l, clause_id cid) {
+  s.apply_unit.add_listener([&](literal_t l, clause_id cid) {
     literal_falsed(l);
     MAX_ASSERT(trail.conflicted() || validate_state());
   });
-  s.remove_clause_p.add_listener([&](clause_id cid) { remove_clause(cid); });
+  s.remove_clause.add_listener([&](clause_id cid) { remove_clause(cid); });
 
   s.added_clause.add_listener([&](const trail_t &trail, clause_id cid) {
     const clause_t &c = cnf[cid];
     if (c.size() > 1) watch_clause(cid);
     SAT_ASSERT(validate_state());
   });
-  s.remove_literal_p.pre(
-      [&](clause_id cid, literal_t l) { remove_clause(cid); });
-  s.remove_literal_p.post([&](clause_id cid, literal_t l) {
+  s.remove_literal.pre([&](clause_id cid, literal_t l) { remove_clause(cid); });
+  s.remove_literal.post([&](clause_id cid, literal_t l) {
     if (cnf[cid].size() > 1) {
       watch_clause(cid);
     }

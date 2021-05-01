@@ -5,7 +5,7 @@
 
 void lbd_t::install(solver_t &s) {
   // This is when we (may) clean the DB
-  s.before_decision_p.add_listener([&](cnf_t &cnf) {
+  s.before_decision.add_listener([&](cnf_t &cnf) {
     if (should_clean(cnf)) {
       auto to_remove = clean();
       // don't remove things on the trail

@@ -82,7 +82,8 @@ bool solver_t::solve() {
 
         // Do the actual backtracking, including updating the unit queue and
         // such.
-        process_backtrack_level(c, target);
+        unit_queue.clear();
+        trail.drop_from(target);
 
         // without LCM, sometimes we can learn a unit clause that is still
         // contradicted on the trail!
@@ -145,7 +146,7 @@ solver_t::state_t solver_t::drain_unit_queue() {
       cond_log(settings::trace_applications, solver_action::skip_unit,
                lit_to_dimacs(l), cnf[c]);
     }
-    if (halted()) {
+    if (trail.conflicted()) {
       return state_t::conflict;
     }
   }
@@ -155,14 +156,6 @@ solver_t::state_t solver_t::drain_unit_queue() {
 action_t *solver_t::determine_backtrack_level(const clause_t &c) {
   action_t *target = nonchronological_backtrack(c, trail);
   return target;
-}
-
-void solver_t::process_backtrack_level(const clause_t &c, action_t *target) {
-  if (settings::backtrack_subsumption) {
-    // backtrack_subsumption(c, target, std::end(trail));
-  }
-  unit_queue.clear();
-  trail.drop_from(target);
 }
 
 // We create a local copy of the CNF.
@@ -190,23 +183,23 @@ solver_t::solver_t(const cnf_t &CNF)
   }
   install_literal_chooser();
 
-  remove_clause_p.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
+  remove_clause.add_listener([&](clause_id cid) { cnf.remove_clause(cid); });
 }
 
 // These are the utilities that maintain the underlying
 // CNF and trail data structures.
 void solver_t::install_core_plugins() {
-  apply_decision_p.add_listener(
+  apply_decision.add_listener(
       [&](literal_t l) { trail.append(make_decision(l)); });
-  apply_unit_p.add_listener([&](literal_t l, clause_id cid) {
+  apply_unit.add_listener([&](literal_t l, clause_id cid) {
     trail.append(make_unit_prop(l, cid));
   });
 
-  restart_p.add_listener([&]() {
+  restart.add_listener([&]() {
     while (trail.level()) trail.pop();
   });
 
-  remove_literal_p.add([&](clause_id cid, literal_t l) {
+  remove_literal.add([&](clause_id cid, literal_t l) {
     clause_t &c = cnf[cid];
     auto it = std::find(std::begin(c), std::end(c), l);
     MAX_ASSERT(it != std::end(c));
@@ -217,31 +210,31 @@ void solver_t::install_core_plugins() {
 
   // Invariants!
   if (settings::debug_max) {
-    before_decision_p.precondition([&](const cnf_t &cnf) {
+    before_decision.pre([&](const cnf_t &cnf) {
       trail_t::validate(cnf, trail);
       assert(!trail_t::is_conflicted(cnf, trail));
     });
-    apply_unit_p.precondition([&](literal_t l, clause_id cid) {
+    apply_unit.pre([&](literal_t l, clause_id cid) {
       assert(trail.count_unassigned_literals(cnf[cid]) == 1);
       assert(trail.find_unassigned_literal(cnf[cid]) == l);
       assert(!trail_t::is_conflicted(cnf, trail));
     });
-    choose_literal_p.precondition(
+    choose_literal.pre(
         [&](literal_t l) { assert(!trail_t::has_unit(cnf, trail)); });
-    choose_literal_p.postcondition(
+    choose_literal.post(
         [&](literal_t l) { assert(trail.literal_unassigned(l)); });
   }
 
   // Not guarded under a flag, run only once per solve,
   // and I think it's worth it.
-  start_solve_p.pre([&]() {
+  start_solve.pre([&]() {
     assert(!trail_t::has_unit(cnf, trail));
     assert(!trail_t::is_satisfied(cnf, trail));
     assert(!trail_t::is_conflicted(cnf, trail));
   });
 
   if (settings::trace_decisions) {
-    choose_literal_p.postcondition([&](literal_t l) {
+    choose_literal.postcondition([&](literal_t l) {
       if (l) log_solver_action(solver_action::apply_decision, lit_to_dimacs(l));
     });
   }
@@ -271,8 +264,8 @@ void solver_t::install_core_plugins() {
 void solver_t::install_lbd() { lbd.install(*this); }
 
 void solver_t::install_restart() {
-  restart_p.add_listener([&]() { ema_restart.reset(); });
-  before_decision_p.add_listener([&](const cnf_t &cnf) {
+  restart.add_listener([&]() { ema_restart.reset(); });
+  before_decision.add_listener([&](const cnf_t &cnf) {
     if (ema_restart.should_restart()) {
       restart();
     }
@@ -287,7 +280,7 @@ void solver_t::install_restart() {
 
 void solver_t::install_literal_chooser() {
   if (settings::only_positive_choices) {
-    choose_literal_p.add_listener([&](literal_t &d) { d = polc.choose(); });
+    choose_literal.add_listener([&](literal_t &d) { d = polc.choose(); });
   } else if (settings::naive_vsids) {
     added_clause.add([&](const trail_t &trail, clause_id cid) {
       vsids.clause_learned(cnf[cid]);
@@ -295,48 +288,17 @@ void solver_t::install_literal_chooser() {
     cdcl_resolve.add(
         [&](literal_t l, clause_id cid) { vsids.bump_variable(var(l)); });
 
-    choose_literal_p.add_listener([&](literal_t &d) { d = vsids.choose(); });
-    restart_p.add_listener([&]() { vsids.static_activity(); });
+    choose_literal.add_listener([&](literal_t &d) { d = vsids.choose(); });
+    restart.add_listener([&]() { vsids.static_activity(); });
   } else {
     added_clause.add([&](const trail_t &trail, clause_id cid) {
       vsids.clause_learned(cnf[cid]);
     });
 
-    choose_literal_p.add_listener(
-        [&](literal_t &d) { d = vsids_heap.choose(); });
-    restart_p.add_listener([&]() { vsids_heap.static_activity(); });
+    choose_literal.add_listener([&](literal_t &d) { d = vsids_heap.choose(); });
+    restart.add_listener([&]() { vsids_heap.static_activity(); });
   }
 }
-
-void solver_t::backtrack_subsumption(clause_t &c, action_t *a, action_t *e) {
-  for (; a != e; a++) {
-    if (a->has_clause()) {
-      const clause_t &d = cnf[a->get_clause()];
-      if (c.size() >= d.size()) continue;
-      if (!c.possibly_subsumes(d)) continue;
-      if (subsumes_and_sort(c, d)) {
-        remove_clause(a->get_clause());
-      } else {
-        cond_log(settings::trace_hash_collisions,
-                 solver_action::hash_false_positive);
-      }
-    }
-  }
-}
-
-// We may want to "inline" the different algorithms at some point; did that
-// once, probably not again.
-void solver_t::before_decision(cnf_t &cnf) { before_decision_p(cnf); }
-void solver_t::apply_unit(literal_t l, clause_id cid) { apply_unit_p(l, cid); }
-void solver_t::apply_decision(literal_t l) { apply_decision_p(l); }
-void solver_t::remove_clause(clause_id cid) { remove_clause_p(cid); }
-void solver_t::remove_literal(clause_id cid, literal_t l) {
-  remove_literal_p(cid, l);
-}
-void solver_t::restart() { restart_p(); }
-void solver_t::choose_literal(literal_t &l) { choose_literal_p(l); }
-void solver_t::start_solve() { start_solve_p(); }
-void solver_t::end_solve() { end_solve_p(); }
 
 std::string to_string(solver_t::state_t t) {
   switch (t) {
