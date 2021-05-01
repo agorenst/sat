@@ -2,7 +2,7 @@ CXX=clang++
 CC=clang++
 INCLUDES=-I ./../src/repr -I ./../src/solver
 WARNINGS=-Wall -Werror -Wno-unused-parameter
-CXXFLAGS=$(WARNINGS) -std=c++17 -g -flto -O2 -DREL -ffast-math $(INCLUDES)
+CXXFLAGS=$(WARNINGS) -std=c++17 -g -flto -O2 -ffast-math $(INCLUDES)
 DBGFLAGS=$(WARNINGS) -std=c++17 -g -flto -DSAT_DEBUG_MODE $(INCLUDES)
 AFL=afl-clang-fast++
 SHELL=/bin/bash
@@ -13,21 +13,22 @@ REPRDIR=../src/repr
 BUILDDIR=.
 
 # This was a big help: https://stackoverflow.com/questions/16924333/makefile-compiling-from-directory-to-another-directory
-# The driver library is not something we'll build with different flags.
+# The driver library is not something we'll build with different flags. Well ok, hit a complication with flto
 DRIVERSOURCES=$(wildcard $(DRIVERDIR)/*.cpp)
 DRIVEROBJECTS=$(patsubst $(DRIVERDIR)/%.cpp,$(BUILDDIR)/%.o,$(DRIVERSOURCES))
 $(DRIVEROBJECTS) : $(BUILDDIR)/%.o : $(DRIVERDIR)/%.cpp
-	$(CC) $(CXXFLAGS) -c $< -o $@
+	$(CC) $(CXXFLAGS) -c -DREL $< -o $@
 
 REPRSOURCES=$(wildcard $(REPRDIR)/*.cpp)
 REPROBJECTS=$(patsubst $(REPRDIR)/%.cpp,$(BUILDDIR)/%.o,$(REPRSOURCES))
 $(REPROBJECTS) : $(BUILDDIR)/%.o : $(REPRDIR)/%.cpp
 	$(CC) $(CXXFLAGS) -c $< -o $@
 
+# This is the "release" mode, basically. Note -DREL flag, it removes checks.
 SOLVERSOURCES=$(wildcard $(SOLVERDIR)/*.cpp)
 SOLVEROBJECTS=$(patsubst $(SOLVERDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOLVERSOURCES))
 $(SOLVEROBJECTS) : $(BUILDDIR)/%.o : $(SOLVERDIR)/%.cpp
-	$(CC) $(CXXFLAGS) -c $< -o $@
+	$(CC) $(CXXFLAGS) -DREL -c $< -o $@
 $(BUILDDIR)/sat : $(SOLVEROBJECTS) $(DRIVEROBJECTS) $(REPROBJECTS)
 	$(CC) $(CXXFLAGS) $^ -o $@
 
@@ -69,16 +70,16 @@ clean:
 GENTESTS1000=$(shell seq 1000 | awk '{print $$1".1000minisat_diff"}')
 GENTESTS100=$(shell seq 100 | awk '{print $$1".100minisat_diff"}')
 GENTESTS10=$(shell seq 10 | awk '{print $$1".10minisat_diff"}')
-tests: sat.dbg sat $(GENTESTS1000) $(GENTESTS100) $(GENTESTS10)
-%.1000minisat_diff:
-	python3 ./../src/gen/satgen.py --vars 10 -s $(basename $@) | ./sat.dbg --debug-max | diff - <(python3 ./../src/gen/satgen.py --vars 10 -s $(basename $@) | minisat | tail -n 1)
-%.100minisat_diff:
-	python3 ./../src/gen/satgen.py --vars 100 -s $(basename $@) | ./sat.dbg --debug-max | diff - <(python3 ./../src/gen/satgen.py --vars 100 -s $(basename $@) | minisat | tail -n 1)
-%.10minisat_diff:
+tests: $(GENTESTS1000) $(GENTESTS100) $(GENTESTS10)
+%.1000minisat_diff: sat.san
+	python3 ./../src/gen/satgen.py --vars 10 -s $(basename $@) | ./sat.san --debug-max | diff - <(python3 ./../src/gen/satgen.py --vars 10 -s $(basename $@) | minisat | tail -n 1)
+%.100minisat_diff: sat.san
+	python3 ./../src/gen/satgen.py --vars 100 -s $(basename $@) | ./sat.san --debug-max | diff - <(python3 ./../src/gen/satgen.py --vars 100 -s $(basename $@) | minisat | tail -n 1)
+%.10minisat_diff: sat
 	python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | ./sat | diff - <(python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | minisat | tail -n 1)
 
 PERFTESTS10=$(shell seq 10 | awk '{print $$1".10perftest"}')
-benchmarks: sat $(PERFTESTS10)
-%.10perftest:
+benchmarks: $(PERFTESTS10)
+%.10perftest: sat
 	time python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | ./sat > /dev/null
 	time python3 ./../src/gen/satgen.py --vars 250 -s $(basename $@) | minisat > /dev/null

@@ -13,11 +13,11 @@ literal_t dimacs_to_lit(int x) {
   literal_t l = std::abs(x);
   l <<= 1;
   if (is_neg) l++;
-  SAT_ASSERT(l > 1);
+  MAX_ASSERT(l > 1);
   return l;
 }
 int lit_to_dimacs(literal_t l) {
-  assert(l != 0);
+  MAX_ASSERT(l != 0);
   bool is_neg = (l % 2) != 0;
   int x = l >> 1;
   if (is_neg) x = -x;

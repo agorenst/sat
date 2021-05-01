@@ -6,20 +6,20 @@
 // Literal block distance, for glue clauses
 // Keeps track of the metrics, too.
 
-struct lbm_entry {
+struct lbd_entry {
   size_t score;
   clause_id id;
 };
-static inline bool entry_cmp(const lbm_entry &e1, const lbm_entry &e2) {
+static inline bool entry_cmp(const lbd_entry &e1, const lbd_entry &e2) {
   return e1.score < e2.score;
 }
 
 struct solver_t;
 
-struct lbm_t {
+struct lbd_t {
   // Don't erase anything here!
-  // std::priority_queue<lbm_entry> worklist;
-  std::vector<lbm_entry> worklist;
+  // std::priority_queue<lbd_entry> worklist;
+  std::vector<lbd_entry> worklist;
   size_t value_cache = 0;
 
   size_t max_size = 0;
@@ -39,6 +39,6 @@ struct lbm_t {
   void flush_value(clause_id cid);
 
   bool remove(clause_id cid);
-  lbm_t(const cnf_t &cnf);
+  lbd_t(const cnf_t &cnf);
   void install(solver_t &);
 };

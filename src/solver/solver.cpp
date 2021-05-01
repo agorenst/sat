@@ -174,7 +174,7 @@ solver_t::solver_t(const cnf_t &CNF)
       vsids(cnf, trail),
       vsids_heap(cnf, trail),
       polc(max_variable(cnf), trail),
-      lbm(cnf) {
+      lbd(cnf) {
   variable_t max_var = max_variable(cnf);
   trail.construct(max_var);
 
@@ -183,7 +183,7 @@ solver_t::solver_t(const cnf_t &CNF)
   // const_watch.install(*this);
 
   if (settings::lbd_cleaning) {
-    install_lbm();
+    install_lbd();
   }
   if (settings::ema_restart) {
     install_restart();
@@ -268,7 +268,7 @@ void solver_t::install_core_plugins() {
   }
 }
 
-void solver_t::install_lbm() { lbm.install(*this); }
+void solver_t::install_lbd() { lbd.install(*this); }
 
 void solver_t::install_restart() {
   restart_p.add_listener([&]() { ema_restart.reset(); });
@@ -278,10 +278,10 @@ void solver_t::install_restart() {
     }
   });
   added_clause.add_listener([&](const trail_t &trail, clause_id cid) {
-    // this is frustrating: we read into the LBM cache, nothing to do with our
+    // this is frustrating: we read into the lbd cache, nothing to do with our
     // parameters.
-    assert(lbm.value_cache);
-    ema_restart.step(lbm.value_cache);
+    assert(lbd.value_cache);
+    ema_restart.step(lbd.value_cache);
   });
 }
 
@@ -446,12 +446,12 @@ clause_id solver_t::determine_conflict_clause() {
   }
 
   clause_id to_return = nullptr;
-  bool to_lbm = true;
+  bool to_lbd = true;
   if (last_subsumed == std::prev(it)) {
     to_return = last_subsumed->get_clause();
     // hack: will be re-added with "added clause"
     watch.remove_clause(to_return);
-    to_lbm = lbm.remove(to_return);
+    to_lbd = lbd.remove(to_return);
     // QUESTION: how to "LCM" this? LCM with "remove_literal"?
   } else {
     while (!stamped.get(it->get_literal())) it++;
@@ -485,12 +485,12 @@ clause_id solver_t::determine_conflict_clause() {
 
   added_clause(trail, to_return);
 
-  if (!to_lbm) {
+  if (!to_lbd) {
     // this was an original clause, make it unremovable.
     // This is a *really* painful hack; an artifact of how we want to
     // remove literals in LCM without the pain of triggering constant updates
     // in, e.g., watched literals or the like.
-    lbm.remove(to_return);
+    lbd.remove(to_return);
   }
 
   return to_return;
