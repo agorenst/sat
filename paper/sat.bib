@@ -1,0 +1,379 @@
+% https://en.wikibooks.org/wiki/LaTeX/Bibliography_Management
+
+%VSIDS and two-watched literals
+%10.1145/378239.379017,
+@inproceedings{chaff,
+  author    = {Moskewicz, Matthew W. and Madigan, Conor F. and Zhao, Ying and Zhang, Lintao and Malik, Sharad},
+  title     = {Chaff: Engineering an Efficient SAT Solver},
+  year      = {2001},
+  isbn      = {1581132972},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/378239.379017},
+  doi       = {10.1145/378239.379017},
+  booktitle = {Proceedings of the 38th Annual Design Automation Conference},
+  pages     = {530-535},
+  numpages  = {6},
+  keywords  = {design verification, boolean satisfiability},
+  location  = {Las Vegas, Nevada, USA},
+  series    = {DAC '01}
+}
+
+% Glucouse: https://www.labri.fr/perso/lsimon/glucose/
+
+% Downloaded directly from Springer site, but looks good to me.
+% What is "Address" value here...?
+@inproceedings{fengbacchus2020,
+  author    = {Feng, Nick and Bacchus, Fahiem},
+  editor    = {Pulina, Luca and Seidl, Martina},
+  title     = {Clause Size Reduction with all-UIP Learning},
+  booktitle = {Theory and Applications of Satisfiability Testing -- SAT 2020},
+  year      = {2020},
+  publisher = {Springer International Publishing},
+  address   = {Cham},
+  pages     = {28--45},
+  abstract  = {Almost all CDCL SAT solvers use the 1-UIP clause learning scheme for learning new clauses from conflicts, and our current understanding of SAT solving provides good reasons for using that scheme. In particular, the 1-UIP scheme yields asserting clauses, and these asserting clauses have minimum LBD among all possible asserting clauses. As a result of these advantages, other clause learning schemes, like i-UIP and all-UIP, that were proposed in early work are not used in modern solvers. In this paper, we propose a new technique for exploiting the all-UIP clause learning scheme. Our technique is to employ all-UIP learning under the constraint that the learnt clause's LBD does not increase (over the minimum established by the 1-UIP clause). Our method can learn clauses that are significantly smaller than the 1-UIP clause while preserving the minimum LBD. Unlike previous clause minimization methods, our technique is not limited to learning a sub-clause of the 1-UIP clause. We show empirically that our method can improve the performance of state of the art solvers.},
+  isbn      = {978-3-030-51825-7}
+}
+
+% From https://link.springer.com/chapter/10.1007/978-3-642-02777-2_21
+@inproceedings{hansomenzi2009,
+  author    = {Han, Hyojung and Somenzi, Fabio},
+  editor    = {Kullmann, Oliver},
+  title     = {On-the-Fly Clause Improvement},
+  booktitle = {Theory and Applications of Satisfiability Testing - SAT 2009},
+  year      = {2009},
+  publisher = {Springer Berlin Heidelberg},
+  address   = {Berlin, Heidelberg},
+  pages     = {209--222},
+  abstract  = {Most current propositional SAT solvers apply resolution at various stages to derive new clauses or simplify existing ones. The former happens during conflict analysis, while the latter is usually done during preprocessing. We show how subsumption of the operands by the resolvent can be inexpensively detected during resolution; we then show how this detection is used to improve three stages of the SAT solver: variable elimination, clause distillation, and conflict analysis. The ``on-the-fly'' subsumption check is easily integrated in a SAT solver. In particular, it is compatible with the strong conflict analysis and the generation of unsatisfiability proofs. Experiments show the effectiveness of this technique and illustrate an interesting synergy between preprocessing and the DPLL procedure.},
+  isbn      = {978-3-642-02777-2}
+}
+
+% see bibsource
+% slight edits to names to get it to play nicely with biber, c.f. https://tex.stackexchange.com/questions/251261/input-encoding-error-after-upgrading-from-biber-1-9-to-biber-2-1
+@article{hamadijabboursais2010,
+  author    = {Youssef Hamadi and
+               Sa{\"i}d Jabbour and
+               Lakhdar Sa{\"i}s},
+  title     = {Learning for Dynamic Subsumption},
+  journal   = {Int. J. Artif. Intell. Tools},
+  volume    = {19},
+  number    = {4},
+  pages     = {511--529},
+  year      = {2010},
+  url       = {https://doi.org/10.1142/S0218213010000303},
+  doi       = {10.1142/S0218213010000303},
+  timestamp = {Tue, 12 May 2020 16:53:37 +0200},
+  biburl    = {https://dblp.org/rec/journals/ijait/HamadiJS10.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+% Bibtex from https://dl.acm.org/doi/book/10.5555/2898950
+@book{knuth2015,
+  author    = {Knuth, Donald E.},
+  title     = {The Art of Computer Programming, Volume 4, Fascicle 6: Satisfiability},
+  year      = {2015},
+  isbn      = {0134397606},
+  publisher = {Addison-Wesley Professional},
+  edition   = {1st},
+  abstract  = {This multivolume work on the analysis of algorithms has long been recognized as the definitive description of classical computer science. The four volumes published to date already comprise a unique and invaluable resource in programming theory and practice. Countless readers have spoken about the profound personal influence of Knuths writings. Scientists have marveled at the beauty and elegance of his analysis, while practicing programmers have successfully applied his cookbook solutions to their day-to-day problems. All have admired Knuth for the breadth, clarity, accuracy, and good humor found in his books. To continue the fourth and later volumes of the set, and to update parts of the existing volumes, Knuth has created a series of small books called fascicles, which are published at regular intervals. Each fascicle encompasses a section or more of wholly new or revised material. Ultimately, the content of these fascicles will be rolled up into the comprehensive, final versions of each volume, and the enormous undertaking that began in 1962 will be complete. Volume 4 Fascicle 6 This fascicle, brimming with lively examples, forms the middle third of what will eventually become hardcover Volume 4B. It introduces and surveys Satisfiability, one of the most fundamental problems in all of computer science: Given a Boolean function, can its variables be set to at least one pattern of 0s and 1s that will make the function true? Satisfiability is far from an abstract exercise in understanding formal systems. Revolutionary methods for solving such problems emerged at the beginning of the twenty-first century, and theyve led to game-changing applications in industry. These so-called SAT solvers can now routinely find solutions to practical problems that involve millions of variables and were thought until very recently to be hopelessly difficult. Fascicle 6 presents full details of seven different SAT solvers, ranging from simple algorithms suitable for small problems to state-of-the-art algorithms of industrial strength. Many other significant topics also arise in the course of the discussion, such as bounded model checking, the theory of traces, Las Vegas algorithms, phase changes in random processes, the efficient encoding of problems into conjunctive normal form, and the exploitation of global and local symmetries. More than 500 exercises are provided, arranged carefully for self-instruction, together with detailed answers.}
+}
+
+# from https://dblp.uni-trier.de/rec/conf/sat/BiereF18.html?view=bibtex
+@inproceedings{bierefrohlich2018,
+  author    = {Armin Biere and
+               Andreas Fr{\"{o}}hlich},
+  editor    = {Daniel Le Berre and
+               Matti J{\"{a}}rvisalo},
+  title     = {Evaluating {CDCL} Restart Schemes},
+  booktitle = {Proceedings of Pragmatics of {SAT} 2015, Austin, Texas, USA, September
+               23, 2015 / Pragmatics of {SAT} 2018, Oxford, UK, July 7, 2018},
+  series    = {EPiC Series in Computing},
+  volume    = {59},
+  pages     = {1--17},
+  publisher = {EasyChair},
+  year      = {2018},
+  url       = {https://easychair.org/publications/paper/RdBL},
+  timestamp = {Wed, 27 May 2020 16:02:35 +0200},
+  biburl    = {https://dblp.org/rec/conf/sat/BiereF18.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@inproceedings{bierefrohlich2015,
+  author    = {Biere, Armin and Fr{\"o}hlich, Andreas},
+  editor    = {Heule, Marijn and Weaver, Sean},
+  title     = {Evaluating CDCL Variable Scoring Schemes},
+  booktitle = {Theory and Applications of Satisfiability Testing -- SAT 2015},
+  year      = {2015},
+  publisher = {Springer International Publishing},
+  address   = {Cham},
+  pages     = {405--422},
+  abstract  = {The VSIDS (variable state independent decaying sum) decision heuristic invented in the context of the CDCL (conflict-driven clause learning) SAT solver Chaff, is considered crucial for achieving high efficiency of modern SAT solvers on application benchmarks. This paper proposes ACIDS (average conflict-index decision score), a variant of VSIDS. The ACIDS heuristics is compared to the original implementation of VSIDS, its popular modern implementation EVSIDS (exponential VSIDS), the VMTF (variable move-to-front) scheme, and other related decision heuristics. They all share the important principle to select those variables as decisions, which recently participated in conflicts. The main goal of the paper is to provide an empirical evaluation to serve as a starting point for trying to understand the reason for the efficiency of these decision heuristics. In our experiments, it turns out that EVSIDS, VMTF, ACIDS behave very similarly, if implemented carefully.},
+  isbn      = {978-3-319-24318-4}
+}
+
+@inproceedings{audemardsimon2009,
+  author    = {Audemard, Gilles and Simon, Laurent},
+  title     = {Predicting Learnt Clauses Quality in Modern SAT Solvers},
+  year      = {2009},
+  publisher = {Morgan Kaufmann Publishers Inc.},
+  address   = {San Francisco, CA, USA},
+  abstract  = {Beside impressive progresses made by SAT solvers over the last ten years, only few works tried to understand why Conflict Directed Clause Learning algorithms (CDCL) are so strong and efficient on most industrial applications. We report in this work a key observation of CDCL solvers behavior on this family of benchmarks and explain it by an unsuspected side effect of their particular Clause Learning scheme. This new paradigm allows us to solve an important, still open, question: How to designing a fast, static, accurate, and predictive measure of new learnt clauses pertinence. Our paper is followed by empirical evidences that show how our new learning scheme improves state-of-the art results by an order of magnitude on both SAT and UNSAT industrial problems.},
+  booktitle = {Proceedings of the 21st International Jont Conference on Artifical Intelligence},
+  pages     = {399–404},
+  numpages  = {6},
+  location  = {Pasadena, California, USA},
+  series    = {IJCAI'09}
+}
+@article{marques-silvasakallah1999,
+  author  = {Marques-Silva, J.P. and Sakallah, K.A.},
+  journal = {IEEE Transactions on Computers},
+  title   = {GRASP: a search algorithm for propositional satisfiability},
+  year    = {1999},
+  volume  = {48},
+  number  = {5},
+  pages   = {506-521},
+  doi     = {10.1109/12.769433}
+}
+
+% from https://dblp.uni-trier.de/rec/journals/jair/BeameKS04.html?view=bibtex
+@article{beamekautzsabharwal2004,
+  author    = {Paul Beame and
+               Henry A. Kautz and
+               Ashish Sabharwal},
+  title     = {Towards Understanding and Harnessing the Potential of Clause Learning},
+  journal   = {J. Artif. Intell. Res.},
+  volume    = {22},
+  pages     = {319--351},
+  year      = {2004},
+  url       = {https://doi.org/10.1613/jair.1410},
+  doi       = {10.1613/jair.1410},
+  timestamp = {Mon, 21 Jan 2019 15:01:17 +0100},
+  biburl    = {https://dblp.org/rec/journals/jair/BeameKS04.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@phdthesis{nadel2008,
+  author = {Alexander Nadel},
+  title  = {Understanding and Improving a Modern {SAT} Solver},
+  school = {Tel Aviv University},
+  year   = {2008}
+}
+
+@inproceedings{nadelryvchin2018,
+  author    = {Nadel, Alexander and Ryvchin, Vadim},
+  editor    = {Beyersdorff, Olaf
+and Wintersteiger, Christoph M.},
+  title     = {Chronological Backtracking},
+  booktitle = {Theory and Applications of Satisfiability Testing -- SAT 2018},
+  year      = {2018},
+  publisher = {Springer International Publishing},
+  address   = {Cham},
+  pages     = {111--121},
+  abstract  = {Non-Chronological Backtracking (NCB) has been implemented in every modern CDCL SAT solver since the original CDCL solver GRASP. NCB's importance has never been questioned. This paper argues that NCB is not always helpful. We show how one can implement the alternative to NCB--Chronological Backtracking (CB)--in a modern SAT solver. We demonstrate that CB improves the performance of the winner of the latest SAT Competition, Maple{\_}LCM{\_}Dist, and the winner of the latest MaxSAT Evaluation Open-WBO.},
+  isbn      = {978-3-319-94144-8}
+}
+
+@inproceedings{audemardetal2008,
+  author    = {Audemard, G.
+and Bordeaux, L.
+and Hamadi, Y.
+and Jabbour, S.
+and Sais, L.},
+  editor    = {Kleine B{\"u}ning, Hans
+and Zhao, Xishun},
+  title     = {A Generalized Framework for Conflict Analysis},
+  booktitle = {Theory and Applications of Satisfiability Testing -- SAT 2008},
+  year      = {2008},
+  publisher = {Springer Berlin Heidelberg},
+  address   = {Berlin, Heidelberg},
+  pages     = {21--27},
+  abstract  = {This paper presents an extension of Conflict Driven Clauses Learning (CDCL). It relies on an extended notion of implication graph containing additional arcs, called inverse arcs. These are obtained by taking into account the satisfied clauses of the formula, which are usually ignored by conflict analysis. This extension captures more conveniently the whole propagation process, and opens new perspectives for CDCL-based approaches. Among other benefits, our extension leads to a new conflict analysis scheme that exploits the additional arcs to back-jump to higher levels. Experimental results show that the integration of our generalized conflict analysis scheme within two state-of-the-art solvers improves their performance.},
+  isbn      = {978-3-540-79719-7}
+}
+% https://link.springer.com/chapter/10.1007/978-3-030-24258-9_18
+@inproceedings{mohlebiere2019,
+  author    = {M{\"o}hle, Sibylle
+and Biere, Armin},
+  editor    = {Janota, Mikol{\'a}{\v{s}}
+and Lynce, In{\^e}s},
+  title     = {Backing Backtracking},
+  booktitle = {Theory and Applications of Satisfiability Testing -- SAT 2019},
+  year      = {2019},
+  publisher = {Springer International Publishing},
+  address   = {Cham},
+  pages     = {250--266},
+  abstract  = {Non-chronological backtracking was considered an important and necessary feature of conflict-driven clause learning (CDCL). However, a SAT solver combining CDCL with chronological backtracking succeeded in the main track of the SAT Competition 2018. In that solver, multiple invariants considered crucial for CDCL were violated. In particular, decision levels of literals on the trail were not necessarily increasing anymore. The corresponding paper presented at SAT 2018 described the algorithm and provided empirical evidence of its correctness, but a formalization and proofs were missing. Our contribution is to fill this gap. We further generalize the approach, discuss implementation details, and empirically confirm its effectiveness in an independent implementation.},
+  isbn      = {978-3-030-24258-9}
+}
+
+% https://link.springer.com/chapter/10.1007%2F978-3-540-24605-3_37
+@inproceedings{eensorensson2004,
+  author    = {E{\'e}n, Niklas
+and S{\"o}rensson, Niklas},
+  editor    = {Giunchiglia, Enrico
+and Tacchella, Armando},
+  title     = {An Extensible SAT-solver},
+  booktitle = {Theory and Applications of Satisfiability Testing},
+  year      = {2004},
+  publisher = {Springer Berlin Heidelberg},
+  address   = {Berlin, Heidelberg},
+  pages     = {502--518},
+  abstract  = {In this article, we present a small, complete, and efficient SAT-solver in the style of conflict-driven learning, as exemplified by Chaff. We aim to give sufficient details about implementation to enable the reader to construct his or her own solver in a very short time. This will allow users of SAT-solvers to make domain specific extensions or adaptions of current state-of-the-art SAT-techniques, to meet the needs of a particular application area. The presented solver is designed with this in mind, and includes among other things a mechanism for adding arbitrary boolean constraints. It also supports solving a series of related SAT-problems efficiently by an incremental SAT-interface.},
+  isbn      = {978-3-540-24605-3}
+}
+
+
+% https://dblp.uni-trier.de/rec/conf/tacas/JarvisaloBH10.html?view=bibtex
+@inproceedings{jarvisalobiereheule2010,
+  author    = {Matti J{\"{a}}rvisalo and
+               Armin Biere and
+               Marijn Heule},
+  editor    = {Javier Esparza and
+               Rupak Majumdar},
+  title     = {Blocked Clause Elimination},
+  booktitle = {Tools and Algorithms for the Construction and Analysis of Systems,
+               16th International Conference, {TACAS} 2010, Held as Part of the Joint
+               European Conferences on Theory and Practice of Software, {ETAPS} 2010,
+               Paphos, Cyprus, March 20-28, 2010. Proceedings},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {6015},
+  pages     = {129--144},
+  publisher = {Springer},
+  year      = {2010},
+  url       = {https://doi.org/10.1007/978-3-642-12002-2\_10},
+  doi       = {10.1007/978-3-642-12002-2\_10},
+  timestamp = {Mon, 16 Sep 2019 15:27:51 +0200},
+  biburl    = {https://dblp.org/rec/conf/tacas/JarvisaloBH10.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+@inproceedings{subbarayanpradhan2004,
+  author    = {Sathiamoorthy Subbarayan and
+               Dhiraj K. Pradhan},
+  editor    = {Holger H. Hoos and
+               David G. Mitchell},
+  title     = {NiVER: Non-increasing Variable Elimination Resolution for Preprocessing
+               {SAT} Instances},
+  booktitle = {Theory and Applications of Satisfiability Testing, 7th International
+               Conference, {SAT} 2004, Vancouver, BC, Canada, May 10-13, 2004, Revised
+               Selected Papers},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {3542},
+  pages     = {276--291},
+  publisher = {Springer},
+  year      = {2004},
+  url       = {https://doi.org/10.1007/11527695\_22},
+  doi       = {10.1007/11527695\_22},
+  timestamp = {Tue, 14 May 2019 10:00:41 +0200},
+  biburl    = {https://dblp.org/rec/conf/sat/SubbarayanP04a.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+@inproceedings{ramovandertakheule2011,
+  author    = {Ramos, Antonio
+and van der Tak, Peter
+and Heule, Marijn J. H.},
+  editor    = {Sakallah, Karem A.
+and Simon, Laurent},
+  title     = {Between Restarts and Backjumps},
+  booktitle = {Theory and Applications of Satisfiability Testing - SAT 2011},
+  year      = {2011},
+  publisher = {Springer Berlin Heidelberg},
+  address   = {Berlin, Heidelberg},
+  pages     = {216--229},
+  abstract  = {This paper introduces a novel technique that significantly reduces the computational costs to perform a restart in conflict-driven clause learning (CDCL) solvers. Our technique exploits the observation that CDCL solvers make many redundant propagations after a restart. It efficiently predicts which decisions will be made after a restart. This prediction is used to backtrack to the first level at which heuristics may select a new decision rather than performing a complete restart.},
+  isbn      = {978-3-642-21581-0}
+}
+
+
+@article{vandertakramosheule2011,
+  author    = {Peter van der Tak and
+               Antonio Ramos and
+               Marijn Heule},
+  title     = {Reusing the Assignment Trail in {CDCL} Solvers},
+  journal   = {J. Satisf. Boolean Model. Comput.},
+  volume    = {7},
+  number    = {4},
+  pages     = {133--138},
+  year      = {2011},
+  url       = {https://doi.org/10.3233/sat190082},
+  doi       = {10.3233/sat190082},
+  timestamp = {Mon, 17 Aug 2020 18:32:39 +0200},
+  biburl    = {https://dblp.org/rec/journals/jsat/TakRH11.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@inproceedings{jinsomenzi2006,
+  author    = {HoonSang Jin and
+               Fabio Somenzi},
+  editor    = {Georges G. E. Gielen},
+  title     = {Strong conflict analysis for propositional satisfiability},
+  booktitle = {Proceedings of the Conference on Design, Automation and Test in Europe,
+               {DATE} 2006, Munich, Germany, March 6-10, 2006},
+  pages     = {818--823},
+  publisher = {European Design and Automation Association, Leuven, Belgium},
+  year      = {2006},
+  url       = {https://doi.org/10.1109/DATE.2006.244149},
+  doi       = {10.1109/DATE.2006.244149},
+  timestamp = {Wed, 16 Oct 2019 14:14:53 +0200},
+  biburl    = {https://dblp.org/rec/conf/date/JinS06.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@inproceedings{piettehamadisais2008,
+  author    = {C{\'{e}}dric Piette and
+               Youssef Hamadi and
+               Lakhdar Sais},
+  editor    = {Malik Ghallab and
+               Constantine D. Spyropoulos and
+               Nikos Fakotakis and
+               Nikolaos M. Avouris},
+  title     = {Vivifying Propositional Clausal Formulae},
+  booktitle = {{ECAI} 2008 - 18th European Conference on Artificial Intelligence,
+               Patras, Greece, July 21-25, 2008, Proceedings},
+  series    = {Frontiers in Artificial Intelligence and Applications},
+  volume    = {178},
+  pages     = {525--529},
+  publisher = {{IOS} Press},
+  year      = {2008},
+  url       = {https://doi.org/10.3233/978-1-58603-891-5-525},
+  doi       = {10.3233/978-1-58603-891-5-525},
+  timestamp = {Wed, 24 May 2017 08:27:20 +0200},
+  biburl    = {https://dblp.org/rec/conf/ecai/PietteHS08.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@inproceedings{hansomenzi2007,
+  author    = {HyoJung Han and
+               Fabio Somenzi},
+  title     = {Alembic: An Efficient Algorithm for {CNF} Preprocessing},
+  booktitle = {Proceedings of the 44th Design Automation Conference, {DAC} 2007,
+               San Diego, CA, USA, June 4-8, 2007},
+  pages     = {582--587},
+  publisher = {{IEEE}},
+  year      = {2007},
+  url       = {https://doi.org/10.1145/1278480.1278628},
+  doi       = {10.1145/1278480.1278628},
+  timestamp = {Tue, 06 Nov 2018 16:58:15 +0100},
+  biburl    = {https://dblp.org/rec/conf/dac/HanS07.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+@inproceedings{sorenssonbiere2009,
+  author    = {Niklas S{\"{o}}rensson and
+               Armin Biere},
+  editor    = {Oliver Kullmann},
+  title     = {Minimizing Learned Clauses},
+  booktitle = {Theory and Applications of Satisfiability Testing - {SAT} 2009, 12th
+               International Conference, {SAT} 2009, Swansea, UK, June 30 - July
+               3, 2009. Proceedings},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {5584},
+  pages     = {237--243},
+  publisher = {Springer},
+  year      = {2009},
+  url       = {https://doi.org/10.1007/978-3-642-02777-2\_23},
+  doi       = {10.1007/978-3-642-02777-2\_23},
+  timestamp = {Mon, 16 Sep 2019 15:30:17 +0200},
+  biburl    = {https://dblp.org/rec/conf/sat/SorenssonB09.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}

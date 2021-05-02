@@ -1,0 +1,207 @@
+\documentclass{article}
+\title{Notes on Implementing a CDCL SAT Solver}
+\author{Aaron Gorenstein}
+\date{28 April, 2021}
+
+\usepackage{cleveref}
+\usepackage{biblatex}
+\addbibresource{sat.bib}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+    These are my notes (written after much of my efforts) in attempting to earn an understanding of the SAT-solving state-of-the-art.
+    This serves as a mix of annotated-bibliography, to-do-list, and notes on implementations hurdles I ran into.
+    I hope this serves as useful and interesting reading for someone else, or at least something I can refer back to as time goes on.
+\end{abstract}
+
+\section{Apology}
+As a note, I have done this all essentially as a ``free-agent'' and never interacted with the SAT solving research community.
+My brief foray into (an unrelated part of) academia made it quite clear that the \emph{community} of scholars on a subject is something not easily inferred from just reading the papers.
+For instance, the ideas of a paper may enter the community, by way of preprints and discussion, long before its official publication date (nevermind the conference-versus-journal latency too).
+This, and other things like subtle ``special cases'' to results that only are revealed after publication, but are themselves not worth writing up, cannot be obtained ``just'' by reading the papers.
+So, don't be fooled by the \LaTeX: I am an amateur writing up my experiences peering into the SAT solving world from the outside.
+I am confident that I am studying and implementing this work to a high standard, but it is upper-bounded by my lack of colleagues.
+\section{Design Philosophy}
+
+\subsection{My Approach}
+A modern SAT solver has many different algorithms plugged into it (that's most of this write-up, in \cref{sec:algorithms}).
+How ``independent'' are those algorithms?
+Is there a ready boundary between the SAT solver ``main loop'' and the additional algorithms?
+For instance, the different clause-learning strategies\cite{beamekautzsabharwal2004,fengbacchus2020} suggest that can be ``compartmentalized'',
+and even the non-chronological backtracking might be formalized as a function that takes a learned clause and trail.
+
+From an implementation standpoint, however, the various components of a SAT solver seem much more intertwined.
+
+I think the seeds of these questions were planted when I read Nadel's thesis \cite{nadel2008}, which is asking the same thing, but much more rigorously and in-depth.
+My work here can be understood as a humbler attempt to explore the same ideas.
+\subsection{Other Implementation Comparisons}
+Regarding authorship, this is ``all my fault''.
+I deliberately do \emph{not} look at other solver implementations, as my hobby project here is to try to hit all the problems and rough edges myself.
+In hashes {\tt 79588b0435edf0f5f332e0db189db47b865b14fd} and {\tt 73bf147a43be0b187f27022b65890f52c36eaf79} you can see I ``indirectly'' examined minisat, to use it as an oracle to help find bugfixes and performance improvements.
+I expect to do similar things with more recent solvers like Glucose and CryptoMiniSat, but haven't yet had the time.
+
+As minisat is apt-get-able from my Linux distribution, it made it readily possible to do ``competitive analysis'', performance-wise.
+This allows me to say---and reassure myself---that my solver, implementing algorithms that came about as advancements after minisat's implementation, does indeed ``beat'' minisat at my motivating benchmarks.
+Moreover, this requires an answer to the question: how do we define success?
+\subsection{Defining Success}
+I decided to restrict my benchmarks to random-3-SAT instances with a clause-to-variable ratio of $4.26$.
+This is empirically shown (not my own work) to be close to the ``threshold'' for random-3-SAT, where whether the instance is SAT or UNSAT is hard to predict.
+As you leave the threshold, samples become overwhelmingly SAT (if you have fewer clauses) or UNSAT (if you have more).
+By that token, the expectation is that these instances are ``hard'', and generally take a while for a solver to solve.
+This seems to bear out, in as much as with just a few hundred variables it can take a minute or so to solve a single instance.
+
+As I see it, there are a number of interesting ways of measuring performance:
+\begin{enumerate}
+    \item The easiest one, the one I appealed to, is wall-clock time.
+    \item Knuth\cite{knuth2015} uses memory-operation count, and you can imagine a physical-memory version where we count cache misses or similar.
+    \item Number of decisions or number of conflicts is also a neat measure.
+\end{enumerate}
+Ultimately, I've opted for using wall-clock time.
+
+Using random-3-SAT enables us to generate as many instances as we'd like, as well as make ones as large or as small as we'd like.
+The fascinating nature of NP-completeness means that it is difficult to really prove our assumptions, but the hope is that a reasonable sample of problems can give us a meaningful conclusion of our ``typical'' behavior on the class of random 3-SAT instances.
+So that running our solver on 50 instances, and comparing the runtime to that of Minisat, really is showing a real performance difference, and the results won't be flipped on the next 50 instances.
+(I trust nothing when it comes to SAT.)
+
+In practice most people are (understandably) focused on industrial instances, which are far from random.
+These admit certain optimizations that don't necessarily play a role in random-3-SAT.
+If nothing else, \emph{binary} clauses come up frequently in industrial applications, and so far (empirically) we learn very few binary clauses from my problem instances.
+As a professor of mine was fond of saying (perhaps a little optimistically), ``the real world is tractable''.
+Industrial instances can be tractable with a \emph{tremendous} number of clauses and variables; by choice this is not a consideration of this solver.
+I'm happy with 200-400 variables, and some thousands---not millions---of clauses.
+Moreover, while I haven't looked into it deeply, I seem to remember learning that random SAT instances are best addressed with, e.g., WalkSAT and other randomized solvers.
+However, I like deterministic algorithms.
+
+\subsection{Code Design}
+See the README in the code repo.
+
+\section{Algorithms}\label{sec:algorithms}
+What technology is implemented in this solver (so far)?
+This is the fun part.
+\subsection{Conflict-Directed Clause Learning}
+The core algorithm ``that started it all'' since 1999\cite{marques-silvasakallah1999},
+I mainly focused on Knuth's description of the algorithm\cite{knuth2015} for my actual implementation.
+The power of CDCL is well-explored.
+Two particular questions to consider are: what is it its power versus resolution\cite{beamekautzsabharwal2004}, and is it actually going to terminate the search (for which there is research I don't have handy).
+
+In this solver we do the ``typically'' first-unique-implication-point approach, which seems to be settled as the right starting point.
+Pending work includes more learning strategies that I would like to explore, see \cref{sec:future:clause-learning}.
+\subsection{Learned-Clause Minimization}\label{sec:LCM}
+This is a fun little sequel, but hard for me to fully realize.\cite{sorenssonbiere2009}
+I had to do a competitive analysis against minisat to fix a few bugs in my implementation, but now I have many good formulations.
+This is an absolutely crucial enhancement to CDCL, performance-wise.
+
+It also, at least empirically, seems to guarantee a nice property about NCB (see discussion in \cref{sec:NCB}).
+\subsection{Non-Chronological Backtracking}\label{sec:NCB}
+Pioneered as part of Chaff\cite{marques-silvasakallah1999}, though as mentioned in the article it had some precedent elsewhere.
+I actually am quite pleased with how the implementation turned out.
+
+An interesting complication: with LCM (\cref{sec:LCM}) turned on, we \emph{always} have a decision to undo.
+With LCM turned off, sometimes we backtrack in a way where there is no decision to undo.
+When this happens, it indicates that we have an UNSAT instance\footnote{I think! Need to prove this. Alternative is that I have a bug.}
+Conversely, I believe with LCM turned on we will learn the empty clause.
+This is a hypothesis I'd like to formally confirm, that there is an iff here.
+
+\subsection{VSIDS Literal Choosing Strategy}\label{sec:VSIDS}
+One of the key technologies in Chaff\cite{chaff}, there's been a \emph{lot} of work trying to characterize exactly why VSIDS is so good.
+The algorithm is ``simple'' enough, though the theory is apparently sophisticated, and getting just the right formulation has real impact.
+One survey in particular really helped guide my implementation\cite{bierefrohlich2015} and Knuth's book was a fun enough read too\cite{knuth2015}.
+\paragraph{Exceptions}
+There is the question of what the ``initial'' weights for each variable should be, which I (for simplicity's sake) chose to be the frequency count.
+My impression from the literature is that it is advantageous to \emph{not} reset those weights even on a solver restart, but I found it useful to reset the weights.
+It greatly improved the runtime---I have no formal reason for this.
+Maybe I misunderstood.
+
+Additionally, standard implementations seem to use a priority queue of some sort, I found that my dumb linear search is good.
+The trick (mentioned in a few places\cite{knuth2015,bierefrohlich2015}) of bumping things by a less-than-one multiple to avoid updating all the variables is something I never quite got around to doing.
+
+For a long time I was stuck only bumping the literals in the final learned clause---there's a \emph{huge} improvement from also including those literals involved in the intermediate resolutions.
+One of the papers mentions how that additional bumping became standard; adding the citation here is a todo.
+
+I forget where the polarity/phase-savings idea was first introduced, but yes, we do that too.
+
+\subsection{Two-Watched Literal Scheme}
+Maintaining the invariants here, especially with regards to backtracking (and later, on-the-fly-subsumption) is a real bear.
+Getting a hardware-efficient implementation was also a bear.
+
+\subsection{Vivification (Distillation)}
+From a software-engineering perspective, vivification requires so much unit-clause-propogation it suggests the idea of implementing it as a variation of a SAT-solver.
+That's my own take, at least.
+
+I have a pretty limited implementation so far, mainly following the description of one paper\cite{piettehamadisais2008} but grateful for a second formuation\cite{hansomenzi2007}.
+I think the solver could be improved if I take a second look at what both of these papers offer.
+
+My understanding from reading proceedings of recent SAT solver competitions (though I don't have a citation handy) is that people are exploring extensions to these approaches that functionally subsume them as a preprocessing step.
+I'll get there one day.
+\subsection{Blocked Clause Elimination}
+In this discussion\cite{jarvisalobiereheule2010} I particularly liked the formulation of confluent and convergent simplifications etc.
+I found that reassuring, in a way, and that this appears to be a more general form of pure literal elimination.
+I implemented this long before attempting this writeup; I will need to review exactly where this algorithm stands in our implementation.
+\subsection{Bounded Variable Elimination}
+This is a very approachable preprocessing step that really pays off\cite{subbarayanpradhan2004}.
+I like the paper acronym, ``NIVER''. Coarsely, it's ``do resolution to get rid of variables so long as we're not introducing too many more clauses''.
+I swear something about the main nested loops in the main paper is strange---shouldn't the ``commit the resolution'' if-condition be after the loops, not inside them?
+In any case, it works and is very helpful.
+\subsection{On-The-Fly Subsumption}
+Apparently two papers explored this idea at more-or-less the same time
+\cite{hamadijabboursais2010,hansomenzi2009}, as mentioned in \cite[236]{knuth2015}.
+
+Implementing this had some ``fun'' complications:
+\begin{itemize}
+    \item For the first time ever, we were removing literals in a way ``in the middle of things''.
+          This meant we had to (potentially) update watched literals information if those literals were removed.
+          This revealed complications about how to find the ``right'' watched literals that would respect backtracking, which to my knowledge I never really saw mentioned elsewhere.
+    \item Refactoring a lot about when we introduce clauses into the database (and consequently get a clause\_id) and how other optimizations plug into that.
+\end{itemize}
+\subsection{Exponential Moving Averages Restart Strategy}
+An excellent discussion of restart strategies\cite{bierefrohlich2018} generalized a successful strategy as ``Exponential Moving Averages'',
+which I more-or-less implemented directly.\footnote{Only by looking
+    at the style of papers and authors, I would guess that work has a companion paper of variable-selection strategies\cite{bierefrohlich2015} which I found almost as excellent a read, c.f.\ \cref{sec:VSIDS}.}
+This is one such approach that, as far as I can tell, was developed long after minisat, and I would think that is a big reason for why my solver is faster on our motivating inputs.
+\subsection{Literal Block Distances Cleaning Strategy}\label{sec:LBD}
+A core improvement to SAT solvers is being able to discard learnt-but-not-that-useful clauses.
+Crucial to that is \emph{scoring} the clauses so you can reason about which ones to keep, and which ones to discard.
+The Literal Block Distance (LBD) metric\cite{audemardsimon2009} has, as far as I can see from my forays into the literature, stood out by far as the most effective scoring strategy.
+The solver they implemented, Glucose\footnote{So named because low-LBD-clauses ``glue'' things together, though other than the phonetic similarity I haven't seen an explicit explanation of the jump to the sugar.} appears frequently in recent time as the ``base'' on which other people try out their new algorithms.
+
+The LBD of a clause is straightforward to compute.
+The interesting part is the datastructure design of the CNF that actual enables this clause removal, something on which I spent way too much time.
+\paragraph{Interaction} This appears to have a neat interaction with LCM, \cref{sec:LCM}, in as much as LCM can improvement the score (I think, it's been a while since I ran that experiment).
+
+\section{Future Work}
+\subsection{Chronological Backtracking}
+This\cite{nadelryvchin2018} apparently made waves in one of the recent SAT competitions, and I hope to read a sequel paper\cite{mohlebiere2019} too.
+\subsection{Better Backjumping}
+Earlier than chronological backtracking, there is a neat analysis on some extra ``implicit'' resolution information that we can extract from a trail\cite{audemardetal2008}.
+It'd be neat to apply this and see how it works in our solver.
+\subsection{Additional Preprocessing}
+\subsection{Other Clause Learning Algorithms}\label{sec:future:clause-learning}
+I am particularly excited (perhaps as I just found the paper recently) of a formulation\cite{fengbacchus2020} of CDCL that breaks down the resolution steps into per-level phases, and uses that to articulate the different learning schemes.
+I would like to see how that interacts with, e.g., on-the-fly subsumption.
+(Maybe without learning additional clauses, we can still find more subsumption cases in a way cheap enough that it's worth it.)
+
+There is also (found earlier) ``strong'' clause learning\cite{jinsomenzi2006}.
+
+Note that all of these always use the backtracking resolution (I don't know if there's any success trying some other alternative, or what that alternative would look like!), it is a matter of \emph{which} resolvant to utlimately use.
+\subsection{Trail Reuse}
+Especially with regards to my VSIDS-reset-policy, I wonder how much of trail-reuse\cite{ramovandertakheule2011} would benefit.
+Or, as is often the case, if this reveals a deficiency in my implementation somewhere.
+I am 90\% sure there is an interesting write-up on the implementation\cite{vandertakramosheule2011}, which I would be intrigued to investigate further.
+
+\subsection{List of Pending Experiments}
+\begin{itemize}
+    \item There is the notion of the ``activity'' of a clause (realized explicitly in minisat). Does activity, or something like it, find valuable clauses that LBD is wrongly erasing?
+    \item How much does LCM improve LBD? Is it consistent in its improvement, or are there some clauses that particularly benefit? (Or, is LCM better understood as a bugfix for CDCL, consider how it empirically seemed to lead to the backtracking ``improvement'' noted in \cref{sec:NCB}.
+    \item Metrics! Measure everything.
+\end{itemize}
+
+\section{Additional Bibliography}
+
+\section{Useful Resources}
+
+\section{Related Explorations}
+
+\printbibliography
+
+\end{document}
