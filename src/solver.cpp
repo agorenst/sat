@@ -329,7 +329,7 @@ std::string to_string(solver_t::state_t t) {
 
 // This is a core subsidiary function. It is not a plugin. It calls plugins.
 clause_id solver_t::determine_conflict_clause() {
-  stamped.clear();  // This is, in effect, the current resolution clause
+  stamped.reset();  // This is, in effect, the current resolution clause
   std::vector<literal_t> C;        // the clause to learn
   const size_t D = trail.level();  // the conflict level
 

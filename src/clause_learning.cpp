@@ -92,7 +92,7 @@ clause_t explicit_resolution(const cnf_t& cnf, const trail_t& actions) {
 
 clause_t stamp_resolution(const cnf_t &cnf, const trail_t &actions,
                           lit_bitset_t &stamped) {
-  stamped.clear();
+  stamped.reset();
 
   std::vector<literal_t> C;
   const size_t D = actions.level();

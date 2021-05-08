@@ -377,3 +377,24 @@ and Simon, Laurent},
   biburl    = {https://dblp.org/rec/conf/sat/SorenssonB09.bib},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
+
+% https://dl.acm.org/doi/10.1145/176454.176484
+@article{briggstorczon1993,
+  author     = {Briggs, Preston and Torczon, Linda},
+  title      = {An Efficient Representation for Sparse Sets},
+  year       = {1993},
+  issue_date = {March–Dec. 1993},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {2},
+  number     = {1–4},
+  issn       = {1057-4514},
+  url        = {https://doi.org/10.1145/176454.176484},
+  doi        = {10.1145/176454.176484},
+  abstract   = {Sets are a fundamental abstraction widely used in programming. Many representations are possible, each offering different advantages. We describe a representation that supports constant-time implementations of clear-set, add-member, and delete-member. Additionally, it supports an efficient forall iterator, allowing enumeration of all the members of a set in time proportional to the cardinality of the set.We present detailed comparisons of the costs of operations on our representation and on a bit vector representation. Additionally, we give experimental results showing the effectiveness of our representation in a practical application: construction of an interference graph for use during graph-coloring register allocation.While this representation was developed to solve a specific problem arising in register allocation, we have found it useful throughout our work, especially when implementing efficient analysis techniques for large programs. However, the new representation is not a panacea. The operations required for a particular set should be carefully considered before this representation, or any other representation, is chosen.},
+  journal    = {ACM Lett. Program. Lang. Syst.},
+  month      = mar,
+  pages      = {59–69},
+  numpages   = {11},
+  keywords   = {set representations, register allocation, compiler implementation, set operations}
+}

@@ -9,7 +9,7 @@
 // on a decision forward.
 void lcm(const cnf_t &cnf, clause_t &c, const trail_t &trail) {
   static lit_bitset_t decisions(max_variable(cnf));
-  decisions.clear();
+  decisions.reset();
 
   // populate the decisions set.
   for (const action_t &a : trail) {
@@ -93,9 +93,9 @@ void lcm_cache_dfs(const cnf_t &cnf, clause_t &c, const trail_t &actions) {
   static lit_bitset_t not_removable(max_variable(cnf));
   static lit_bitset_t removable(max_variable(cnf));
   static lit_bitset_t inclause(max_variable(cnf));
-  not_removable.clear();
-  removable.clear();
-  inclause.clear();
+  not_removable.reset();
+  removable.reset();
+  inclause.reset();
 
   for (literal_t l : c) {
     inclause.set(l);
@@ -218,7 +218,7 @@ void learned_clause_minimization(const cnf_t &cnf, clause_t &c,
       work_list.push_back(p);
     }
 
-    seen.clear();
+    seen.reset();
 
     bool is_removable = true;
     while (!work_list.empty()) {

@@ -111,40 +111,11 @@ struct var_map_t {
   auto end() const { return mem.end(); }
 };
 
-struct lit_bitset_t {
-  typedef std::vector<char> mem_t;
-  mem_t mem;
-  variable_t max_var;
-
-  // Initialize the size based on the max var.
-  void construct(variable_t m) {
-    max_var = m;
-    mem.resize(max_var * 2 + 2);
-    clear();
-  }
-  lit_bitset_t(variable_t m) { construct(m); }
-
-  void set(literal_t v) { mem[literal_to_index(v)] = 1; }
-  void clear(literal_t v) { mem[literal_to_index(v)] = 0; }
-  bool get(literal_t v) const { return mem[literal_to_index(v)]; }
-
- private:
-  auto begin() { return mem.begin(); }
-  auto end() { return mem.end(); }
-  auto begin() const { return mem.begin(); }
-  auto end() const { return mem.end(); }
-
- public:
-  void clear() { std::fill(begin(), end(), 0); }
-  size_t count() const { return std::accumulate(begin(), end(), 0); }
-
-  size_t literal_to_index(literal_t l) const { return l; }
-};
-
 struct var_bitset_t {
   typedef std::vector<char> mem_t;
   mem_t mem;
   variable_t max_var;
+  size_t set_count = 0;
 
   void construct(variable_t m) {
     max_var = m;
@@ -155,8 +126,14 @@ struct var_bitset_t {
     return variable_to_index(var(l));
   }
 
-  void set(variable_t v) { mem[variable_to_index(v)] = true; }
-  void clear(variable_t v) { mem[variable_to_index(v)] = false; }
+  void set(variable_t v) {
+    mem[variable_to_index(v)] = true;
+    set_count++;
+  }
+  void clear(variable_t v) {
+    mem[variable_to_index(v)] = false;
+    set_count--;
+  }
   bool get(variable_t v) const { return mem[variable_to_index(v)]; }
 
  private:
@@ -166,7 +143,10 @@ struct var_bitset_t {
   auto end() const { return mem.end(); }
 
  public:
-  void clear() { std::fill(begin(), end(), 0); }
+  void clear() {
+    std::fill(begin(), end(), 0);
+    set_count = 0;
+  }
 };
 
 template <typename T>
@@ -205,3 +185,65 @@ literal_t literal_map_t<T>::iter_to_literal(
   return index;
   // return index - max_var;
 }
+
+// Briggs and Torczon
+struct sparse_integer_set {
+  std::vector<size_t> sparse;
+  std::vector<size_t> dense;
+  size_t size = 0;
+  sparse_integer_set(size_t s) : sparse(s), dense(s) {}
+  bool set(size_t k) {
+    auto j = sparse[k];
+    if (j >= size || dense[j] != k) {
+      sparse[k] = size;
+      dense[size] = k;
+      size++;
+      return true;
+    }
+    return false;
+  }
+  bool clear(size_t k) {
+    auto j = sparse[k];
+    if (j < size && dense[j] == k) {
+      size--;
+      auto x = dense[size];
+      dense[j] = x;
+      sparse[x] = j;
+      return true;
+    }
+    return false;
+  }
+  bool get(size_t k) const {
+    auto j = sparse[k];
+    return j < size && dense[j] == k;
+  }
+
+  void reset() { size = 0; }
+  auto begin() { return dense.begin(); }
+  auto end() { return dense.begin() + size; }
+  auto begin() const { return dense.begin(); }
+  auto end() const { return dense.begin() + size; }
+};
+
+struct lit_bitset_t {
+  // typedef std::vector<char> mem_t;
+  typedef sparse_integer_set mem_t;
+  mem_t mem;
+
+  // Initialize the size based on the max var.
+  lit_bitset_t(variable_t m) : mem(m * 2 + 2) {}
+
+  void set(literal_t v) { mem.set(v); }
+  void clear(literal_t v) { mem.clear(v); }
+  bool get(literal_t v) const { return mem.get(v); }
+
+ public:
+  auto begin() { return mem.begin(); }
+  auto end() { return mem.end(); }
+  auto begin() const { return mem.begin(); }
+  auto end() const { return mem.end(); }
+
+ public:
+  void reset() { mem.reset(); }
+  size_t count() const { return mem.size; }
+};
