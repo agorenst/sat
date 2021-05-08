@@ -45,6 +45,7 @@ literal_t vsids_t::choose() const {
   if (!c) return 0;
   return trail.previously_assigned_literal(c);
 }
+float vsids_t::score(literal_t l) const { return activity[var(l)]; }
 
 vsids_heap_t::vsids_heap_t(const cnf_t &cnf, const trail_t &trail)
     : trail(trail), cnf(cnf), vars(cnf.var_range()) {

@@ -78,7 +78,8 @@ struct trail_t {
   static void validate(const cnf_t &cnf, const trail_t &trail);
   void print_certificate() const;
 
-  static bool has_unit(const cnf_t &cnf, const trail_t &t);
+  static bool has_unit(const cnf_t &cnf, const trail_t &trail);
+  static clause_id get_unit_clause(const cnf_t &cnf, const trail_t &trail);
   static literal_t is_asserting(const trail_t &trail, const clause_t &c);
   static bool is_satisfied(const cnf_t &cnf, const trail_t &t);
   static bool is_conflicted(const cnf_t &cnf, const trail_t &t);

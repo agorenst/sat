@@ -329,6 +329,17 @@ bool trail_t::has_unit(const cnf_t &cnf, const trail_t &trail) {
   }
   return false;
 }
+clause_id trail_t::get_unit_clause(const cnf_t &cnf, const trail_t &trail) {
+  for (auto cid : cnf) {
+    if (trail.clause_sat(cnf[cid])) continue;
+    // not sure what I want in this case.
+    if (trail.clause_unsat(cnf[cid])) continue;
+    size_t c = trail.count_unassigned_literals(cnf[cid]);
+    assert(c);
+    if (c == 1) return cid;
+  }
+  return nullptr;
+}
 bool trail_t::is_satisfied(const cnf_t &cnf, const trail_t &trail) {
   return std::all_of(std::begin(const_clauses(cnf)),
                      std::end(const_clauses(cnf)),

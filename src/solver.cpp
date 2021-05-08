@@ -28,6 +28,7 @@ bool solver_t::solve() {
   start_solve();
 
   for (;;) {
+    // std::cerr << to_string(state) << trail << std::endl;
     switch (state) {
       case state_t::quiescent: {
         // This may be where we decide, e.g., to restart.
@@ -117,6 +118,8 @@ bool solver_t::solve() {
 
         // Add it as a unit... this is dependent on certain backtracking, I
         // think.
+        // std::cerr << "Pushing: " << lit_to_dimacs(u) << " -- " << cnf[cid]
+        //<< std::endl;
         unit_queue.push({u, cid});
 
         state = state_t::check_units;
@@ -219,8 +222,16 @@ void solver_t::install_core_plugins() {
       assert(trail.find_unassigned_literal(cnf[cid]) == l);
       assert(!trail_t::is_conflicted(cnf, trail));
     });
-    choose_literal.pre(
-        [&](literal_t l) { assert(!trail_t::has_unit(cnf, trail)); });
+    choose_literal.pre([&](literal_t l) {
+#if 0
+      if (trail_t::has_unit(cnf, trail)) {
+       std::cerr << trail << std::endl;
+        auto cid = trail_t::get_unit_clause(cnf, trail);
+       std::cerr << cnf[cid] << std::endl;
+      }
+#endif
+      assert(!trail_t::has_unit(cnf, trail));
+    });
     choose_literal.post(
         [&](literal_t l) { assert(trail.literal_unassigned(l)); });
   }
@@ -339,7 +350,7 @@ clause_id solver_t::determine_conflict_clause() {
   size_t resolvent_size = 0;
   auto last_subsumed = std::rend(trail);
   for (literal_t l : conflict_clause) {
-    stamped.set(neg(l));
+    stamped.set(l);
     resolvent_size++;
     if (trail.level(neg(l)) < D) {
       C.push_back(l);
@@ -353,7 +364,7 @@ clause_id solver_t::determine_conflict_clause() {
     // We don't expect to be able to resolve against this.
     // i.e., this literal (and its reason) don't play a role
     // in resolution to derive a new clause.
-    if (!stamped.get(L)) {
+    if (!stamped.get(neg(L))) {
       continue;
     }
 
@@ -363,7 +374,7 @@ clause_id solver_t::determine_conflict_clause() {
     cdcl_resolve(L, it->get_clause());
 
     counter--;  // track the number of resolutions we're doing.
-    stamped.clear(L);
+    stamped.clear(neg(L));
     MAX_ASSERT(resolvent_size > 0);
     resolvent_size--;
 
@@ -373,9 +384,9 @@ clause_id solver_t::determine_conflict_clause() {
     for (literal_t a : d) {
       if (a == L) continue;
       // We care about future resolutions, so we negate "a"
-      if (!stamped.get(neg(a))) {
+      if (!stamped.get(a)) {
         resolvent_size++;
-        stamped.set(neg(a));
+        stamped.set(a);
         if (trail.level(neg(a)) < D) {
           C.push_back(a);
         } else {
@@ -386,7 +397,7 @@ clause_id solver_t::determine_conflict_clause() {
     }
 
     // for (literal_t l : cnf.lit_range()) {
-    // assert(contains(resolvent, l) == stamped.get(neg(l)));
+    // assert(contains(resolvent, l) == stamped.get(l));
     //}
 
     if (settings::on_the_fly_subsumption) {
@@ -400,8 +411,8 @@ clause_id solver_t::determine_conflict_clause() {
         // We are only good at detecting unit clauses if they're the thing we
         // learned. If on-the-fly-subsumption is able to get an intermediate
         // resolvand into unit form, we would miss that, and some core
-        // assumptions of our solver would be violated. So let's look for that.
-        // Experimentally things look good, but I am suspicious.
+        // assumptions of our solver would be violated. So let's look for
+        // that. Experimentally things look good, but I am suspicious.
         assert(resolvent_size != 1 || counter == 1);
       }
     }
@@ -416,7 +427,7 @@ clause_id solver_t::determine_conflict_clause() {
     to_lbd = lbd.remove(to_return);
     // QUESTION: how to "LCM" this? LCM with "remove_literal"?
   } else {
-    while (!stamped.get(it->get_literal())) it++;
+    while (!stamped.get(neg(it->get_literal()))) it++;
 
     MAX_ASSERT(it->has_literal());
     C.push_back(neg(it->get_literal()));
@@ -424,8 +435,8 @@ clause_id solver_t::determine_conflict_clause() {
     MAX_ASSERT(counter == 1);
     MAX_ASSERT(C.size() == stamped.count());
 
-    // TODO: is there a "nice" sort we can do here that could be helpful? VSIDS,
-    // for instance?
+    // TODO: is there a "nice" sort we can do here that could be helpful?
+    // VSIDS, for instance?
     std::sort(std::begin(C), std::end(C));
 
     clause_t learned_clause{C};
@@ -434,8 +445,9 @@ clause_id solver_t::determine_conflict_clause() {
   }
   // Having learned the clause, now minimize it.
   // Fun fact: there are some rare cases where we're able to minimize the
-  // already-existing clause, presumably thanks to our ever-smarter trail. This
-  // doesn't really give us a perf benefit in my motivating benchmarks, though.
+  // already-existing clause, presumably thanks to our ever-smarter trail.
+  // This doesn't really give us a perf benefit in my motivating benchmarks,
+  // though.
   if (settings::learned_clause_minimization) {
     learned_clause_minimization(cnf, cnf[to_return], trail, stamped);
   }
@@ -444,6 +456,38 @@ clause_id solver_t::determine_conflict_clause() {
   if (cnf[to_return].size() == 0) {
     return nullptr;
   }
+
+#if 0
+// TODO: This causes some kind of invariant violation where we induce unit clauses.
+  // Are there additional subsumption opportunities?
+  // This is "neat" --- it makes back-tracking harder in some instances? As in,
+  // it induces more units on the trail? (It's not that the clause is literally
+  // reduced to 1, though that may be true too...)
+  if (settings::on_the_fly_subsumption) {
+    for (; it != std::rend(trail); it++) {
+      if (!it->is_unit_prop()) continue;
+      literal_t L = it->get_literal();
+      if (!stamped.get(neg(L))) {
+        continue;
+      }
+      stamped.clear(neg(L));
+      resolvent_size--;
+      const clause_t &d = cnf[it->get_clause()];
+      for (literal_t a : d) {
+        if (a == L) continue;
+        if (stamped.get(a)) continue;
+        resolvent_size++;
+        stamped.set(a);
+      }
+      if (d.size() - 1 == resolvent_size && resolvent_size > 2) {
+        std::cerr << trail << std::endl;
+        std::cerr << cnf[it->get_clause()] << std::endl;
+        remove_literal(it->get_clause(), it->get_literal());
+        std::cerr << cnf[it->get_clause()] << std::endl;
+      }
+    }
+  }
+#endif
 
   added_clause(trail, to_return);
 
