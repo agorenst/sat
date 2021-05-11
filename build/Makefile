@@ -45,8 +45,33 @@ $(SOLVERDBGOBJECTS) : $(BUILDDIR)/%.dbg.o : $(SOURCEDIR)/%.cpp
 $(BUILDDIR)/sat.dbg : $(SOLVERDBGOBJECTS)
 	$(CC) $(DBGFLAGS) $^ -o $@
 
+# https://clang.llvm.org/docs/UsersManual.html#profile-guided-optimization
+# LLVM flag version is fprofile-instr-generate, but we specify a directory here
+SOLVERPGIOBJECTS=$(patsubst $(SOURCEDIR)/%.cpp,$(BUILDDIR)/%.pgi.o,$(SOLVERSOURCES))
+$(SOLVERPGIOBJECTS) : $(BUILDDIR)/%.pgi.o : $(SOURCEDIR)/%.cpp
+	$(CC) $(CXXFLAGS) -DREL -fprofile-instr-generate="sat-%m.profraw" -c $< -o $@
+$(BUILDDIR)/sat.pgi : $(SOLVERPGIOBJECTS)
+	$(CC) $(CXXFLAGS) -DREL -fprofile-instr-generate="sat-%m.profraw"  $^ -o $@
+
+#$(CC) $(CXXFLAGS) -DREL -fprofile-generate=profdir $^ -o $@
+
+sat.profdata: sat.pgi
+	python3 ./../tools/cnfsearch.py -lower-bound 0 -upper-bound 10 -scale 3.0 benchmark -solver "./sat.pgi"
+	mv *.profraw profdir/one.profraw
+	python3 ./../tools/cnfsearch.py -lower-bound 0 -upper-bound 10 -scale 3.0 benchmark -solver "./sat.pgi" -flags="--only-stamped"
+	mv *.profraw profdir/two.profraw
+	llvm-profdata merge -output=sat.profdata ./profdir/*.profraw
+
+#llvm-profdata merge -output=sat.profdata profdir/
+
+SOLVERPGOOBJECTS=$(patsubst $(SOURCEDIR)/%.cpp,$(BUILDDIR)/%.pgo.o,$(SOLVERSOURCES))
+$(SOLVERPGOOBJECTS) : $(BUILDDIR)/%.pgo.o : $(SOURCEDIR)/%.cpp | sat.profdata
+	$(CC) $(CXXFLAGS) -DREL -fprofile-use=sat.profdata -c $< -o $@
+$(BUILDDIR)/sat.pgo : $(SOLVERPGOOBJECTS) | sat.profdata
+	$(CC) $(CXXFLAGS) -DREL -fprofile-use=sat.profdata $^ -o $@
+
 clean:
-	rm -f $(SOLVERSANOBJECTS) $(SOLVEROBJECTS) $(SOLVERAFLOBJECTS) $(SOLVERDBGOBJECTS) $(REPROBJECTS) $(DRIVEROBJECTS) sat.dbg sat.afl sat sat.san
+	rm -f $(SOLVERPGOOBJECTS) $(SOLVERPGIOBJECTS) $(SOLVERSANOBJECTS) $(SOLVEROBJECTS) $(SOLVERAFLOBJECTS) $(SOLVERDBGOBJECTS) $(REPROBJECTS) $(DRIVEROBJECTS) sat.dbg sat.afl sat sat.san *.prof* sat.pgi sat.pgo profdir/*
 
 # $(info $(VARNAME))
 
@@ -63,7 +88,5 @@ tests: $(GENTESTS1000) $(GENTESTS100) $(GENTESTS10)
 	python3 ./../tools/satgen.py --vars 250 -s $(basename $@) | ./sat | diff - <(python3 ./../tools/satgen.py --vars 250 -s $(basename $@) | minisat | tail -n 1)
 
 benchmark1: sat
-	echo "Minisat"
-	python3 ./../tools/cnfsearch.py -lower-bound 0 -upper-bound 25 -scale 2.5 benchmark -solver minisat
-	echo "My sat"
-	python3 ./../tools/cnfsearch.py -lower-bound 0 -upper-bound 25 -scale 2.5 benchmark -solver "./sat"
+	python3 ./../tools/cnfsearch.py -lower-bound 0 -upper-bound 10 -scale 3.0 benchmark -solver "./sat"
+	python3 ./../tools/cnfsearch.py -lower-bound 0 -upper-bound 10 -scale 3.0 benchmark -solver "minisat"
