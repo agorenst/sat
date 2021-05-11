@@ -1,3 +1,5 @@
+#include <string>
+#include <vector>
 namespace settings {
 extern bool print_parse;
 extern bool print_canon;
@@ -39,5 +41,6 @@ extern bool preprocess_bve;
 extern bool preprocess_bce;
 
 int parse(int argc, char* argv[]);
+bool parse_strings(const std::vector<std::string>&);
 void print_help();
 }  // namespace settings

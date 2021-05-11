@@ -40,6 +40,7 @@ bool preprocess_bve = false;
 bool preprocess_bce = false;
 
 bool debug_max = false;  // this should ultimately be an integer or osmething.
+
 struct flag_t {
   std::string name;
   std::string description;
@@ -103,6 +104,29 @@ const char* trace_cdcl_clause() {
                    [&](const flag_t& o) { return o.name == "trace-cdcl"; });
   return flag->param.c_str();
 }
+bool parse_arg(const char* arg) {
+#if 0
+// don't handle this case yet (const char!)
+  char* argend = &arg[strlen(arg)];
+  auto param_ptr = std::find(arg, argend, '=');
+  std::string param_value = "";
+  if (param_ptr != argend) {
+    *param_ptr = '\0';  // remove the '=';
+    std::copy(param_ptr + 1, argend, std::back_inserter(param_value));
+  }
+#endif
+
+  bool found = false;
+  for (auto& p : options) {
+    if (!strcmp(p.name.c_str(), arg)) {
+      // This is a flag, flip it from default
+      p.value = !p.value;
+      found = true;
+      break;
+    }
+  }
+  return found;
+}
 int parse(int argc, char* argv[]) {
   for (int i = 1; i < argc; i++) {
     char* arg = argv[i];
@@ -115,31 +139,31 @@ int parse(int argc, char* argv[]) {
     }
     arg++;
     arg++;
-
-    char* argend = &arg[strlen(arg)];
-
-    auto param_ptr = std::find(arg, argend, '=');
-    std::string param_value = "";
-    if (param_ptr != argend) {
-      *param_ptr = '\0';  // remove the '=';
-      std::copy(param_ptr + 1, argend, std::back_inserter(param_value));
-    }
-
-    bool found = false;
-    for (auto& p : options) {
-      if (!strcmp(p.name.c_str(), arg)) {
-        // This is a flag, flip it from default
-        p.value = !p.value;
-        found = true;
-        if (param_value != "") p.param = param_value;
-        break;
-      }
-    }
+    bool found = parse_arg(arg);
     if (!found) {
       return i;
     }
   }
   return 0;  // success
+}
+bool parse_strings(const std::vector<std::string>& args) {
+  for (auto& arg_str : args) {
+    const char* arg = arg_str.c_str();
+    auto n = strlen(arg);
+    if (n < 2) {
+      return false;  // error
+    }
+    if (arg[0] != '-' || arg[1] != '-') {
+      return false;
+    }
+    arg++;
+    arg++;
+    bool found = parse_arg(arg);
+    if (!found) {
+      return false;
+    }
+  }
+  return true;  // success
 }
 void print_help() { printf("Usage information TBD\n"); }
 }  // namespace settings

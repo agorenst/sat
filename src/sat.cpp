@@ -3,11 +3,13 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <list>
 #include <map>
 #include <queue>
+#include <sstream>
 #include <vector>
 
 #include "cnf.h"
@@ -34,6 +36,28 @@ int main(int argc, char* argv[]) {
     settings::print_help();
     return 1;
   }
+
+  // Parse environment variable
+  char* environment_settings_c = (getenv("SAT_SETTINGS"));
+  if (environment_settings_c) {
+    std::string environment_settings{environment_settings_c};
+    if (environment_settings != "") {
+      std::istringstream ss(environment_settings);
+      std::vector<std::string> flags{std::istream_iterator<std::string>(ss),
+                                     std::istream_iterator<std::string>()};
+      bool parse_ok = settings::parse_strings(flags);
+      if (!parse_ok) {
+        printf("Error with flag from SAT_SETTINGS: \"%s\"\n",
+               environment_settings_c);
+        settings::print_help();
+        return 2;
+      }
+    }
+  }
+
+  // Given a special flag, output our whole settings (for sanity-checking
+  // purposes, mainly)
+  // NYI
 
   // Instantiate our CNF object
   std::string input_file;
