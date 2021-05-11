@@ -225,13 +225,13 @@ struct sparse_integer_set {
   auto end() const { return dense.begin() + size; }
 };
 
-struct lit_bitset_t {
+struct lit_compactset_t {
   // typedef std::vector<char> mem_t;
   typedef sparse_integer_set mem_t;
   mem_t mem;
 
   // Initialize the size based on the max var.
-  lit_bitset_t(variable_t m) : mem(m * 2 + 2) {}
+  lit_compactset_t(variable_t m) : mem(m * 2 + 2) {}
 
   void set(literal_t v) { mem.set(v); }
   void clear(literal_t v) { mem.clear(v); }
@@ -246,4 +246,64 @@ struct lit_bitset_t {
  public:
   void reset() { mem.reset(); }
   size_t count() const { return mem.size; }
+};
+
+struct lit_bitset_t {
+  typedef std::vector<char> mem_t;
+  mem_t mem;
+  variable_t max_var;
+
+  // Initialize the size based on the max var.
+  void construct(variable_t m) {
+    max_var = m;
+    mem.resize(max_var * 2 + 2);
+    reset();
+  }
+  lit_bitset_t(variable_t m) { construct(m); }
+
+  void set(literal_t v) { mem[literal_to_index(v)] = 1; }
+  void clear(literal_t v) { mem[literal_to_index(v)] = 0; }
+  bool get(literal_t v) const { return mem[literal_to_index(v)]; }
+
+ private:
+  auto begin() { return mem.begin(); }
+  auto end() { return mem.end(); }
+  auto begin() const { return mem.begin(); }
+  auto end() const { return mem.end(); }
+
+ public:
+  void reset() { std::fill(begin(), end(), 0); }
+  size_t count() const { return std::accumulate(begin(), end(), 0); }
+
+  size_t literal_to_index(literal_t l) const { return l; }
+};
+
+struct lit_bothset_t {
+  lit_compactset_t c;
+  lit_bitset_t b;
+  // Initialize the size based on the max var.
+  lit_bothset_t(variable_t m) : c(m), b(m) {}
+
+  void set(literal_t v) {
+    c.set(v);
+    b.set(v);
+  }
+  void clear(literal_t v) {
+    c.clear(v);
+    b.clear(v);
+  }
+  bool get(literal_t v) const { return b.get(v); }
+
+ public:
+  auto begin() { return c.begin(); }
+  auto end() { return c.end(); }
+  auto begin() const { return c.begin(); }
+  auto end() const { return c.end(); }
+
+ public:
+  void reset() {
+    c.reset();
+    b.reset();
+  }
+  size_t count() const { return c.count(); }
 };

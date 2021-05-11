@@ -15,8 +15,9 @@ struct solver_t {
   // and "learned" clauses)
   cnf_t cnf;
 
-  // This is just kinda handy to have around, but it's vestigial.
-  lit_bitset_t stamped;
+  // This is used in the learn-clause routine.
+  // lit_compactset_t stamped;
+  lit_compactset_t compact_stamped;
 
   // This is the history of committed actions we have.
   // This is the thing to ask if you need to know if a literal

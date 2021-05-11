@@ -174,6 +174,13 @@ struct clause_t {
 
   // no copy constructor, only "clone"
   clause_t(clause_t &&that) = default;
+  clause_t(const lit_compactset_t &s) : mem(std::begin(s), std::end(s)) {}
+  clause_t(const lit_bitset_t &s) {
+    for (literal_t l : literal_range(s.max_var)) {
+      if (s.get(l)) mem.push_back(l);
+    }
+  }
+  clause_t(const lit_bothset_t &s) : clause_t(s.c) {}
   clause_t &operator=(clause_t &&that) = default;
 
   clause_t *left = nullptr;

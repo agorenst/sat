@@ -162,9 +162,10 @@ action_t *solver_t::determine_backtrack_level(const clause_t &c) {
 }
 
 // We create a local copy of the CNF.
+//
 solver_t::solver_t(const cnf_t &CNF)
     : cnf(CNF),
-      stamped(max_variable(cnf)),
+      compact_stamped(max_variable(cnf)),
       watch(cnf, trail, unit_queue),
       const_watch(cnf, trail, unit_queue),
       vsids(cnf, trail),
@@ -327,10 +328,8 @@ std::string to_string(solver_t::state_t t) {
   return "";
 }
 
-// This is a core subsidiary function. It is not a plugin. It calls plugins.
 clause_id solver_t::determine_conflict_clause() {
-  stamped.reset();  // This is, in effect, the current resolution clause
-  std::vector<literal_t> C;        // the clause to learn
+  compact_stamped.reset();  // This is, in effect, the current resolution clause
   const size_t D = trail.level();  // the conflict level
 
   // The end of our trail contains the conflicting clause and literal:
@@ -339,7 +338,6 @@ clause_id solver_t::determine_conflict_clause() {
 
   // Get the conflict clause
   const clause_t &conflict_clause = cnf[it->get_clause()];
-  // clause_t resolvent = conflict_clause.clone();
   it++;
 
   size_t counter =
@@ -347,14 +345,9 @@ clause_id solver_t::determine_conflict_clause() {
                     [&](literal_t l) { return trail.level(l) == D; });
   MAX_ASSERT(counter > 1);
 
-  size_t resolvent_size = 0;
   auto last_subsumed = std::rend(trail);
   for (literal_t l : conflict_clause) {
-    stamped.set(l);
-    resolvent_size++;
-    if (trail.level(neg(l)) < D) {
-      C.push_back(l);
-    }
+    compact_stamped.set(l);
   }
 
   for (; counter > 1; it++) {
@@ -364,19 +357,17 @@ clause_id solver_t::determine_conflict_clause() {
     // We don't expect to be able to resolve against this.
     // i.e., this literal (and its reason) don't play a role
     // in resolution to derive a new clause.
-    if (!stamped.get(neg(L))) {
+    if (!compact_stamped.get(neg(L))) {
       continue;
     }
 
-    // L *is* stamped, so we *can* resolve against it!
+    // L *is* compact_stamped, so we *can* resolve against it!
 
     // Report that we're about to resolve against this.
     cdcl_resolve(L, it->get_clause());
 
     counter--;  // track the number of resolutions we're doing.
-    stamped.clear(neg(L));
-    MAX_ASSERT(resolvent_size > 0);
-    resolvent_size--;
+    compact_stamped.clear(neg(L));
 
     const clause_t &d = cnf[it->get_clause()];
     // resolvent = resolve_ref(resolvent, d, neg(L));
@@ -384,11 +375,9 @@ clause_id solver_t::determine_conflict_clause() {
     for (literal_t a : d) {
       if (a == L) continue;
       // We care about future resolutions, so we negate "a"
-      if (!stamped.get(a)) {
-        resolvent_size++;
-        stamped.set(a);
+      if (!compact_stamped.get(a)) {
+        compact_stamped.set(a);
         if (trail.level(neg(a)) < D) {
-          C.push_back(a);
         } else {
           // this is another thing to resolve against.
           counter++;
@@ -396,12 +385,8 @@ clause_id solver_t::determine_conflict_clause() {
       }
     }
 
-    // for (literal_t l : cnf.lit_range()) {
-    // assert(contains(resolvent, l) == stamped.get(l));
-    //}
-
     if (settings::on_the_fly_subsumption) {
-      if (d.size() - 1 == resolvent_size) {
+      if (d.size() - 1 == compact_stamped.count()) {
         last_subsumed = it;
         remove_literal(it->get_clause(), it->get_literal());
         MAX_ASSERT(std::find(std::begin(d), std::end(d), L) == std::end(d));
@@ -413,7 +398,7 @@ clause_id solver_t::determine_conflict_clause() {
         // resolvand into unit form, we would miss that, and some core
         // assumptions of our solver would be violated. So let's look for
         // that. Experimentally things look good, but I am suspicious.
-        assert(resolvent_size != 1 || counter == 1);
+        SEARCH_ASSERT(compact_stamped.count() != 1 || counter == 1);
       }
     }
   }
@@ -427,20 +412,10 @@ clause_id solver_t::determine_conflict_clause() {
     to_lbd = lbd.remove(to_return);
     // QUESTION: how to "LCM" this? LCM with "remove_literal"?
   } else {
-    while (!stamped.get(neg(it->get_literal()))) it++;
-
     MAX_ASSERT(it->has_literal());
-    C.push_back(neg(it->get_literal()));
-
     MAX_ASSERT(counter == 1);
-    MAX_ASSERT(C.size() == stamped.count());
 
-    // TODO: is there a "nice" sort we can do here that could be helpful?
-    // VSIDS, for instance?
-    std::sort(std::begin(C), std::end(C));
-
-    clause_t learned_clause{C};
-
+    clause_t learned_clause{compact_stamped};
     to_return = cnf.add_clause(std::move(learned_clause));
   }
   // Having learned the clause, now minimize it.
@@ -449,7 +424,7 @@ clause_id solver_t::determine_conflict_clause() {
   // This doesn't really give us a perf benefit in my motivating benchmarks,
   // though.
   if (settings::learned_clause_minimization) {
-    learned_clause_minimization(cnf, cnf[to_return], trail, stamped);
+    learned_clause_minimization(cnf, cnf[to_return], trail);
   }
 
   // Special, but crucial, case.
@@ -467,19 +442,17 @@ clause_id solver_t::determine_conflict_clause() {
     for (; it != std::rend(trail); it++) {
       if (!it->is_unit_prop()) continue;
       literal_t L = it->get_literal();
-      if (!stamped.get(neg(L))) {
+      if (!compact_stamped.get(neg(L))) {
         continue;
       }
-      stamped.clear(neg(L));
-      resolvent_size--;
+      compact_stamped.clear(neg(L));
       const clause_t &d = cnf[it->get_clause()];
       for (literal_t a : d) {
         if (a == L) continue;
-        if (stamped.get(a)) continue;
-        resolvent_size++;
-        stamped.set(a);
+        if (compact_stamped.get(a)) continue;
+        compact_stamped.set(a);
       }
-      if (d.size() - 1 == resolvent_size && resolvent_size > 2) {
+      if (d.size() - 1 == compact_stamped.count() && resolvent_size > 2) {
         std::cerr << trail << std::endl;
         std::cerr << cnf[it->get_clause()] << std::endl;
         remove_literal(it->get_clause(), it->get_literal());
