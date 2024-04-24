@@ -14,7 +14,7 @@ The [tests](tests) directory has some old tests. A lot of the testing is subsume
 The [tools](tools) directory contains various scripts (mostly Python, some bash) for interacting with the compiled SAT solver.
 
 Of course the goal is to solve CNF instances quickly, but more than that I want to write the explanations and demonstration code I "wish I had" when I started diving into this material.
-That writing, in LaTeX for ease-of-citation, can be found in [paper](paper).
+That writing, in LaTeX for ease-of-citation, can be found in [paper](paper/sat.pdf).
 
 # Getting Started
 ## Building
